@@ -14,13 +14,14 @@ export function PresenceProvider({ enabled, children }: { enabled: boolean; chil
   const board = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!enabled || !profile) return;
-    const c = supabase.channel('presence:dtour', { config: { presence: { key: profile.id } } });
+    if (!enabled) return;
+    const c = supabase.channel('presence:dtour', { config: { presence: { key: profile?.id ?? `visitor-${Math.random().toString(36).slice(2)}` } } });
     ch.current = c;
     c.on('presence', { event: 'sync' }, () => {
       setOnline(Object.values(c.presenceState<OnlineUser>()).map((l) => l[0]).filter(Boolean));
     }).subscribe(async (status) => {
-      if (status === 'SUBSCRIBED') await c.track({ id: profile.id, handle: profile.handle, board: board.current });
+      // Visitors watch the count; only members are counted.
+      if (status === 'SUBSCRIBED' && profile) await c.track({ id: profile.id, handle: profile.handle, board: board.current });
     });
     return () => { supabase.removeChannel(c); ch.current = null; };
   }, [enabled, profile?.id, profile?.handle]); // eslint-disable-line react-hooks/exhaustive-deps

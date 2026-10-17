@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  createSocietyPost, createTeam, createThread, createWikiArticle, flair, saveDraft, similarThreads, uploadLibraryItem,
-  type PostType, type SocietyLite, type Tone,
+  createSocietyPost, createTeam, createThread, createWikiArticle, flair, saveDraft, similarThreads, uploadImage, uploadLibraryItem,
+  type PostType, type ProfileRow, type SocietyLite, type Tone,
 } from '@dtour/shared';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Icon } from '@/components/Icon';
@@ -22,14 +22,15 @@ const TYPES: [PostType, string, string, string][] = [
 const TONE_SQ: Record<Tone, string> = { accent: 'var(--color-accent)', accent2: 'var(--color-accent-2)', ink: 'var(--color-text)' };
 const Label = ({ children }: { children: React.ReactNode }) => <div className="label-caps">{children}</div>;
 
-export function Composer({ boards, societies, subjects, initialType, initialBoard, initialTitle }: {
-  boards: Board[]; societies: SocietyLite[]; subjects: { code: string; name: string }[];
+export function Composer({ me, boards, societies, subjects, initialType, initialBoard, initialTitle }: {
+  me: ProfileRow; boards: Board[]; societies: SocietyLite[]; subjects: { code: string; name: string }[];
   initialType?: string; initialBoard?: string; initialTitle?: string;
 }) {
-  const { me, toast } = useShell();
+  const { toast } = useShell();
   const router = useRouter();
   const body = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const imgRef = useRef<HTMLInputElement>(null);
   const postable = boards.filter((b) => !b.verified_only || societies.length > 0);
   const defBoard = postable.find((b) => b.slug === initialBoard) ?? postable.find((b) => b.slug === `academics-${(me.branch_code ?? '').toLowerCase()}`) ?? postable.find((b) => b.slug === 'campus-buzz') ?? postable[0];
 
@@ -94,6 +95,7 @@ export function Composer({ boards, societies, subjects, initialType, initialBoar
     try {
       if (type === 'article') {
         const slug = await createWikiArticle(sb, { userId: me.id, title, body: text, boardId: boardId || null });
+        toast(me.role === 'member' ? 'Sent to the moderators — your guide goes live once approved.' : 'Published.');
         router.push(`/wiki/${slug}`); return;
       }
       if (type === 'team') {
@@ -207,7 +209,7 @@ export function Composer({ boards, societies, subjects, initialType, initialBoar
               <button key={ic} className="btn btn-icon" onClick={fn} aria-label={ic}><Icon name={ic} size={18} /></button>
             ))}
             <span style={{ width: 1, height: 22, background: 'var(--color-divider)', margin: '0 6px' }} />
-            <button className="btn btn-icon" onClick={() => fileRef.current?.click()} aria-label="Image"><Icon name="image" size={18} /></button>
+            <button className="btn btn-icon" onClick={() => imgRef.current?.click()} aria-label="Insert image"><Icon name="image" size={18} /></button>
             <button className="btn btn-icon" onClick={() => fileRef.current?.click()} aria-label="Attach"><Icon name="paperclip" size={18} /></button>
             <span className="hide-mobile" style={{ marginLeft: 'auto', fontSize: 12.5, color: 'var(--color-neutral-700)', paddingRight: 8 }}>Markdown + LaTeX supported</span>
           </div>
@@ -215,6 +217,14 @@ export function Composer({ boards, societies, subjects, initialType, initialBoar
             ? <div style={{ minHeight: 180, padding: '10px 14px', background: 'var(--color-surface)', borderRadius: '0 0 2px 2px' }}><Markdown source={text || '*Nothing to preview yet.*'} size={16} /></div>
             : <textarea ref={body} className="input" value={text} onChange={(e) => setText(e.target.value)} placeholder="Add context. What have you tried? Which branch, semester, professor?" style={{ borderRadius: '0 0 2px 2px', minHeight: 180, font: '400 16px/1.6 var(--font-body)', borderTop: 'none', display: 'block' }} />}
           <input ref={fileRef} type="file" hidden onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+          <input ref={imgRef} type="file" accept="image/*" hidden onChange={async (e) => {
+            const f = e.target.files?.[0]; e.target.value = '';
+            if (!f) return;
+            if (f.size > 10 * 1048576) { toast('Images can be up to 10 MB.'); return; }
+            toast('Uploading image…');
+            try { const url = await uploadImage(supabaseBrowser(), me.id, f, f.name, f.type); setText((t) => `${t}${t && !t.endsWith('\n') ? '\n\n' : ''}![${f.name.replace(/\.[^.]+$/, '')}](${url})\n`); }
+            catch (err) { toast((err as Error).message); }
+          }} />
           <div onClick={() => fileRef.current?.click()} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); setFile(e.dataTransfer.files[0] ?? null); }}
             style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10, padding: '12px 14px', border: '1px dashed var(--color-neutral-400)', borderRadius: 2, fontSize: 14, color: 'var(--color-neutral-700)', cursor: 'pointer', flexWrap: 'wrap' }}>
             <Icon name="upload-simple" size={20} color="var(--color-accent)" />
@@ -274,7 +284,7 @@ export function Composer({ boards, societies, subjects, initialType, initialBoar
         {type === 'article' && (
           <div style={{ marginTop: 28, padding: '16px 18px', background: 'var(--color-accent-100)', borderRadius: 2, fontSize: 14.5, lineHeight: 1.5, color: 'var(--color-accent-900)', display: 'flex', gap: 12 }}>
             <Icon name="users-four" size={22} color="var(--color-accent-700)" />
-            <div><b>Wiki articles are shared.</b> Anyone can suggest edits after you publish; every editor is credited. Start from a template:{' '}
+            <div><b>Wiki articles are shared.</b> A moderator reviews new guides and edits before they go live; every editor is credited. Start from a template:{' '}
               <a onClick={() => setText('### What this guide covers\n\n\n### Step by step\n\n\n### Common mistakes\n\n')}>Guide</a> · <a onClick={() => setText('### Month 1\n\n\n### Month 2\n\n\n### Resources\n\n')}>Roadmap</a> · <a onClick={() => setText('### How the course is graded\n\n\n### Units that matter\n\n\n### PYQs and notes\n\n')}>Subject survival</a>
             </div>
           </div>

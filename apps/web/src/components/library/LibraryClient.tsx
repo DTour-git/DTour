@@ -40,10 +40,11 @@ export function SubjectSearch() {
 const KINDS = [['notes', 'Notes'], ['pyq', 'PYQ'], ['lab', 'Lab file'], ['slides', 'Slides']] as const;
 
 export function UploadButton({ subjects, defaultSubject, floating }: { subjects: { code: string; name: string }[]; defaultSubject?: string; floating?: boolean }) {
+  const { requireMe } = useShell();
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button className={`btn btn-primary${floating ? ' elev-md' : ''}`} style={floating ? { height: 48, padding: '0 18px' } : { height: 44 }} onClick={() => setOpen(true)}>
+      <button className={`btn btn-primary${floating ? ' elev-md' : ''}`} style={floating ? { height: 48, padding: '0 18px' } : { height: 44 }} onClick={() => requireMe() && setOpen(true)}>
         <Icon name="upload-simple" size={17} />Upload
       </button>
       {open && <UploadDialog subjects={subjects} defaultSubject={defaultSubject} onClose={() => setOpen(false)} />}
@@ -52,7 +53,7 @@ export function UploadButton({ subjects, defaultSubject, floating }: { subjects:
 }
 
 function UploadDialog({ subjects, defaultSubject, onClose }: { subjects: { code: string; name: string }[]; defaultSubject?: string; onClose: () => void }) {
-  const { me, toast } = useShell();
+  const { requireMe, toast } = useShell();
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -62,6 +63,7 @@ function UploadDialog({ subjects, defaultSubject, onClose }: { subjects: { code:
   const [busy, setBusy] = useState(false);
 
   const submit = async () => {
+    const me = requireMe(); if (!me) return;
     if (!file || !subject || !title.trim()) { toast('Pick a file, subject and title.'); return; }
     setBusy(true);
     try {
@@ -151,9 +153,10 @@ export function SubjectFiles({ items, threads, counts }: { items: FileItem[]; th
 }
 
 function FileRow({ it }: { it: FileItem }) {
-  const { toast } = useShell();
+  const { toast, requireMe } = useShell();
   const [ic, col] = ICON[it.kind] ?? ICON.notes;
   const download = async () => {
+    if (!requireMe()) return;
     try {
       const { downloadItem } = await import('@dtour/shared');
       const url = await downloadItem(supabaseBrowser(), it.id);

@@ -97,3 +97,4 @@ export declare const UsersThreeIcon: PhosphorIcon;
 export declare const VideoIcon: PhosphorIcon;
 export declare const WarningIcon: PhosphorIcon;
 export declare const XIcon: PhosphorIcon;
+export declare const AtIcon: PhosphorIcon;

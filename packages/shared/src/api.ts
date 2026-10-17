@@ -163,7 +163,7 @@ export async function getToday(sb: DB, tab: FeedTab = 'hot', branch: string | nu
     sb.from('threads').select(THREAD_SELECT).eq('kind', 'news').order('created_at', { ascending: false }).limit(1).maybeSingle(),
     getTimeline(sb),
     listThreads(sb, { tab, excludeNews: true, limit: 1, branch }),
-    sb.from('wiki_articles').select('id,slug,title,editor_count,checked_at,cover_label').order('views_week', { ascending: false }).limit(1).maybeSingle(),
+    sb.from('wiki_articles').select('id,slug,title,editor_count,checked_at,cover_label').eq('status', 'published').order('views_week', { ascending: false }).limit(1).maybeSingle(),
     getDesks(sb),
     sb.from('teams').select('id,title,short_title,deadline_on,deadline_label,urgent,team_roles(name,filled,sort)').order('deadline_on', { nullsFirst: false }).limit(2),
     sb.from('teams').select('id', { count: 'exact', head: true }),
@@ -303,7 +303,7 @@ export async function getThread(sb: DB, id: number, userId: string | null) {
     thread.attachment?.subject
       ? sb.from('library_items').select('id,title,kind,format,subject_code').eq('subject_code', thread.attachment.subject).neq('id', thread.attachment.library_item_id ?? -1).order('downloads_week', { ascending: false }).limit(3)
       : null,
-    sb.from('wiki_articles').select('slug,title,editor_count,checked_at').order('views_week', { ascending: false }).limit(1).maybeSingle(),
+    sb.from('wiki_articles').select('slug,title,editor_count,checked_at').eq('status', 'published').order('views_week', { ascending: false }).limit(1).maybeSingle(),
     sb.from('lounge_messages').select('id,room_slug').eq('promoted_thread_id', id).maybeSingle(),
   ]);
   const rv = new Map((replyVotes ? must(replyVotes) : []).map((r) => [r.reply_id, r.value]));
@@ -374,7 +374,7 @@ export async function similarThreads(sb: DB, title: string, limit = 3) {
   const ors = words.slice(0, 6).map((w) => `title.ilike.%${w.replace(/[%,()]/g, '')}%`).join(',');
   const [t, a] = await Promise.all([
     sb.from('threads').select('id,title,score,reply_count,board:boards(name,short_name)').or(ors).limit(20),
-    sb.from('wiki_articles').select('slug,title,editor_count').or(ors).limit(10),
+    sb.from('wiki_articles').select('slug,title,editor_count').eq('status', 'published').or(ors).limit(10),
   ]);
   type Sim = { title: string; sub: string; route: string; n: number };
   const out: Sim[] = [
@@ -401,14 +401,22 @@ export async function createThread(sb: DB, i: NewThreadInput) {
   return row.id;
 }
 
+export async function isModerator(sb: DB) {
+  return !!must(await sb.rpc('is_moderator'));
+}
+
+/** New guides go to the moderation queue (moderators publish directly). Returns the slug. */
 export async function createWikiArticle(sb: DB, i: { userId: string; title: string; body: string; dek?: string; categoryId?: number | null; boardId?: string | null }) {
+  const mod = await isModerator(sb);
   const base = i.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
   const slug = `${base}-${Math.random().toString(36).slice(2, 6)}`;
+  const words = i.body.split(/\s+/).filter(Boolean).length;
   const row = must(await sb.from('wiki_articles').insert({
     slug, title: i.title.trim(), body: i.body, dek: i.dek ?? null, category_id: i.categoryId ?? null,
-    board_id: i.boardId ?? null, started_by: i.userId, read_minutes: Math.max(1, Math.round(i.body.split(/\s+/).length / 220)),
-  }).select('slug').single());
-  await sb.from('wiki_revisions').insert({ article_id: (await sb.from('wiki_articles').select('id').eq('slug', row.slug).single()).data!.id, editor_id: i.userId, summary: 'started the article', delta_words: i.body.split(/\s+/).length, body: i.body });
+    board_id: i.boardId ?? null, started_by: i.userId, read_minutes: Math.max(1, Math.round(words / 220)),
+    status: mod ? 'published' : 'pending',
+  }).select('id,slug').single());
+  must(await sb.from('wiki_revisions').insert({ article_id: row.id, editor_id: i.userId, summary: 'started the article', delta_words: words, body: i.body, status: mod ? 'published' : 'suggested' }));
   return row.slug;
 }
 
@@ -464,7 +472,7 @@ export async function boardPicker(sb: DB) {
 export async function getWikiIndex(sb: DB) {
   const [cats, arts, editors] = await Promise.all([
     sb.from('wiki_categories').select('*').order('id'),
-    sb.from('wiki_articles').select('id,slug,title,category_id,editor_count,read_minutes,checked_at,cover_label,views_week').order('views_week', { ascending: false }),
+    sb.from('wiki_articles').select('id,slug,title,category_id,editor_count,read_minutes,checked_at,cover_label,views_week').eq('status', 'published').order('views_week', { ascending: false }),
     sb.from('wiki_revisions').select('editor_id'),
   ]);
   const articles = must(arts);
@@ -482,7 +490,7 @@ export async function getArticle(sb: DB, slug: string, userId: string | null) {
   if (!a) return null;
   const [revs, more, talk, fb] = await Promise.all([
     sb.from('wiki_revisions').select(`id,summary,delta_words,created_at,editor:profiles!wiki_revisions_editor_id_fkey(${PERSON})`).eq('article_id', a.id).eq('status', 'published').order('created_at', { ascending: false }).limit(20),
-    sb.from('wiki_articles').select('slug,title').neq('id', a.id).order('views_week', { ascending: false }).limit(4),
+    sb.from('wiki_articles').select('slug,title').eq('status', 'published').neq('id', a.id).order('views_week', { ascending: false }).limit(4),
     sb.from('wiki_talk').select(`id,body,created_at,author:profiles!wiki_talk_author_id_fkey(${PERSON})`).eq('article_id', a.id).order('created_at', { ascending: false }).limit(20),
     userId ? sb.from('wiki_feedback').select('useful').eq('article_id', a.id).eq('user_id', userId).maybeSingle() : null,
   ]);
@@ -507,9 +515,69 @@ export async function setWikiFeedback(sb: DB, articleId: number, userId: string,
   else await sb.from('wiki_feedback').upsert({ article_id: articleId, user_id: userId, useful });
 }
 
+/** Edits wait for a moderator unless you are one. Returns true if it went live immediately. */
 export async function suggestWikiEdit(sb: DB, i: { articleId: number; userId: string; summary: string; body: string; oldBody: string }) {
+  const mod = await isModerator(sb);
   const delta = i.body.split(/\s+/).filter(Boolean).length - i.oldBody.split(/\s+/).filter(Boolean).length;
-  must(await sb.from('wiki_revisions').insert({ article_id: i.articleId, editor_id: i.userId, summary: i.summary, body: i.body, delta_words: delta }));
+  must(await sb.from('wiki_revisions').insert({ article_id: i.articleId, editor_id: i.userId, summary: i.summary, body: i.body, delta_words: delta, status: mod ? 'published' : 'suggested' }));
+  return mod;
+}
+
+// ── Moderation ────────────────────────────────────────────────────────────
+export interface PendingRevision {
+  id: number; summary: string; delta_words: number | null; body: string | null; created_at: string;
+  editor: PersonLite; article: { id: number; slug: string; title: string; body: string; status: string };
+}
+export interface PendingArticle {
+  id: number; slug: string; title: string; dek: string | null; body: string; created_at: string; starter: PersonLite | null;
+}
+
+export async function getModQueue(sb: DB) {
+  const [revs, arts] = await Promise.all([
+    sb.from('wiki_revisions').select(`id,summary,delta_words,body,created_at,editor:profiles!wiki_revisions_editor_id_fkey(${PERSON}),article:wiki_articles!inner(id,slug,title,body,status)`)
+      .eq('status', 'suggested').eq('article.status', 'published').order('created_at'),
+    sb.from('wiki_articles').select(`id,slug,title,dek,body,created_at,starter:profiles!wiki_articles_started_by_fkey(${PERSON})`).eq('status', 'pending').order('created_at'),
+  ]);
+  return { revisions: must(revs) as unknown as PendingRevision[], articles: must(arts) as unknown as PendingArticle[] };
+}
+export async function reviewRevision(sb: DB, id: number, approve: boolean, note?: string) {
+  must(await sb.rpc('review_wiki_revision', { p_revision: id, p_approve: approve, p_note: note }));
+}
+export async function reviewArticle(sb: DB, id: number, approve: boolean, note?: string) {
+  must(await sb.rpc('review_wiki_article', { p_article: id, p_approve: approve, p_note: note }));
+}
+export async function myPendingEdits(sb: DB, articleId: number, userId: string) {
+  return must(await sb.from('wiki_revisions').select('id,summary,created_at,status').eq('article_id', articleId).eq('editor_id', userId).eq('status', 'suggested'));
+}
+
+// ── Notifications ─────────────────────────────────────────────────────────
+export interface NotificationRow {
+  id: number; kind: string; count: number; text: string; snippet: string | null; route: string; read_at: string | null; created_at: string;
+  actor: PersonLite | null;
+}
+export async function getNotifications(sb: DB, limit = 40) {
+  const rows = must(await sb.from('notifications').select(`id,kind,count,text,snippet,route,read_at,created_at,actor:profiles!notifications_actor_id_fkey(${PERSON})`).order('created_at', { ascending: false }).limit(limit));
+  return rows as unknown as NotificationRow[];
+}
+export async function unreadNotificationCount(sb: DB) {
+  const { count } = await sb.from('notifications').select('id', { count: 'exact', head: true }).is('read_at', null);
+  return count ?? 0;
+}
+export async function markNotificationsRead(sb: DB) {
+  must(await sb.rpc('mark_notifications_read'));
+}
+export const NOTIFICATION_ICON: Record<string, string> = {
+  mention: 'at', reply: 'chat-circle', comment: 'chats', upvote: 'arrow-fat-up', accepted: 'check-circle', team_request: 'users-three', wiki_review: 'shield-check',
+};
+
+// ── Images ────────────────────────────────────────────────────────────────
+/** Upload an image to the public media bucket; returns its URL for ![](…) markdown. */
+export async function uploadImage(sb: DB, userId: string, file: Blob | ArrayBuffer, fileName: string, contentType: string) {
+  const ext = (fileName.split('.').pop() ?? 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+  const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const up = await sb.storage.from('media').upload(path, file, { contentType, upsert: false });
+  if (up.error) throw new Error(up.error.message);
+  return sb.storage.from('media').getPublicUrl(path).data.publicUrl;
 }
 
 export async function postWikiTalk(sb: DB, articleId: number, userId: string, body: string) {

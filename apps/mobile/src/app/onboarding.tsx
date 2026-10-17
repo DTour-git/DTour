@@ -10,7 +10,7 @@ import { Avatar, LogoMark, Pill, PrimaryBtn, Screen, Tag } from '@/components/ui
 const HANDLE = /^[a-z0-9][a-z0-9._]{2,23}$/;
 
 export default function Onboarding() {
-  const me = useMe();
+  const me = useMe()!; // onboarding is only reachable while signed in
   const { refreshProfile } = useAuth();
   const { data: branches } = useData(() => getBranches(supabase));
   const [handle, setHandle] = useState(me.handle);

@@ -683,6 +683,110 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          actor_id: string | null
+          article_id: number | null
+          count: number
+          created_at: string
+          id: number
+          kind: string
+          lounge_message_id: number | null
+          read_at: string | null
+          reply_id: number | null
+          route: string
+          snippet: string | null
+          team_id: number | null
+          text: string
+          thread_id: number | null
+          user_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          article_id?: number | null
+          count?: number
+          created_at?: string
+          id?: never
+          kind: string
+          lounge_message_id?: number | null
+          read_at?: string | null
+          reply_id?: number | null
+          route: string
+          snippet?: string | null
+          team_id?: number | null
+          text: string
+          thread_id?: number | null
+          user_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          article_id?: number | null
+          count?: number
+          created_at?: string
+          id?: never
+          kind?: string
+          lounge_message_id?: number | null
+          read_at?: string | null
+          reply_id?: number | null
+          route?: string
+          snippet?: string | null
+          team_id?: number | null
+          text?: string
+          thread_id?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_lounge_message_id_fkey"
+            columns: ["lounge_message_id"]
+            isOneToOne: false
+            referencedRelation: "lounge_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_reply_id_fkey"
+            columns: ["reply_id"]
+            isOneToOne: false
+            referencedRelation: "replies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "threads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       place_hearts: {
         Row: {
           place_id: number
@@ -894,6 +998,7 @@ export type Database = {
           onboarded: boolean
           open_to_teams: boolean
           reply_count: number
+          role: string
           semester: number | null
           skills: string[]
           thread_count: number
@@ -919,6 +1024,7 @@ export type Database = {
           onboarded?: boolean
           open_to_teams?: boolean
           reply_count?: number
+          role?: string
           semester?: number | null
           skills?: string[]
           thread_count?: number
@@ -944,6 +1050,7 @@ export type Database = {
           onboarded?: boolean
           open_to_teams?: boolean
           reply_count?: number
+          role?: string
           semester?: number | null
           skills?: string[]
           thread_count?: number
@@ -1646,6 +1753,7 @@ export type Database = {
       }
       wiki_articles: {
         Row: {
+          ai_verdict: Json | null
           board_id: string | null
           body: string
           category_id: number | null
@@ -1658,8 +1766,12 @@ export type Database = {
           id: number
           is_demo: boolean
           read_minutes: number
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           slug: string
           started_by: string | null
+          status: string
           talk_count: number
           title: string
           updated_at: string
@@ -1667,6 +1779,7 @@ export type Database = {
           views_week: number
         }
         Insert: {
+          ai_verdict?: Json | null
           board_id?: string | null
           body?: string
           category_id?: number | null
@@ -1679,8 +1792,12 @@ export type Database = {
           id?: never
           is_demo?: boolean
           read_minutes?: number
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           slug: string
           started_by?: string | null
+          status?: string
           talk_count?: number
           title: string
           updated_at?: string
@@ -1688,6 +1805,7 @@ export type Database = {
           views_week?: number
         }
         Update: {
+          ai_verdict?: Json | null
           board_id?: string | null
           body?: string
           category_id?: number | null
@@ -1700,8 +1818,12 @@ export type Database = {
           id?: never
           is_demo?: boolean
           read_minutes?: number
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           slug?: string
           started_by?: string | null
+          status?: string
           talk_count?: number
           title?: string
           updated_at?: string
@@ -1726,6 +1848,13 @@ export type Database = {
           {
             foreignKeyName: "wiki_articles_checked_by_fkey"
             columns: ["checked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_articles_reviewed_by_fkey"
+            columns: ["reviewed_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1798,32 +1927,44 @@ export type Database = {
       }
       wiki_revisions: {
         Row: {
+          ai_verdict: Json | null
           article_id: number
           body: string | null
           created_at: string
           delta_words: number | null
           editor_id: string
           id: number
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           status: string
           summary: string
         }
         Insert: {
+          ai_verdict?: Json | null
           article_id: number
           body?: string | null
           created_at?: string
           delta_words?: number | null
           editor_id: string
           id?: never
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: string
           summary: string
         }
         Update: {
+          ai_verdict?: Json | null
           article_id?: number
           body?: string | null
           created_at?: string
           delta_words?: number | null
           editor_id?: string
           id?: never
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: string
           summary?: string
         }
@@ -1838,6 +1979,13 @@ export type Database = {
           {
             foreignKeyName: "wiki_revisions_editor_id_fkey"
             columns: ["editor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_revisions_reviewed_by_fkey"
+            columns: ["reviewed_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1916,6 +2064,7 @@ export type Database = {
       fmt_n: { Args: { n: number }; Returns: string }
       fuzzy_pattern: { Args: { q: string }; Returns: string }
       hook_before_user_created: { Args: { event: Json }; Returns: Json }
+      is_moderator: { Args: never; Returns: boolean }
       is_society_poster: { Args: never; Returns: boolean }
       karma_breakdown: {
         Args: { p_user: string }
@@ -1925,11 +2074,58 @@ export type Database = {
         }[]
       }
       karma_this_week: { Args: { p_user: string }; Returns: number }
+      mark_notifications_read: { Args: never; Returns: undefined }
+      notify: {
+        Args: {
+          p_actor: string
+          p_article?: number
+          p_kind: string
+          p_msg?: number
+          p_reply?: number
+          p_route: string
+          p_snippet?: string
+          p_team?: number
+          p_text: string
+          p_thread?: number
+          p_user: string
+        }
+        Returns: undefined
+      }
+      notify_mentions: {
+        Args: {
+          p_actor: string
+          p_body: string
+          p_msg?: number
+          p_reply?: number
+          p_route: string
+          p_text: string
+          p_thread?: number
+        }
+        Returns: undefined
+      }
+      notify_upvote: {
+        Args: {
+          p_actor: string
+          p_owner: string
+          p_reply: number
+          p_thread: number
+          p_title: string
+        }
+        Returns: undefined
+      }
       promote_lounge_message: {
         Args: { p_board: string; p_message: number; p_title: string }
         Returns: number
       }
       record_download: { Args: { p_item: number }; Returns: string }
+      review_wiki_article: {
+        Args: { p_approve: boolean; p_article: number; p_note?: string }
+        Returns: undefined
+      }
+      review_wiki_revision: {
+        Args: { p_approve: boolean; p_note?: string; p_revision: number }
+        Returns: undefined
+      }
       root_board_name: { Args: { p_board: string }; Returns: string }
       search: {
         Args: { p_kind?: string; p_limit?: number; q?: string }

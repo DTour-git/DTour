@@ -29,7 +29,7 @@ export default function Boards() {
   const me = useMe();
   const { online } = usePresence();
   const { data, refreshing, refresh } = useData(() => getBoardsIndex(supabase));
-  useEffect(() => { if (data) markBoardsSeen(supabase, me.id); }, [data, me.id]);
+  useEffect(() => { if (data && me) markBoardsSeen(supabase, me.id); }, [data, me]);
 
   return (
     <Screen>

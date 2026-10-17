@@ -1,10 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
-const PUBLIC = ['/login', '/auth'];
+// Reading is public; only these need an account (writes are also guarded in the UI and by RLS).
+const MEMBERS_ONLY = ['/new', '/onboarding', '/mod'];
 
-// Refreshes the Supabase session cookie on every request and keeps DTour
-// members-only: anyone without a session is sent to /login.
+// Refreshes the Supabase session cookie on every request and sends visitors
+// to /login only for member pages.
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
   const sb = createServerClient(
@@ -23,10 +24,10 @@ export async function proxy(request: NextRequest) {
   );
   const { data: { user } } = await sb.auth.getUser();
   const path = request.nextUrl.pathname;
-  if (!user && !PUBLIC.some((p) => path.startsWith(p))) {
+  if (!user && MEMBERS_ONLY.some((p) => path.startsWith(p))) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
-    url.search = path === '/' ? '' : `?next=${encodeURIComponent(path + request.nextUrl.search)}`;
+    url.search = `?next=${encodeURIComponent(path + request.nextUrl.search)}`;
     return NextResponse.redirect(url);
   }
   return response;

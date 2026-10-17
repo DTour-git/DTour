@@ -6,6 +6,7 @@ import { dateline, longDate, type ConfigRow } from '@dtour/shared';
 import { Icon } from '../Icon';
 import { Avatar, LogoMark } from '../ui';
 import { OnlineCount, useShell } from './Shell';
+import { NotificationBell } from './NotificationBell';
 
 const NAV = [
   { href: '/', label: 'Today', match: (p: string) => p === '/' },
@@ -17,8 +18,8 @@ const NAV = [
   { href: '/kahan-chalein', label: 'Kahan chalein?', match: (p: string) => p.startsWith('/kahan-chalein') },
 ];
 
-export function Header({ config, exam }: {
-  config: ConfigRow | null;
+export function Header({ config, exam, modQueue }: {
+  config: ConfigRow | null; modQueue: number | null;
   exam: { label: string; days: number; semester: number | null } | null;
 }) {
   const path = usePathname();
@@ -50,11 +51,23 @@ export function Header({ config, exam }: {
             <span className="st-text">Search anything</span>
             <span style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}><span className="keyhint">/</span></span>
           </button>
-          <Link href="/new" className="btn btn-primary" style={{ height: 40, color: 'var(--color-bg)' }}>
+          <Link href={me ? '/new' : '/login?next=/new'} className="btn btn-primary" style={{ height: 40, color: 'var(--color-bg)' }}>
             <Icon name="pencil-simple-line" size={17} />Post
           </Link>
-          <span style={{ width: 40, display: 'flex', justifyContent: 'center' }} title="Notifications are coming soon"><Icon name="bell" size={24} /></span>
-          <Link href={`/u/${me.handle}`} aria-label="Your profile"><Avatar person={me} size={36} /></Link>
+          {modQueue != null && (
+            <Link href="/mod" title="Moderation queue" aria-label={`Moderation queue, ${modQueue} waiting`} style={{ position: 'relative', width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text)' }}>
+              <Icon name="shield-check" size={24} />
+              {modQueue > 0 && <span style={{ position: 'absolute', top: 4, right: 2, minWidth: 17, height: 17, padding: '0 4px', borderRadius: 9, background: 'var(--color-accent)', color: 'var(--color-bg)', font: '600 10.5px/17px var(--font-body)', textAlign: 'center' }}>{modQueue}</span>}
+            </Link>
+          )}
+          {me ? (
+            <>
+              <NotificationBell />
+              <Link href={`/u/${me.handle}`} aria-label="Your profile"><Avatar person={me} size={36} /></Link>
+            </>
+          ) : (
+            <Link href={`/login?next=${encodeURIComponent(path)}`} className="btn btn-secondary" style={{ height: 40, color: 'var(--color-text)' }}>Sign in</Link>
+          )}
         </div>
       </div>
       <nav className="nav section-nav" aria-label="Sections">

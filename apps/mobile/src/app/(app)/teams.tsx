@@ -3,7 +3,7 @@ import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors, deadlineText, getTeams, toggleTeamRequest } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
-import { useMe } from '@/lib/auth';
+import { useMe, useRequireMe } from '@/lib/auth';
 import { useData } from '@/lib/useData';
 import { T } from '@/components/T';
 import { Icon } from '@/components/Icon';
@@ -14,12 +14,13 @@ const CATS: [string | null, string, 'accent' | 'accent2' | undefined][] = [[null
 export default function Teams() {
   const router = useRouter();
   const me = useMe();
+  const requireMe = useRequireMe();
   const [cat, setCat] = useState<string | null>(null);
-  const { data, setData, refreshing, refresh } = useData(() => getTeams(supabase, me.id));
+  const { data, setData, refreshing, refresh } = useData(() => getTeams(supabase, me?.id ?? null));
   const teams = (data?.teams ?? []).filter((t) => !cat || t.category === cat);
 
   const ask = async (id: number) => {
-    if (!data) return;
+    if (!data || !requireMe()) return;
     const r = new Set(data.myRequests); if (r.has(id)) r.delete(id); else r.add(id);
     setData({ ...data, myRequests: r });
     await toggleTeamRequest(supabase, id).catch(refresh);
@@ -32,7 +33,7 @@ export default function Teams() {
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.accent} />}>
         <Pressable onPress={() => router.navigate('/you')} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14, paddingVertical: 12, paddingHorizontal: 14, backgroundColor: colors.accent100, borderRadius: 2 }}>
           <Icon name="hand-waving" size={20} color={colors.accent700} />
-          <T size={14} color={colors.accent900} style={{ flex: 1 }}>{me.open_to_teams
+          <T size={14} color={colors.accent900} style={{ flex: 1 }}>{me?.open_to_teams
             ? <>You&apos;re <T size={14} w={600} color={colors.accent900}>open to teams</T>{me.skills.length ? ` · ${me.skills.slice(0, 2).join(', ')}` : ''}</>
             : <>Turn on <T size={14} w={600} color={colors.accent900}>open to teams</T> so teams can find you</>}</T>
           <Icon name="caret-right" size={16} color={colors.accent900} />
@@ -55,7 +56,7 @@ export default function Teams() {
                   </View>
                 ))}
               </View>
-              {t.owner_id === me.id
+              {t.owner_id === me?.id
                 ? <T size={13} color={colors.neutral700}>Your team</T>
                 : <PrimaryBtn label={req ? 'Requested ✓' : 'Ask to join'} secondary={!req && i !== 0} onPress={() => ask(t.id)} />}
             </View>

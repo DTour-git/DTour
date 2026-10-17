@@ -1,8 +1,9 @@
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { clock, colors, dayOfMonth, getConfig, getExamCountdown, getTimeline, listThreads, mobileDate, n, timelineTime, weekOfSem } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
 import { useMe } from '@/lib/auth';
+import { useNotifications } from '@/lib/notifications';
 import { useData } from '@/lib/useData';
 import { T, Kicker } from '@/components/T';
 import { Icon } from '@/components/Icon';
@@ -20,6 +21,7 @@ const CAT = ['', 'Campus', 'Padhai', 'Career', 'Culture', 'Bahar'];
 export default function Today() {
   const router = useRouter();
   const me = useMe();
+  const { unread } = useNotifications();
   const { data, refreshing, refresh } = useData(async () => {
     const [lead, timeline, threads, config, exam] = await Promise.all([
       supabase.from('threads').select('id,title,created_at,reply_count,image_label,author:profiles!threads_author_id_fkey(handle),society:societies(verified)').eq('kind', 'news').order('created_at', { ascending: false }).limit(1).maybeSingle(),
@@ -39,7 +41,14 @@ export default function Today() {
         <T size={27} w={600} ls={-0.03}>DTour</T>
         <View style={{ marginLeft: 'auto', flexDirection: 'row' }}>
           <IconBtn name="magnifying-glass" label="Search" onPress={() => router.push('/search')} />
-          <IconBtn name="bell" label="Notifications" />
+          <View>
+            <IconBtn name="bell" label={`Notifications${unread ? `, ${unread} unread` : ''}`} onPress={() => router.push((me ? '/notifications' : '/login') as Href)} />
+            {unread > 0 && (
+              <View pointerEvents="none" style={{ position: 'absolute', top: 6, right: 6, minWidth: 17, height: 17, paddingHorizontal: 4, borderRadius: 9, backgroundColor: colors.accent2, alignItems: 'center', justifyContent: 'center' }}>
+                <T size={10.5} w={600} color={colors.bg}>{unread > 99 ? '99+' : String(unread)}</T>
+              </View>
+            )}
+          </View>
         </View>
       </View>
       <View style={{ marginHorizontal: 20, borderTopWidth: 3, borderBottomWidth: 1, borderColor: colors.text, paddingVertical: 8, flexDirection: 'row', justifyContent: 'space-between' }}>

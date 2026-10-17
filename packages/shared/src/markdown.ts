@@ -16,7 +16,8 @@ export type Block =
   | { t: 'ul'; items: Inline[][] }
   | { t: 'quote'; inl: Inline[] }
   | { t: 'senior'; quote: string; by: string | null }
-  | { t: 'code'; v: string };
+  | { t: 'code'; v: string }
+  | { t: 'img'; src: string; alt: string };
 
 const INLINE = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\$[^$]+\$|\[[^\]]+\]\([^)\s]+\))/g;
 
@@ -62,6 +63,8 @@ export function parse(md: string): Block[] {
       continue;
     }
     if (!trimmed) { flush(); continue; }
+    const img = /^!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)$/.exec(trimmed);
+    if (img) { flush(); blocks.push({ t: 'img', alt: img[1], src: img[2] }); continue; }
     const h = /^(#{2,4})\s+(.*)$/.exec(trimmed);
     if (h) {
       flush();
@@ -95,6 +98,6 @@ export function wordCount(md: string): number {
 
 /** Plain-text excerpt for previews. */
 export function plain(md: string, max = 200): string {
-  const s = md.replace(/[#>*`$\[\]]/g, '').replace(/\(([^)]+)\)/g, '').replace(/\s+/g, ' ').trim();
+  const s = md.replace(/!\[[^\]]*\]\([^)]*\)/g, '').replace(/[#>*`$\[\]]/g, '').replace(/\(([^)]+)\)/g, '').replace(/\s+/g, ' ').trim();
   return s.length > max ? s.slice(0, max - 1) + '…' : s;
 }

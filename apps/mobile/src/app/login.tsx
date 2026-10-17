@@ -6,12 +6,14 @@ import { colors, fonts } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
 import { T } from '@/components/T';
 import { Icon } from '@/components/Icon';
-import { LogoMark, PrimaryBtn, Screen } from '@/components/ui';
+import { IconBtn, LogoMark, PrimaryBtn, Screen } from '@/components/ui';
+import { useRouter } from 'expo-router';
 
 WebBrowser.maybeCompleteAuthSession();
 const DOMAIN = 'dtu.ac.in';
 
 export default function Login() {
+  const router = useRouter();
   const [step, setStep] = useState<'start' | 'code'>('start');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -60,7 +62,8 @@ export default function Login() {
   return (
     <Screen>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={{ padding: 24, paddingTop: 60 }} keyboardShouldPersistTaps="handled">
+        <View style={{ paddingLeft: 6 }}><IconBtn name="x" label="Close" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} /></View>
+        <ScrollView contentContainerStyle={{ padding: 24, paddingTop: 16 }} keyboardShouldPersistTaps="handled">
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <LogoMark size={34} /><T size={44} w={600} ls={-0.035} lh={1}>DTour</T>
           </View>

@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { colors, compact, daysUntil, downloadItem, fileSize, getSubject, n } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
 import { useData } from '@/lib/useData';
+import { useRequireMe } from '@/lib/auth';
 import { T } from '@/components/T';
 import { Icon } from '@/components/Icon';
 import { UploadSheet } from '@/components/Upload';
@@ -17,6 +18,7 @@ export default function SubjectFiles() {
   const router = useRouter();
   const [f, setF] = useState<(typeof FILTERS)[number]>('All');
   const [uploading, setUploading] = useState(false);
+  const requireMe = useRequireMe();
   const { data, reload } = useData(() => getSubject(supabase, code), [code]);
   if (!data) return <Screen><AppBar /></Screen>;
   const s = data.subject;
@@ -24,6 +26,7 @@ export default function SubjectFiles() {
   const show = { pyq: f === 'All' || f === 'PYQs', notes: f === 'All' || f === 'Notes', lab: f === 'All' || f === 'Lab files', threads: f === 'All' || f === 'Threads' };
 
   const download = async (id: number) => {
+    if (!requireMe()) return;
     try {
       const url = await downloadItem(supabase, id);
       if (url) Linking.openURL(url); else Alert.alert('Demo file', 'Real uploads open in your PDF viewer here.');
@@ -85,7 +88,7 @@ export default function SubjectFiles() {
           )}
         </View>
       </ScrollView>
-      <Pressable onPress={() => setUploading(true)} style={{ position: 'absolute', right: 20, bottom: 40, height: 48, paddingHorizontal: 18, borderRadius: 2, backgroundColor: colors.accent, flexDirection: 'row', alignItems: 'center', gap: 8, shadowColor: '#2d2b2b', shadowOpacity: 0.16, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 4 }}>
+      <Pressable onPress={() => requireMe() && setUploading(true)} style={{ position: 'absolute', right: 20, bottom: 40, height: 48, paddingHorizontal: 18, borderRadius: 2, backgroundColor: colors.accent, flexDirection: 'row', alignItems: 'center', gap: 8, shadowColor: '#2d2b2b', shadowOpacity: 0.16, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 4 }}>
         <Icon name="upload-simple" size={18} color={colors.bg} /><T size={14} w={600} color={colors.bg}>Upload</T>
       </Pressable>
       {uploading && <UploadSheet subjects={[{ code: s.code, name: s.name }]} defaultSubject={s.code} onClose={() => setUploading(false)} onDone={reload} />}

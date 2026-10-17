@@ -3,7 +3,7 @@ import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors, daysUntil, getLibrary, n } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
-import { useMe } from '@/lib/auth';
+import { useMe, useRequireMe } from '@/lib/auth';
 import { useData } from '@/lib/useData';
 import { T } from '@/components/T';
 import { Icon } from '@/components/Icon';
@@ -13,15 +13,16 @@ import { AppBar, IconBtn, Pill, PillRow, Screen, Tag, rowRule } from '@/componen
 export default function Library() {
   const router = useRouter();
   const me = useMe();
-  const branch = me.branch_code ?? 'COE';
-  const [sem, setSem] = useState(me.semester ?? 1);
+  const requireMe = useRequireMe();
+  const branch = me?.branch_code ?? 'COE';
+  const [sem, setSem] = useState(me?.semester ?? 1);
   const [uploading, setUploading] = useState(false);
   const { data, refreshing, refresh, reload } = useData(() => getLibrary(supabase, branch, sem), [branch, sem]);
   const b = data?.branches.find((x) => x.code === branch);
   const top = data?.top[0];
   return (
     <Screen>
-      <AppBar title="Library" subtitle={b?.full_name ?? branch} right={<IconBtn name="upload-simple" color={colors.accent} label="Upload" onPress={() => setUploading(true)} />} />
+      <AppBar title="Library" subtitle={b?.full_name ?? branch} right={<IconBtn name="upload-simple" color={colors.accent} label="Upload" onPress={() => requireMe() && setUploading(true)} />} />
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.accent} />}>
         <View style={{ paddingHorizontal: 20 }}>
           <T size={30} w={600} style={{ marginTop: 6, marginBottom: 4 }}>Semester {sem}</T>

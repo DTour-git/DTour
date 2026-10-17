@@ -3,7 +3,7 @@ import { Alert, Modal, Pressable, TextInput, View } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { colors, fonts, uploadLibraryItem } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
-import { useMe } from '@/lib/auth';
+import { useRequireMe } from '@/lib/auth';
 import { T } from './T';
 import { Icon } from './Icon';
 import { Pill, PrimaryBtn } from './ui';
@@ -12,7 +12,7 @@ const KINDS = [['notes', 'Notes'], ['pyq', 'PYQ'], ['lab', 'Lab'], ['slides', 'S
 
 /** Document picker → asks for type (Notes / PYQ / Lab) + subject → uploads to the Library. */
 export function UploadSheet({ subjects, defaultSubject, onClose, onDone }: { subjects: { code: string; name: string }[]; defaultSubject?: string; onClose: () => void; onDone: () => void }) {
-  const me = useMe();
+  const requireMe = useRequireMe();
   const [file, setFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
   const [kind, setKind] = useState<(typeof KINDS)[number][0]>('notes');
   const [subject, setSubject] = useState(defaultSubject ?? subjects[0]?.code ?? '');
@@ -24,6 +24,7 @@ export function UploadSheet({ subjects, defaultSubject, onClose, onDone }: { sub
     if (!r.canceled && r.assets[0]) { setFile(r.assets[0]); if (!title) setTitle(r.assets[0].name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ')); }
   };
   const upload = async () => {
+    const me = requireMe(); if (!me) return;
     if (!file || !subject || !title.trim()) return Alert.alert('Pick a file, subject and title.');
     setBusy(true);
     try {

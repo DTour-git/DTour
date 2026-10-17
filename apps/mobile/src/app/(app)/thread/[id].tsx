@@ -6,7 +6,7 @@ import {
   type ReplyNode,
 } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
-import { useMe } from '@/lib/auth';
+import { useMe, useRequireMe } from '@/lib/auth';
 import { useData } from '@/lib/useData';
 import { usePresence } from '@/lib/presence';
 import { T } from '@/components/T';
@@ -18,8 +18,9 @@ export default function Thread() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const me = useMe();
+  const requireMe = useRequireMe();
   const { online, setBoard } = usePresence();
-  const { data, setData, refreshing, refresh, reload } = useData(() => getThread(supabase, Number(id), me.id), [id]);
+  const { data, setData, refreshing, refresh, reload } = useData(() => getThread(supabase, Number(id), me?.id ?? null), [id]);
   const [sort, setSort] = useState<'best' | 'newest'>('best');
   const [draft, setDraft] = useState('');
   const [replyTo, setReplyTo] = useState<ReplyNode | null>(null);
@@ -28,23 +29,26 @@ export default function Thread() {
 
   if (!data) return <Screen><AppBar /></Screen>;
   const t = data.thread;
-  const isOp = t.author.id === me.id;
+  const isOp = t.author.id === me?.id;
 
   const vote = async () => {
+    if (!requireMe()) return;
     const next = data.myVote === 1 ? 0 : 1;
     setData({ ...data, myVote: next, thread: { ...t, score: t.score + (next - data.myVote) } });
     try { const s = await voteThread(supabase, t.id, next as 0 | 1); setData((d) => d && { ...d, thread: { ...d.thread, score: s } }); } catch { reload(); }
   };
   const save = async () => {
+    const u = requireMe(); if (!u) return;
     setData({ ...data, saved: !data.saved });
-    await setSaved(supabase, t.id, me.id, !data.saved).catch(reload);
+    await setSaved(supabase, t.id, u.id, !data.saved).catch(reload);
   };
   const send = async () => {
+    const u = requireMe(); if (!u) return;
     const body = draft.trim(); if (!body) return;
     setDraft('');
     const parent = replyTo ? (replyTo.parent_id ?? replyTo.id) : null;
     setReplyTo(null);
-    await postReply(supabase, { threadId: t.id, userId: me.id, body, parentId: parent });
+    await postReply(supabase, { threadId: t.id, userId: u.id, body, parentId: parent });
     reload();
   };
 
@@ -63,7 +67,7 @@ export default function Thread() {
             <T size={12.5} color={colors.neutral700}>{ago(t.created_at)}</T>
           </Pressable>
           <View style={{ marginTop: 14 }}><Markdown source={t.body} /></View>
-          {data.poll && <Poll threadId={t.id} options={data.poll} mine={data.myPollOption} userId={me.id} />}
+          {data.poll && <Poll threadId={t.id} options={data.poll} mine={data.myPollOption} />}
           {t.attachment && (
             <Pressable onPress={() => t.attachment?.subject && router.push(`/library/${t.attachment.subject}`)}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, backgroundColor: colors.surface, borderRadius: 2 }}>
@@ -111,7 +115,7 @@ export default function Thread() {
             </Pressable>
           )}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <TextInput value={draft} onChangeText={setDraft} placeholder="Add a reply…" placeholderTextColor={colors.neutral700} multiline
+            <TextInput value={draft} onChangeText={setDraft} placeholder={me ? 'Add a reply…' : 'Sign in to reply'} onFocus={() => { if (!me) requireMe(); }} placeholderTextColor={colors.neutral700} multiline
               style={{ flex: 1, minHeight: 44, maxHeight: 120, paddingHorizontal: 14, paddingTop: 12, paddingBottom: 10, backgroundColor: colors.surface, borderRadius: 2, fontFamily: fonts.regular, fontSize: 15, color: colors.text }} />
             <Pressable onPress={send} accessibilityLabel="Send reply" style={{ width: 44, height: 44, borderRadius: 2, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}>
               <Icon name="paper-plane-tilt" size={20} color={colors.bg} />
@@ -130,7 +134,8 @@ function Reply({ r, opId, acceptedId, isOp, threadId, onReply, onChange, nested 
   const [v, setV] = useState(r.myVote);
   const [s, setS] = useState(r.score);
   const accepted = r.id === acceptedId;
-  const vote = async () => { const nx = v === 1 ? 0 : 1; setS(s + nx - v); setV(nx); voteReply(supabase, r.id, nx as 0 | 1).catch(() => { setS(s); setV(v); }); };
+  const requireMe = useRequireMe();
+  const vote = async () => { if (!requireMe()) return; const nx = v === 1 ? 0 : 1; setS(s + nx - v); setV(nx); voteReply(supabase, r.id, nx as 0 | 1).catch(() => { setS(s); setV(v); }); };
   const head = (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
       {r.society ? <><T size={12.5} w={600}>{r.society.name}</T>{r.society.verified && <Seal />}</> : <T size={nested ? 12 : 12.5} w={600}>@{r.author.handle}</T>}
@@ -170,14 +175,15 @@ function Reply({ r, opId, acceptedId, isOp, threadId, onReply, onChange, nested 
   );
 }
 
-function Poll({ threadId, options, mine, userId }: { threadId: number; options: { id: number; label: string; votes: number }[]; mine: number | null; userId: string }) {
+function Poll({ threadId, options, mine }: { threadId: number; options: { id: number; label: string; votes: number }[]; mine: number | null }) {
+  const requireMe = useRequireMe();
   const [opts, setOpts] = useState(options);
   const [sel, setSel] = useState(mine);
   const total = opts.reduce((a, o) => a + o.votes, 0);
   const pick = async (id: number) => {
-    if (id === sel) return;
+    const u = requireMe(); if (!u || id === sel) return;
     setOpts(opts.map((o) => ({ ...o, votes: o.votes + (o.id === id ? 1 : 0) - (o.id === sel ? 1 : 0) }))); setSel(id);
-    await votePoll(supabase, threadId, id, userId);
+    await votePoll(supabase, threadId, id, u.id);
   };
   return (
     <View style={{ gap: 8, marginBottom: 14 }}>

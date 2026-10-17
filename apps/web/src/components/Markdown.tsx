@@ -25,6 +25,7 @@ export function Markdown({ source, size = 17, lineHeight = 1.65 }: { source: str
           case 'ul': return <ul key={i}>{b.items.map((it, k) => <li key={k}><Inl parts={it} /></li>)}</ul>;
           case 'quote': return <blockquote key={i} style={{ margin: '0 0 15px', paddingLeft: 14, borderLeft: '2px solid var(--color-neutral-300)', color: 'var(--color-neutral-800)' }}><Inl parts={b.inl} /></blockquote>;
           case 'code': return <pre key={i}>{b.v}</pre>;
+          case 'img': return <img key={i} src={b.src} alt={b.alt} loading="lazy" style={{ maxWidth: '100%', borderRadius: 2, margin: '6px 0 16px' }} />;
           case 'senior': return (
             <div key={i} style={{ margin: '26px 0', padding: '20px 24px', background: 'var(--color-surface)', borderRadius: 2 }}>
               <div className="kicker" style={{ color: 'var(--color-accent-2-700)', marginBottom: 6 }}>From a senior</div>

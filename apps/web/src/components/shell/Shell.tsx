@@ -1,13 +1,17 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import type { ProfileRow } from '@dtour/shared';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 
 export interface OnlineUser { id: string; handle: string; board: string | null; society: string | null }
 
 interface ShellCtx {
-  me: ProfileRow;
+  /** Signed-in profile, or null for a visitor reading without an account. */
+  me: ProfileRow | null;
+  /** Returns the profile, or sends a visitor to sign in and returns null. Call at the start of any write. */
+  requireMe: () => ProfileRow | null;
   online: OnlineUser[];
   setPresenceBoard: (slug: string | null) => void;
   searchOpen: boolean;
@@ -16,6 +20,8 @@ interface ShellCtx {
   initialQuery: string;
   loungeOpen: boolean;
   setLoungeOpen: (v: boolean) => void;
+  loungeRoom: string | null;
+  openLounge: (room: string) => void;
   toast: (msg: string) => void;
 }
 
@@ -26,11 +32,14 @@ export const useShell = () => {
   return c;
 };
 
-export function Shell({ me, children }: { me: ProfileRow; children: ReactNode }) {
+export function Shell({ me, children }: { me: ProfileRow | null; children: ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [online, setOnline] = useState<OnlineUser[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [initialQuery, setInitialQuery] = useState('');
   const [loungeOpen, setLoungeOpen] = useState(false);
+  const [loungeRoom, setLoungeRoom] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const channelRef = useRef<ReturnType<ReturnType<typeof supabaseBrowser>['channel']> | null>(null);
   const boardRef = useRef<string | null>(null);
@@ -38,7 +47,7 @@ export function Shell({ me, children }: { me: ProfileRow; children: ReactNode })
   // Realtime presence: who's on DTour right now, and which board they're reading.
   useEffect(() => {
     const sb = supabaseBrowser();
-    const ch = sb.channel('presence:dtour', { config: { presence: { key: me.id } } });
+    const ch = sb.channel('presence:dtour', { config: { presence: { key: me?.id ?? `visitor-${Math.random().toString(36).slice(2)}` } } });
     channelRef.current = ch;
     const sync = () => {
       const state = ch.presenceState<OnlineUser>();
@@ -47,15 +56,16 @@ export function Shell({ me, children }: { me: ProfileRow; children: ReactNode })
     };
     ch.on('presence', { event: 'sync' }, sync)
       .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') await ch.track({ id: me.id, handle: me.handle, board: boardRef.current, society: null });
+        // Visitors watch the count; only members are counted.
+        if (status === 'SUBSCRIBED' && me) await ch.track({ id: me.id, handle: me.handle, board: boardRef.current, society: null });
       });
     return () => { sb.removeChannel(ch); };
-  }, [me.id, me.handle]);
+  }, [me?.id, me?.handle]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const setPresenceBoard = useCallback((slug: string | null) => {
     boardRef.current = slug;
-    channelRef.current?.track({ id: me.id, handle: me.handle, board: slug, society: null });
-  }, [me.id, me.handle]);
+    if (me) channelRef.current?.track({ id: me.id, handle: me.handle, board: slug, society: null });
+  }, [me]);
 
   // `/` (when not typing) or ⌘K / Ctrl+K opens the search palette.
   useEffect(() => {
@@ -77,12 +87,17 @@ export function Shell({ me, children }: { me: ProfileRow; children: ReactNode })
     window.setTimeout(() => setToastMsg(null), 2600);
   }, []);
 
+  const requireMe = useCallback(() => {
+    if (!me) router.push(`/login?next=${encodeURIComponent(pathname)}`);
+    return me;
+  }, [me, router, pathname]);
+
   const value = useMemo<ShellCtx>(() => ({
-    me, online, setPresenceBoard, searchOpen,
+    me, requireMe, online, setPresenceBoard, searchOpen,
     openSearch: (q = '') => { setInitialQuery(q); setSearchOpen(true); },
     closeSearch: () => setSearchOpen(false),
-    initialQuery, loungeOpen, setLoungeOpen, toast,
-  }), [me, online, setPresenceBoard, searchOpen, initialQuery, loungeOpen, toast]);
+    initialQuery, loungeOpen, setLoungeOpen, loungeRoom, openLounge: (room: string) => { setLoungeRoom(room); setLoungeOpen(true); }, toast,
+  }), [me, requireMe, online, setPresenceBoard, searchOpen, initialQuery, loungeOpen, loungeRoom, toast]);
 
   return (
     <Ctx.Provider value={value}>

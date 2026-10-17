@@ -14,18 +14,20 @@ import { useShell } from '../shell/Shell';
 
 /** Vertical rail: upvote · score · downvote · save · share (optimistic). */
 export function VoteRail({ threadId, score, myVote, saved }: { threadId: number; score: number; myVote: number; saved: boolean }) {
-  const { me, toast } = useShell();
+  const { requireMe, toast } = useShell();
   const [v, setV] = useState(myVote);
   const [s, setS] = useState(score);
   const [isSaved, setIsSaved] = useState(saved);
 
   const vote = async (dir: 1 | -1) => {
+    if (!requireMe()) return;
     const next = v === dir ? 0 : dir;
     setS(s + (next - v)); setV(next);
     try { setS(await voteThread(supabaseBrowser(), threadId, next as -1 | 0 | 1)); }
     catch { setS(s); setV(v); toast('Vote failed.'); }
   };
   const save = async () => {
+    const me = requireMe(); if (!me) return;
     setIsSaved(!isSaved);
     try { await setSaved(supabaseBrowser(), threadId, me.id, !isSaved); toast(!isSaved ? 'Saved to your profile.' : 'Removed from saved.'); }
     catch { setIsSaved(isSaved); }
@@ -57,14 +59,14 @@ export function VoteRail({ threadId, score, myVote, saved }: { threadId: number;
 export function ReplyComposer({ threadId, parentId, onDone, autoFocus, placeholder = 'Add a reply…' }: {
   threadId: number; parentId?: number; onDone?: () => void; autoFocus?: boolean; placeholder?: string;
 }) {
-  const { me, toast } = useShell();
+  const { me, requireMe, toast } = useShell();
   const router = useRouter();
   const [open, setOpen] = useState(!!autoFocus);
   const [body, setBody] = useState('');
   const [pending, start] = useTransition();
 
   const submit = async () => {
-    if (!body.trim()) return;
+    const me = requireMe(); if (!me || !body.trim()) return;
     try {
       await postReply(supabaseBrowser(), { threadId, userId: me.id, body, parentId });
       setBody(''); setOpen(false); onDone?.();
@@ -74,15 +76,15 @@ export function ReplyComposer({ threadId, parentId, onDone, autoFocus, placehold
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} style={{ width: '100%', display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 14px', background: 'var(--color-surface)', borderRadius: 2, color: 'var(--color-neutral-700)', fontSize: 15, border: 0, cursor: 'text', textAlign: 'left', fontFamily: 'var(--font-body)' }}>
-        <Avatar person={me} size={30} /><span style={{ paddingTop: 4 }}>{placeholder}</span>
+      <button onClick={() => requireMe() && setOpen(true)} style={{ width: '100%', display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 14px', background: 'var(--color-surface)', borderRadius: 2, color: 'var(--color-neutral-700)', fontSize: 15, border: 0, cursor: 'text', textAlign: 'left', fontFamily: 'var(--font-body)' }}>
+        {me ? <Avatar person={me} size={30} /> : <Avatar person={{ handle: '?', tint: 'neutral' }} size={30} label="?" />}<span style={{ paddingTop: 4 }}>{me ? placeholder : 'Sign in with your DTU account to reply'}</span>
       </button>
     );
   }
   return (
     <div style={{ background: 'var(--color-surface)', borderRadius: 2, padding: '12px 14px' }}>
       <div style={{ display: 'flex', gap: 12 }}>
-        <Avatar person={me} size={30} />
+        {me && <Avatar person={me} size={30} />}
         <textarea autoFocus value={body} onChange={(e) => setBody(e.target.value)} placeholder={placeholder} rows={4}
           onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') submit(); }}
           style={{ flex: 1, border: 0, background: 'transparent', outline: 'none', resize: 'vertical', font: '400 16px/1.6 var(--font-body)', color: 'var(--color-text)' }} />
@@ -99,7 +101,7 @@ export function ReplyComposer({ threadId, parentId, onDone, autoFocus, placehold
 export function ReplyItem({ r, threadId, opId, acceptedId, isOp, depth = 0 }: {
   r: ReplyNode; threadId: number; opId: string; acceptedId: number | null; isOp: boolean; depth?: number;
 }) {
-  const { toast } = useShell();
+  const { toast, requireMe } = useShell();
   const router = useRouter();
   const [v, setV] = useState(r.myVote);
   const [s, setS] = useState(r.score);
@@ -108,6 +110,7 @@ export function ReplyItem({ r, threadId, opId, acceptedId, isOp, depth = 0 }: {
   const accepted = r.id === acceptedId;
 
   const vote = async () => {
+    if (!requireMe()) return;
     const next = v === 1 ? 0 : 1;
     setS(s + (next - v)); setV(next);
     try { setS(await voteReply(supabaseBrowser(), r.id, next as 0 | 1)); } catch { setS(s); setV(v); }
@@ -135,7 +138,7 @@ export function ReplyItem({ r, threadId, opId, acceptedId, isOp, depth = 0 }: {
           <button onClick={vote} className="vote-btn" style={{ alignItems: 'center', gap: 4, fontSize: 13.5, fontFamily: 'var(--font-body)' }} aria-pressed={v === 1}>
             <Icon name="arrow-fat-up" size={17} color={v === 1 || s > 0 ? 'var(--color-accent)' : undefined} weight={v === 1 ? 'fill' : 'duotone'} />{s}
           </button>
-          <button className="vote-btn" onClick={() => setReplying(true)} style={{ fontSize: 13.5, fontFamily: 'var(--font-body)' }}>Reply</button>
+          <button className="vote-btn" onClick={() => requireMe() && setReplying(true)} style={{ fontSize: 13.5, fontFamily: 'var(--font-body)' }}>Reply</button>
           {isOp && !nested && <button className="vote-btn" onClick={accept} style={{ fontSize: 13.5, fontFamily: 'var(--font-body)' }}>{accepted ? 'Unaccept' : 'Accept answer'}</button>}
         </div>
         {replying && <div style={{ marginTop: 12 }}><ReplyComposer threadId={threadId} parentId={nested ? (r.parent_id ?? r.id) : r.id} autoFocus onDone={() => setReplying(false)} placeholder={`Reply to @${r.author.handle}…`} /></div>}
@@ -146,9 +149,10 @@ export function ReplyItem({ r, threadId, opId, acceptedId, isOp, depth = 0 }: {
 }
 
 export function JoinBoard({ boardId, joined }: { boardId: string; joined: boolean }) {
-  const { me } = useShell();
+  const { requireMe } = useShell();
   const [j, setJ] = useState(joined);
   const toggle = async () => {
+    const me = requireMe(); if (!me) return;
     setJ(!j);
     try { await setBoardJoined(supabaseBrowser(), boardId, me.id, !j); } catch { setJ(j); }
   };
@@ -156,12 +160,12 @@ export function JoinBoard({ boardId, joined }: { boardId: string; joined: boolea
 }
 
 export function PollBox({ threadId, options, mine }: { threadId: number; options: { id: number; label: string; votes: number }[]; mine: number | null }) {
-  const { me, toast } = useShell();
+  const { requireMe, toast } = useShell();
   const [opts, setOpts] = useState(options);
   const [sel, setSel] = useState(mine);
   const total = opts.reduce((s, o) => s + o.votes, 0);
   const pick = async (id: number) => {
-    if (id === sel) return;
+    const me = requireMe(); if (!me || id === sel) return;
     const prev = { opts, sel };
     setOpts(opts.map((o) => ({ ...o, votes: o.votes + (o.id === id ? 1 : 0) - (o.id === sel ? 1 : 0) })));
     setSel(id);
@@ -186,8 +190,9 @@ export function PollBox({ threadId, options, mine }: { threadId: number; options
 }
 
 export function DownloadLink({ itemId, children, style }: { itemId: number; children: React.ReactNode; style?: React.CSSProperties }) {
-  const { toast } = useShell();
+  const { toast, requireMe } = useShell();
   const go = async () => {
+    if (!requireMe()) return;
     try {
       const { downloadItem } = await import('@dtour/shared');
       const url = await downloadItem(supabaseBrowser(), itemId);

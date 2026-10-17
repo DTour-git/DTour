@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { Icon as PhIcon } from '@phosphor-icons/react';
 import {
-  ArrowBendDownRightIcon, ArrowFatDownIcon, ArrowFatUpIcon, ArticleIcon, BankIcon, BellIcon, BookOpenTextIcon,
+  ArrowBendDownRightIcon, AtIcon, ArrowFatDownIcon, ArrowFatUpIcon, ArticleIcon, BankIcon, BellIcon, BookOpenTextIcon,
   BookmarkSimpleIcon, BooksIcon, BowlFoodIcon, BriefcaseIcon, BuildingsIcon, CalendarBlankIcon, CarProfileIcon,
   CaretDownIcon, CaretLeftIcon, CaretRightIcon, ChartBarHorizontalIcon, ChatCircleIcon, ChatTeardropDotsIcon,
   ChatsCircleIcon, ChatsIcon, CheckCircleIcon, CheckIcon, CircleDashedIcon, ClockCounterClockwiseIcon, CodeIcon,
@@ -18,7 +18,7 @@ import {
 
 const MAP: Record<string, PhIcon> = {
   'arrow-bend-down-right': ArrowBendDownRightIcon, 'arrow-fat-down': ArrowFatDownIcon, 'arrow-fat-up': ArrowFatUpIcon,
-  article: ArticleIcon, bank: BankIcon, bell: BellIcon, 'book-open-text': BookOpenTextIcon, 'bookmark-simple': BookmarkSimpleIcon,
+  article: ArticleIcon, at: AtIcon, bank: BankIcon, bell: BellIcon, 'book-open-text': BookOpenTextIcon, 'bookmark-simple': BookmarkSimpleIcon,
   books: BooksIcon, 'bowl-food': BowlFoodIcon, briefcase: BriefcaseIcon, buildings: BuildingsIcon, 'calendar-blank': CalendarBlankIcon,
   'car-profile': CarProfileIcon, 'caret-down': CaretDownIcon, 'caret-left': CaretLeftIcon, 'caret-right': CaretRightIcon,
   'chart-bar-horizontal': ChartBarHorizontalIcon, 'chat-circle': ChatCircleIcon, 'chat-teardrop-dots': ChatTeardropDotsIcon,

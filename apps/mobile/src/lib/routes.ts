@@ -9,6 +9,7 @@ export function appRoute(web: string): Href {
   if ((r = m(/^\/wiki\/([^/?]+)/))) return `/wiki/${r[1]}` as Href;
   if ((r = m(/^\/library\/subject\/([^/?]+)/))) return `/library/${r[1]}` as Href;
   if ((r = m(/^\/u\/([^/?]+)/))) return `/u/${r[1]}` as Href;
+  if ((r = m(/^\/lounge(?:\?room=([^&]+))?/))) return (r[1] ? `/lounge?room=${r[1]}` : '/lounge') as Href;
   if (web.startsWith('/kahan')) return '/kahan' as Href;
   if (web.startsWith('/teams')) return '/teams' as Href;
   if (web.startsWith('/societies')) return '/societies' as Href;

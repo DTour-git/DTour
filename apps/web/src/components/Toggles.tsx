@@ -8,10 +8,11 @@ import { useShell } from './shell/Shell';
 
 /** RSVP with an optimistic count ("140 going" → "141 going"). */
 export function Rsvp({ postId, going, count, word, featured, label = "I'm going" }: { postId: number; going: boolean; count: number; word: string; featured?: boolean; label?: string }) {
-  const { toast } = useShell();
+  const { toast, requireMe } = useShell();
   const [g, setG] = useState(going);
   const [c, setC] = useState(count);
   const toggle = async () => {
+    if (!requireMe()) return;
     setG(!g); setC(c + (g ? -1 : 1));
     try { await toggleRsvp(supabaseBrowser(), postId); } catch { setG(g); setC(c); toast('Could not RSVP.'); }
   };
@@ -26,9 +27,10 @@ export function Rsvp({ postId, going, count, word, featured, label = "I'm going"
 }
 
 export function AskToJoin({ teamId, requested, primary }: { teamId: number; requested: boolean; primary?: boolean }) {
-  const { toast } = useShell();
+  const { toast, requireMe } = useShell();
   const [r, setR] = useState(requested);
   const toggle = async () => {
+    if (!requireMe()) return;
     setR(!r);
     try { await toggleTeamRequest(supabaseBrowser(), teamId); if (!r) toast('Request sent to the team.'); } catch { setR(r); }
   };
@@ -36,9 +38,11 @@ export function AskToJoin({ teamId, requested, primary }: { teamId: number; requ
 }
 
 export function Heart({ placeId, hearted, count, size = 16 }: { placeId: number; hearted: boolean; count: number; size?: number }) {
+  const { requireMe } = useShell();
   const [h, setH] = useState(hearted);
   const [c, setC] = useState(count);
   const toggle = async () => {
+    if (!requireMe()) return;
     setH(!h); setC(c + (h ? -1 : 1));
     try { await toggleHeart(supabaseBrowser(), placeId); } catch { setH(h); setC(c); }
   };

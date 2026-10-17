@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { chatTime, colors, fonts, getLoungeMessage, getLoungeMessages, getLoungeRooms, sendLoungeMessage, unreadCounts, type LoungeMessage } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
-import { useMe } from '@/lib/auth';
+import { useMe, useRequireMe } from '@/lib/auth';
 import { useData } from '@/lib/useData';
 import { usePresence } from '@/lib/presence';
 import { T } from '@/components/T';
@@ -15,10 +15,13 @@ const SEEN_KEY = 'dtour_lounge_seen';
 
 export default function Lounge() {
   const router = useRouter();
-  const me = useMe();
+  const viewer = useMe();
+  const requireMe = useRequireMe();
   const { online } = usePresence();
   const { data: rooms } = useData(() => getLoungeRooms(supabase));
-  const [room, setRoom] = useState('global');
+  const params = useLocalSearchParams<{ room?: string }>();
+  const [room, setRoom] = useState(params.room ?? 'global');
+  useEffect(() => { if (params.room) setRoom(params.room); }, [params.room]); // eslint-disable-line react-hooks/set-state-in-effect
   const [msgs, setMsgs] = useState<LoungeMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [unread, setUnread] = useState<Record<string, number>>({});
@@ -50,6 +53,7 @@ export default function Lounge() {
   }, [room, rooms]);
 
   const send = async () => {
+    const me = requireMe(); if (!me) return;
     const body = draft.trim(); if (!body) return;
     setDraft('');
     const temp: LoungeMessage = { id: -Date.now(), room_slug: room, body, created_at: new Date().toISOString(), promoted_thread_id: null, pending: true,
@@ -110,7 +114,7 @@ export default function Lounge() {
           )}
         />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 8 }}>
-          <TextInput value={draft} onChangeText={setDraft} onSubmitEditing={send} returnKeyType="send" placeholder={room === 'global' ? 'Message all of DTU' : `Message ${current?.label ?? ''}`}
+          <TextInput value={draft} onChangeText={setDraft} onSubmitEditing={send} returnKeyType="send" placeholder={!viewer ? 'Sign in to join the conversation' : room === 'global' ? 'Message all of DTU' : `Message ${current?.label ?? ''}`} onFocus={() => { if (!viewer) requireMe(); }}
             placeholderTextColor={colors.neutral700} maxLength={1000}
             style={{ flex: 1, height: 44, paddingHorizontal: 14, backgroundColor: colors.surface, borderRadius: 2, fontFamily: fonts.regular, fontSize: 15, color: colors.text }} />
           <Pressable onPress={send} accessibilityLabel="Send" style={{ width: 44, height: 44, borderRadius: 2, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}>

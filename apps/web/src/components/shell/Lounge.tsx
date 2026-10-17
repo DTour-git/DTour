@@ -23,8 +23,8 @@ export function Lounge({ rooms }: { rooms: Room[] }) {
 }
 
 function Drawer({ rooms, onClose }: { rooms: Room[]; onClose: () => void }) {
-  const { me, toast } = useShell();
-  const [room, setRoom] = useState(rooms[0]?.slug ?? 'global');
+  const { me, requireMe, toast, loungeRoom } = useShell();
+  const [room, setRoom] = useState(loungeRoom ?? rooms[0]?.slug ?? 'global');
   const [msgs, setMsgs] = useState<LoungeMessage[]>([]);
   const [draft, setDraft] = useState('');
   const list = useRef<HTMLDivElement>(null);
@@ -55,6 +55,7 @@ function Drawer({ rooms, onClose }: { rooms: Room[]; onClose: () => void }) {
   }, [onClose]);
 
   const send = async () => {
+    const me = requireMe(); if (!me) return;
     const body = draft.trim();
     if (!body) return;
     setDraft('');
@@ -109,7 +110,7 @@ function Drawer({ rooms, onClose }: { rooms: Room[]; onClose: () => void }) {
       </div>
       <div style={{ padding: '14px 18px 20px' }}>
         <form onSubmit={(e) => { e.preventDefault(); send(); }} style={{ display: 'flex', alignItems: 'center', minHeight: 46, padding: '0 6px 0 14px', background: 'var(--color-surface)', borderRadius: 2 }}>
-          <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={`Message ${current?.short_label ?? current?.label ?? '#global'}`} maxLength={1000}
+          <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={me ? `Message ${current?.short_label ?? current?.label ?? '#global'}` : 'Sign in to join the conversation'} onFocus={() => { if (!me) requireMe(); }} maxLength={1000}
             aria-label="Message" style={{ flex: 1, minWidth: 0, border: 0, background: 'transparent', outline: 'none', font: '400 15px var(--font-body)', color: 'var(--color-text)' }} />
           <button type="submit" aria-label="Send" style={{ width: 36, height: 36, borderRadius: 2, background: 'var(--color-accent)', color: 'var(--color-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 0, cursor: 'pointer' }}>
             <Icon name="paper-plane-tilt" size={18} />

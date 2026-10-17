@@ -2,6 +2,7 @@
 import type { ComponentType } from 'react';
 import { colors } from '@dtour/shared';
 import { ArrowBendDownRightIcon } from 'phosphor-react-native/src/icons/ArrowBendDownRight';
+import { AtIcon } from 'phosphor-react-native/src/icons/At';
 import { ArrowFatDownIcon } from 'phosphor-react-native/src/icons/ArrowFatDown';
 import { ArrowFatUpIcon } from 'phosphor-react-native/src/icons/ArrowFatUp';
 import { ArticleIcon } from 'phosphor-react-native/src/icons/Article';
@@ -103,6 +104,7 @@ const MAP: Record<string, ComponentType<P>> = {
   'arrow-fat-down': ArrowFatDownIcon,
   'arrow-fat-up': ArrowFatUpIcon,
   'article': ArticleIcon,
+  'at': AtIcon,
   'bank': BankIcon,
   'bell': BellIcon,
   'book-open-text': BookOpenTextIcon,

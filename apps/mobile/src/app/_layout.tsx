@@ -8,6 +8,7 @@ import { useFonts, SourceSerif4_400Regular, SourceSerif4_400Regular_Italic, Sour
 import { colors } from '@dtour/shared';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { PresenceProvider } from '@/lib/presence';
+import { NotificationsProvider } from '@/lib/notifications';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -21,18 +22,21 @@ function Root() {
 
   const signedIn = !!session && !!profile;
   return (
-    <PresenceProvider enabled={signedIn && !!profile?.onboarded}>
+    <PresenceProvider enabled>
+      <NotificationsProvider>
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg }, animation: 'slide_from_right' }}>
+        {/* Reading is public; signing in is only needed to post, vote, reply or chat. */}
+        <Stack.Protected guard={!(signedIn && !profile?.onboarded)}>
+          <Stack.Screen name="(app)" options={{ animation: 'none' }} />
+        </Stack.Protected>
         <Stack.Protected guard={!signedIn}>
-          <Stack.Screen name="login" />
+          <Stack.Screen name="login" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
         </Stack.Protected>
         <Stack.Protected guard={signedIn && !profile?.onboarded}>
           <Stack.Screen name="onboarding" />
         </Stack.Protected>
-        <Stack.Protected guard={signedIn && !!profile?.onboarded}>
-          <Stack.Screen name="(app)" options={{ animation: 'none' }} />
-        </Stack.Protected>
       </Stack>
+      </NotificationsProvider>
     </PresenceProvider>
   );
 }

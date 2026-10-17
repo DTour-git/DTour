@@ -3,7 +3,7 @@ import { Pressable, ScrollView, Share, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { colors, getArticle, headings, n, parse, setWikiFeedback } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
-import { useMe } from '@/lib/auth';
+import { useMe, useRequireMe } from '@/lib/auth';
 import { useData } from '@/lib/useData';
 import { T } from '@/components/T';
 import { Icon } from '@/components/Icon';
@@ -14,7 +14,8 @@ export default function Article() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const router = useRouter();
   const me = useMe();
-  const { data, setData } = useData(() => getArticle(supabase, slug, me.id), [slug]);
+  const requireMe = useRequireMe();
+  const { data, setData } = useData(() => getArticle(supabase, slug, me?.id ?? null), [slug]);
   const [tocOpen, setTocOpen] = useState(false);
   const scroll = useRef<{ scrollTo: (o: { y: number }) => void } | null>(null);
   const offsets = useRef<Record<string, number>>({});
@@ -24,6 +25,7 @@ export default function Article() {
   const toc = headings(parse(a.body));
   const others = Math.max(0, a.editor_count - 1);
   const useful = async () => {
+    const me = requireMe(); if (!me) return;
     const next = data.myFeedback === true ? null : true;
     setData({ ...data, myFeedback: next, article: { ...a, useful_count: a.useful_count + (next ? 1 : -1) } });
     await setWikiFeedback(supabase, a.id, me.id, next);
@@ -74,7 +76,7 @@ export default function Article() {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, height: 44, paddingHorizontal: 12 }}>
           <Icon name="chats" size={20} color={colors.neutral700} /><T size={14} color={colors.neutral700}>Talk · {a.talk_count}</T>
         </View>
-        <PrimaryBtn label="Suggest edit" icon="pencil-simple-line" style={{ marginLeft: 'auto' }} onPress={() => router.push({ pathname: '/new', params: { type: 'article', edit: a.slug } })} />
+        <PrimaryBtn label="Suggest edit" icon="pencil-simple-line" style={{ marginLeft: 'auto' }} onPress={() => requireMe() && router.push({ pathname: '/new', params: { type: 'article', edit: a.slug } })} />
       </View>
     </Screen>
   );

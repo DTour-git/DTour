@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Linking, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { colors, dayNum, getPlaces, toggleHeart, weekdayCaps } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
-import { useMe } from '@/lib/auth';
+import { useMe, useRequireMe } from '@/lib/auth';
 import { useData } from '@/lib/useData';
 import { T } from '@/components/T';
 import { Icon } from '@/components/Icon';
@@ -13,13 +13,14 @@ const k = (x: number) => (x >= 1000 ? `${(x / 1000).toFixed(1).replace(/\.0$/, '
 
 export default function Kahan() {
   const me = useMe();
+  const requireMe = useRequireMe();
   const [f, setF] = useState('all');
-  const { data, setData, refreshing, refresh } = useData(() => getPlaces(supabase, me.id));
+  const { data, setData, refreshing, refresh } = useData(() => getPlaces(supabase, me?.id ?? null));
   const keep = <P extends { under_100: boolean; on_campus: boolean }>(xs: P[]) => xs.filter((x) => (f !== 'cheap' || x.under_100) && (f !== 'campus' || x.on_campus));
   const show = (s: string) => f === 'all' || f === 'cheap' || f === s || (f === 'campus' && (s === 'canteen' || s === 'chill'));
 
   const heart = async (id: number) => {
-    if (!data) return;
+    if (!data || !requireMe()) return;
     const h = new Set(data.myHearts); const had = h.has(id); if (had) h.delete(id); else h.add(id);
     setData({ ...data, myHearts: h, canteen: data.canteen.map((p) => p.id === id ? { ...p, hearts: p.hearts + (had ? -1 : 1) } : p) });
     await toggleHeart(supabase, id).catch(refresh);

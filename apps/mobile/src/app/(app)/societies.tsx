@@ -3,7 +3,7 @@ import { Linking, RefreshControl, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors, getSocietyBoard, n, POST_KIND_LABEL, postKindTone, toggleRsvp } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
-import { useMe } from '@/lib/auth';
+import { useMe, useRequireMe } from '@/lib/auth';
 import { useData } from '@/lib/useData';
 import { T, Kicker } from '@/components/T';
 import { AppBar, IconBtn, Pill, PillRow, PrimaryBtn, Screen, Seal, rowRule } from '@/components/ui';
@@ -13,11 +13,12 @@ const FILTERS: [string | null, string, 'accent' | 'accent2' | undefined][] = [[n
 export default function Societies() {
   const router = useRouter();
   const me = useMe();
+  const requireMe = useRequireMe();
   const [kind, setKind] = useState<string | null>(null);
-  const { data, setData, refreshing, refresh } = useData(() => getSocietyBoard(supabase, me.id, kind), [kind]);
+  const { data, setData, refreshing, refresh } = useData(() => getSocietyBoard(supabase, me?.id ?? null, kind), [kind]);
 
   const rsvp = async (id: number) => {
-    if (!data) return;
+    if (!data || !requireMe()) return;
     const going = data.myRsvps.has(id);
     const mine = new Set(data.myRsvps); if (going) mine.delete(id); else mine.add(id);
     setData({ ...data, myRsvps: mine, posts: data.posts.map((p) => p.id === id ? { ...p, rsvp_count: p.rsvp_count + (going ? -1 : 1) } : p) });

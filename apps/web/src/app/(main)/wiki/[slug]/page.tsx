@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { agoLong, flair, getArticle, headings, parse } from '@dtour/shared';
+import { agoLong, flair, getArticle, headings, myPendingEdits, parse } from '@dtour/shared';
 import { currentUser } from '@/lib/supabase-server';
 import { Icon } from '@/components/Icon';
 import { Avatar, H6 } from '@/components/ui';
@@ -23,6 +23,7 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
   const d = await getArticle(sb, slug, me?.userId ?? null);
   if (!d) notFound();
   const a = d.article;
+  const pendingEdits = me ? await myPendingEdits(sb, a.id, me.userId) : [];
   const toc = headings(parse(a.body));
   const others = Math.max(0, a.editor_count - 2);
   const checked = a.checked_at ? new Date(a.checked_at).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }) : null;
@@ -50,6 +51,17 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
             ))}
           </div>
         </div>
+        {a.status !== 'published' && (
+          <div style={{ marginTop: 20, padding: '12px 16px', background: a.status === 'pending' ? 'var(--color-accent-100)' : 'var(--color-accent-2-100)', borderRadius: 2, fontSize: 14.5, display: 'flex', gap: 10, alignItems: 'center' }}>
+            <Icon name="shield-check" size={20} color="var(--color-accent-700)" />
+            {a.status === 'pending' ? 'Waiting for a moderator — only you and the moderators can see this guide until it’s approved.' : `Not approved${a.review_note ? `: ${a.review_note}` : '.'}`}
+          </div>
+        )}
+        {pendingEdits.length > 0 && a.status === 'published' && (
+          <div style={{ marginTop: 20, padding: '12px 16px', background: 'var(--color-accent-100)', borderRadius: 2, fontSize: 14.5 }}>
+            Your edit “{pendingEdits[0].summary}” is waiting for a moderator. It goes live once approved.
+          </div>
+        )}
         <h1 className="display" style={{ fontSize: 52, lineHeight: 1.02, margin: '26px 0 14px', letterSpacing: '-.025em' }}>{a.title}</h1>
         {a.dek && <p style={{ font: 'italic 400 21px/1.45 var(--font-body)', color: 'var(--color-neutral-800)', margin: '0 0 18px', maxWidth: 640 }}>{a.dek}</p>}
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 14, fontSize: 13.5, color: 'var(--color-neutral-700)', marginBottom: 34 }}>

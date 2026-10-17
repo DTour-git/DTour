@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { useRouter } from 'expo-router';
 import type { Session } from '@supabase/supabase-js';
 import type { ProfileRow } from '@dtour/shared';
 import { supabase } from './supabase';
@@ -13,11 +14,19 @@ interface AuthCtx {
 const Ctx = createContext<AuthCtx>({ ready: false, session: null, profile: null, refreshProfile: async () => {} });
 export const useAuth = () => useContext(Ctx);
 
-/** The signed-in profile; only call under the authenticated stack. */
-export function useMe(): ProfileRow {
+/** The signed-in profile, or null for a visitor browsing without an account. */
+export function useMe(): ProfileRow | null {
+  return useAuth().profile;
+}
+
+/** Returns a guard for write actions: the profile, or opens sign-in and returns null. */
+export function useRequireMe() {
   const { profile } = useAuth();
-  if (!profile) throw new Error('useMe() outside an authenticated screen');
-  return profile;
+  const router = useRouter();
+  return useCallback(() => {
+    if (!profile) router.push('/login');
+    return profile;
+  }, [profile, router]);
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

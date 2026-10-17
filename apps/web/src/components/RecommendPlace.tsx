@@ -8,12 +8,12 @@ import { Icon } from './Icon';
 import { useShell } from './shell/Shell';
 
 export function RecommendPlace() {
-  const { me, toast } = useShell();
+  const { requireMe, toast } = useShell();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [f, setF] = useState({ category: 'nearby', name: '', where: '', price: '' });
   const save = async () => {
-    if (!f.name.trim()) return;
+    const me = requireMe(); if (!me || !f.name.trim()) return;
     try {
       await recommendPlace(supabaseBrowser(), { userId: me.id, category: f.category, name: f.name.trim(), whereLabel: f.where.trim(), priceLabel: f.price.trim() });
       toast('Thanks — added to Kahan chalein?'); setOpen(false); router.refresh();
@@ -21,7 +21,7 @@ export function RecommendPlace() {
   };
   return (
     <>
-      <button className="btn btn-primary" onClick={() => setOpen(true)}><Icon name="plus" size={17} />Recommend a place</button>
+      <button className="btn btn-primary" onClick={() => requireMe() && setOpen(true)}><Icon name="plus" size={17} />Recommend a place</button>
       {open && (
         <div className="dialog-backdrop" onClick={() => setOpen(false)} style={{ zIndex: 40 }}>
           <div className="dialog" onClick={(e) => e.stopPropagation()} style={{ background: 'var(--color-bg)' }}>

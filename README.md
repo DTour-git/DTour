@@ -32,6 +32,13 @@ Environment files are gitignored. Copy the examples and fill them in from the Su
 - **Search:** the server pre-filters with a subsequence regex (`public.search`), and the client re-ranks results fzf-style (`packages/shared/src/fuzzy.ts`).
 - **Realtime:** Lounge messages use Postgres changes. "N online" counts come from a presence channel shared by the website and the app.
 
+### Access, moderation, notifications
+
+- **Reading is public.** Anyone can browse. Posting, replying, voting, RSVPs, the Lounge composer, uploads and downloads need a DTU account. This is enforced by RLS (anon gets read-only access to content tables) and by sign-in prompts in both apps.
+- **Wiki moderation.** New guides (`status = 'pending'`) and edits (`status = 'suggested'`) wait in the moderation queue (`/mod` on the website) until a moderator approves them. Authors are notified either way. The `ai_verdict` column is reserved for a future AI pre-check.
+- **Making someone a moderator:** run `update public.profiles set role = 'moderator' where handle = '<handle>';` (or `'admin'`). Members can't change their own role.
+- **Notifications** (the bell): @mentions in the Lounge, threads and replies; replies to your threads; replies to your comments; upvotes (grouped per post); accepted answers; team join requests; wiki review results. They arrive live over Supabase Realtime.
+
 ### Auth: DTU accounts only
 
 - **Who can sign up:** only `@dtu.ac.in` addresses. This is enforced server-side by the `before_user_created` auth hook, plus a trigger on `auth.users`. The allowed domains live in `public.allowed_email_domains`.
