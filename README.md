@@ -15,7 +15,8 @@ The campus, all in one place. A community platform for DTU students: campus news
 ```bash
 npm install
 npm run web        # http://localhost:3000
-npm run mobile     # Expo dev server: scan the QR code with Expo Go, or press w for web
+npm run mobile     # Expo Go: scan the QR code (SDK 58 Expo Go), or press w for web
+npm run start:dev -w @dtour/mobile   # for a development build (needed for phone push)
 ```
 
 Environment files are gitignored. Copy the examples and fill them in from the Supabase dashboard (Project Settings → API keys):

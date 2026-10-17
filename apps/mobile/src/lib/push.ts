@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import Constants from 'expo-constants';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { AndroidImportance } from 'expo-notifications';
 import { supabase } from './supabase';
@@ -8,7 +8,8 @@ let registeredToken: string | null = null;
 
 /** Registers this installation after permission is granted. */
 export async function registerPush(userId: string, requestPermission = false) {
-  if (Platform.OS === 'web') return false;
+  // Expo Go can't receive remote push (Android dropped it in SDK 53); only dev/store builds register.
+  if (Platform.OS === 'web' || Constants.executionEnvironment === ExecutionEnvironment.StoreClient) return false;
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
       name: 'DTour updates', importance: AndroidImportance.DEFAULT,
