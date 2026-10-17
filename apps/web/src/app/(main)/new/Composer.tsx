@@ -1,0 +1,329 @@
+'use client';
+
+import { useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import {
+  createSocietyPost, createTeam, createThread, createWikiArticle, flair, saveDraft, similarThreads, uploadLibraryItem,
+  type PostType, type SocietyLite, type Tone,
+} from '@dtour/shared';
+import { supabaseBrowser } from '@/lib/supabase-browser';
+import { Icon } from '@/components/Icon';
+import { Avatar, Tag } from '@/components/ui';
+import { Markdown } from '@/components/Markdown';
+import { useShell } from '@/components/shell/Shell';
+
+type Board = { id: string; slug: string; verified_only: boolean; rules: string[]; tone: Tone; path: string[] };
+const TYPES: [PostType, string, string, string][] = [
+  ['thread', 'Thread', 'chat-circle', 'Start a discussion'], ['question', 'Question', 'question', 'Get an accepted answer'],
+  ['article', 'Wiki article', 'article', 'Shared, editable guide'], ['team', 'Team', 'users-three', 'Find teammates'],
+  ['poll', 'Poll', 'chart-bar-horizontal', 'Let campus vote'], ['event', 'Society post', 'megaphone', 'Events, recruiting, talks'],
+];
+const TONE_SQ: Record<Tone, string> = { accent: 'var(--color-accent)', accent2: 'var(--color-accent-2)', ink: 'var(--color-text)' };
+const Label = ({ children }: { children: React.ReactNode }) => <div className="label-caps">{children}</div>;
+
+export function Composer({ boards, societies, subjects, initialType, initialBoard, initialTitle }: {
+  boards: Board[]; societies: SocietyLite[]; subjects: { code: string; name: string }[];
+  initialType?: string; initialBoard?: string; initialTitle?: string;
+}) {
+  const { me, toast } = useShell();
+  const router = useRouter();
+  const body = useRef<HTMLTextAreaElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const postable = boards.filter((b) => !b.verified_only || societies.length > 0);
+  const defBoard = postable.find((b) => b.slug === initialBoard) ?? postable.find((b) => b.slug === `academics-${(me.branch_code ?? '').toLowerCase()}`) ?? postable.find((b) => b.slug === 'campus-buzz') ?? postable[0];
+
+  const [type, setType] = useState<PostType>((TYPES.find(([k]) => k === initialType)?.[0]) ?? 'thread');
+  const [boardId, setBoardId] = useState(defBoard?.id ?? '');
+  const [picking, setPicking] = useState(false);
+  const [pickQ, setPickQ] = useState('');
+  const [asSociety, setAsSociety] = useState<SocietyLite | null>(null);
+  const [title, setTitle] = useState(initialTitle ?? '');
+  const [text, setText] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagDraft, setTagDraft] = useState('');
+  const [preview, setPreview] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [fileSubject, setFileSubject] = useState('');
+  const [pollOpts, setPollOpts] = useState(['', '']);
+  const [pollDays, setPollDays] = useState(3);
+  const [team, setTeam] = useState({ event: '', closes: '', category: 'hackathon', roles: [] as { name: string; filled: boolean }[], roleDraft: '' });
+  const [ev, setEv] = useState({ kind: 'event', when: '', where: '' });
+  const [similar, setSimilar] = useState<{ title: string; sub: string; route: string }[]>([]);
+  const [draftId, setDraftId] = useState<string | undefined>();
+  const [busy, setBusy] = useState(false);
+  const board = boards.find((b) => b.id === boardId);
+
+  useEffect(() => {
+    if (type === 'event' && !asSociety && societies[0]) setAsSociety(societies[0]);
+  }, [type, asSociety, societies]);
+
+  useEffect(() => {
+    const t = setTimeout(async () => setSimilar(title.trim().length > 3 ? await similarThreads(supabaseBrowser(), title) : []), 250);
+    return () => clearTimeout(t);
+  }, [title]);
+
+  const suggested = useMemo(() => {
+    const w = title.toLowerCase();
+    const pick = (slug: string) => boards.find((b) => b.slug === slug);
+    const out = [/exam|result|datesheet|reval/.test(w) && pick('exams-results'), /intern|placement|interview|offer/.test(w) && pick('placements'), pick('campus-buzz'), pick('exams-results')].filter(Boolean) as Board[];
+    return [...new Map(out.filter((b) => b.id !== boardId).map((b) => [b.id, b])).values()].slice(0, 2);
+  }, [title, boards, boardId]);
+
+  const wrap = (before: string, after = before, placeholder = '') => {
+    const el = body.current; if (!el) return;
+    const { selectionStart: s, selectionEnd: e } = el;
+    const sel = text.slice(s, e) || placeholder;
+    const next = text.slice(0, s) + before + sel + after + text.slice(e);
+    setText(next);
+    requestAnimationFrame(() => { el.focus(); el.setSelectionRange(s + before.length, s + before.length + sel.length); });
+  };
+  const addTag = () => {
+    const t = tagDraft.trim().replace(/^#/, '');
+    if (t && !tags.includes(t) && tags.length < 6) setTags([...tags, t]);
+    setTagDraft('');
+  };
+
+  const tl = title.length;
+  const hint = tl === 0 ? 'Good titles get 3× more replies' : tl < 20 ? 'A bit more detail helps' : 'Looks clear';
+
+  const submit = async () => {
+    if (title.trim().length < 3) { toast('Add a title first.'); return; }
+    const sb = supabaseBrowser();
+    setBusy(true);
+    try {
+      if (type === 'article') {
+        const slug = await createWikiArticle(sb, { userId: me.id, title, body: text, boardId: boardId || null });
+        router.push(`/wiki/${slug}`); return;
+      }
+      if (type === 'team') {
+        if (!team.event.trim()) throw new Error('Name the event or hackathon.');
+        await createTeam(sb, { userId: me.id, category: team.category, eventName: team.event, title, description: text, deadlineOn: team.closes || null, roles: team.roles });
+        router.push('/teams'); return;
+      }
+      if (type === 'event') {
+        if (!asSociety) throw new Error('Only verified society accounts can post to the Society board.');
+        await createSocietyPost(sb, { userId: me.id, societyId: asSociety.id, kind: ev.kind, title, body: text, whenLabel: ev.when || 'soon', whereLabel: ev.where });
+        router.push('/societies'); return;
+      }
+      if (!boardId) throw new Error('Pick a board.');
+      const kind = type === 'poll' ? 'poll' : type === 'question' ? 'question' : 'thread';
+      const id = await createThread(sb, { userId: me.id, boardId, kind, title, body: text, tags, pollOptions: pollOpts.map((o) => o.trim()).filter(Boolean), pollDays, societyId: asSociety?.id ?? null });
+      if (file && fileSubject) {
+        const itemId = await uploadLibraryItem(sb, { userId: me.id, subjectCode: fileSubject, kind: 'notes', title: file.name.replace(/\.[^.]+$/, ''), file, fileName: file.name, contentType: file.type || 'application/octet-stream', size: file.size });
+        await sb.from('threads').update({ attachment: { name: file.name, size: `${(file.size / 1048576).toFixed(1)} MB`, subject: fileSubject, library_item_id: itemId } }).eq('id', id);
+      }
+      router.push(`/t/${id}`);
+    } catch (e) { toast((e as Error).message); setBusy(false); }
+  };
+
+  const save = async () => {
+    try {
+      setDraftId(await saveDraft(supabaseBrowser(), { id: draftId, userId: me.id, kind: type, boardId: boardId || null, title, body: text, payload: { tags, pollOpts, team, ev } }));
+      toast('Draft saved.');
+    } catch (e) { toast((e as Error).message); }
+  };
+
+  const filtered = boards.filter((b) => b.path.join(' ').toLowerCase().includes(pickQ.toLowerCase()) && (!b.verified_only || societies.length));
+
+  return (
+    <div className="grid-side px" style={{ paddingTop: 32 }}>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 13, color: 'var(--color-neutral-700)' }}><Link href="/">Today</Link> / New post</div>
+        <h1 className="display" style={{ fontSize: 44, margin: '14px 0 28px', letterSpacing: '-.025em' }}>What do you want to share?</h1>
+        <Label>Type</Label>
+        <div className="post-types">
+          {TYPES.map(([k, label, icon, h]) => (
+            <button key={k} onClick={() => setType(k)} aria-pressed={type === k}
+              style={{ cursor: 'pointer', padding: '14px 14px 12px', borderRadius: 2, border: 0, textAlign: 'left', fontFamily: 'var(--font-body)',
+                background: type === k ? 'var(--color-accent-100)' : 'var(--color-surface)', color: type === k ? 'var(--color-accent-900)' : 'var(--color-text)',
+                boxShadow: type === k ? 'inset 0 0 0 2px var(--color-accent)' : 'none' }}>
+              <Icon name={icon} size={24} />
+              <div style={{ font: '600 15px var(--font-heading)', marginTop: 8 }}>{label}</div>
+              <div style={{ fontSize: 12, lineHeight: 1.35, opacity: 0.8, marginTop: 2 }}>{h}</div>
+            </button>
+          ))}
+        </div>
+
+        <div className="grid-2" style={{ gap: 20, marginTop: 34 }}>
+          <div style={{ position: 'relative' }}>
+            <Label>{type === 'event' ? 'Society board' : type === 'team' ? 'Team Up' : 'Post in'}</Label>
+            {type === 'team' || type === 'event' ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 46, padding: '0 14px', background: 'var(--color-surface)', borderRadius: 2, fontSize: 15, color: 'var(--color-neutral-700)' }}>
+                <span style={{ width: 10, height: 10, borderRadius: 2, background: type === 'event' ? 'var(--color-accent-2)' : 'var(--color-accent)' }} />
+                {type === 'event' ? <>Culture › <b style={{ font: '600 15px var(--font-heading)', color: 'var(--color-text)' }}>Societies</b></> : <>Career › <b style={{ font: '600 15px var(--font-heading)', color: 'var(--color-text)' }}>Team Up</b></>}
+              </div>
+            ) : (
+              <button onClick={() => setPicking(!picking)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, height: 46, padding: '0 14px', background: 'var(--color-surface)', borderRadius: 2, border: 0, cursor: 'pointer', fontFamily: 'var(--font-body)', textAlign: 'left' }}>
+                {board && <span style={{ width: 10, height: 10, flex: 'none', borderRadius: 2, background: TONE_SQ[board.tone] }} />}
+                <span className="ellipsis" style={{ flex: 1, minWidth: 0, fontSize: 15, color: 'var(--color-neutral-700)' }}>
+                  {board ? <>{board.path.slice(0, -1).join(' › ')} › <span style={{ font: '600 15px var(--font-heading)', color: 'var(--color-text)' }}>{board.path[board.path.length - 1]}</span></> : 'Pick a board'}
+                </span>
+                <Icon name="caret-down" size={16} color="var(--color-neutral-700)" />
+              </button>
+            )}
+            {picking && (
+              <div style={{ position: 'absolute', top: 76, left: 0, right: 0, background: 'var(--color-bg)', boxShadow: 'var(--shadow-md)', borderRadius: 2, zIndex: 5, maxHeight: 340, overflow: 'auto' }}>
+                <input autoFocus className="input" placeholder="Find a board…" value={pickQ} onChange={(e) => setPickQ(e.target.value)} style={{ border: 0, borderBottom: '1px solid var(--color-divider)', borderRadius: 0, height: 40, background: 'var(--color-bg)' }} />
+                {filtered.map((b) => (
+                  <button key={b.id} onClick={() => { setBoardId(b.id); setPicking(false); setPickQ(''); }} className="hover-row"
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '9px 14px', border: 0, background: b.id === boardId ? 'var(--color-accent-100)' : 'transparent', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 14.5, textAlign: 'left', color: 'var(--color-text)' }}>
+                    <span style={{ width: 8, height: 8, borderRadius: 2, background: TONE_SQ[b.tone] }} />{b.path.join(' › ')}
+                  </button>
+                ))}
+              </div>
+            )}
+            {type !== 'team' && type !== 'event' && suggested.length > 0 && (
+              <div style={{ display: 'flex', gap: 6, marginTop: 8, fontSize: 12.5, color: 'var(--color-neutral-700)', alignItems: 'center', flexWrap: 'wrap' }}>
+                Suggested: {suggested.map((b) => <button key={b.id} onClick={() => setBoardId(b.id)} className="tag tag-neutral" style={{ border: 0, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>{b.path[b.path.length - 1]}</button>)}
+              </div>
+            )}
+          </div>
+          <div>
+            <Label>Posting as</Label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 46, padding: '0 14px', background: 'var(--color-surface)', borderRadius: 2 }}>
+              {asSociety ? <Avatar society={asSociety} size={28} /> : <Avatar person={me} size={28} />}
+              <span style={{ font: '600 15px var(--font-heading)' }}>{asSociety ? asSociety.name : `@${me.handle}`}</span>
+              {!asSociety && flair(me.branch_code, me.grad_year) && <Tag>{flair(me.branch_code, me.grad_year)}</Tag>}
+              {societies.length > 0 && (
+                <button onClick={() => setAsSociety(asSociety ? (type === 'event' ? asSociety : null) : societies[0])} style={{ marginLeft: 'auto', fontSize: 13.5, fontWeight: 600, color: 'var(--color-accent-700)', background: 'none', border: 0, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>Change</button>
+              )}
+            </div>
+            <div style={{ fontSize: 12.5, color: 'var(--color-neutral-700)', marginTop: 8 }}>{asSociety ? 'Posts as the verified society, with its badge.' : 'Your branch and year flair show on the post.'}</div>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 34 }}>
+          <Label>Title</Label>
+          <input value={title} onChange={(e) => setTitle(e.target.value.slice(0, 140))} placeholder="Make it specific — e.g. “DSA unit 4 notes for COE sem 3?”" aria-label="Title"
+            style={{ width: '100%', border: 'none', borderBottom: '2px solid var(--color-text)', background: 'transparent', padding: '6px 0 12px', font: '600 30px/1.2 var(--font-heading)', color: 'var(--color-text)', outline: 'none' }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, color: 'var(--color-neutral-700)', marginTop: 6 }}><span>{hint}</span><span>{tl}/140</span></div>
+        </div>
+
+        <div style={{ marginTop: 28 }}>
+          <Label>Body</Label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: 6, background: 'var(--color-surface)', borderRadius: '2px 2px 0 0', borderBottom: '1px solid var(--color-divider)', flexWrap: 'wrap' }}>
+            {([['text-b', () => wrap('**', '**', 'bold')], ['text-italic', () => wrap('*', '*', 'italic')], ['link', () => wrap('[', '](https://)', 'link')], ['quotes', () => wrap('\n> ', '', 'quote')], ['code', () => wrap('`', '`', 'code')], ['list-bullets', () => wrap('\n- ', '', 'item')], ['function', () => wrap('$', '$', 'x^2')]] as [string, () => void][]).map(([ic, fn]) => (
+              <button key={ic} className="btn btn-icon" onClick={fn} aria-label={ic}><Icon name={ic} size={18} /></button>
+            ))}
+            <span style={{ width: 1, height: 22, background: 'var(--color-divider)', margin: '0 6px' }} />
+            <button className="btn btn-icon" onClick={() => fileRef.current?.click()} aria-label="Image"><Icon name="image" size={18} /></button>
+            <button className="btn btn-icon" onClick={() => fileRef.current?.click()} aria-label="Attach"><Icon name="paperclip" size={18} /></button>
+            <span className="hide-mobile" style={{ marginLeft: 'auto', fontSize: 12.5, color: 'var(--color-neutral-700)', paddingRight: 8 }}>Markdown + LaTeX supported</span>
+          </div>
+          {preview
+            ? <div style={{ minHeight: 180, padding: '10px 14px', background: 'var(--color-surface)', borderRadius: '0 0 2px 2px' }}><Markdown source={text || '*Nothing to preview yet.*'} size={16} /></div>
+            : <textarea ref={body} className="input" value={text} onChange={(e) => setText(e.target.value)} placeholder="Add context. What have you tried? Which branch, semester, professor?" style={{ borderRadius: '0 0 2px 2px', minHeight: 180, font: '400 16px/1.6 var(--font-body)', borderTop: 'none', display: 'block' }} />}
+          <input ref={fileRef} type="file" hidden onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+          <div onClick={() => fileRef.current?.click()} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); setFile(e.dataTransfer.files[0] ?? null); }}
+            style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10, padding: '12px 14px', border: '1px dashed var(--color-neutral-400)', borderRadius: 2, fontSize: 14, color: 'var(--color-neutral-700)', cursor: 'pointer', flexWrap: 'wrap' }}>
+            <Icon name="upload-simple" size={20} color="var(--color-accent)" />
+            {file ? <>{file.name} · file it under
+              <select className="input" value={fileSubject} onClick={(e) => e.stopPropagation()} onChange={(e) => setFileSubject(e.target.value)} style={{ width: 'auto', height: 32 }}>
+                <option value="">pick a subject…</option>{subjects.map((s) => <option key={s.code} value={s.code}>{s.code} · {s.name}</option>)}
+              </select></>
+              : <>Drop PDFs, notes or images · files also get filed in the <Link href="/library" onClick={(e) => e.stopPropagation()}>Library</Link> under this subject</>}
+          </div>
+        </div>
+
+        {type === 'poll' && (
+          <div style={{ marginTop: 28 }}>
+            <Label>Poll options</Label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 520 }}>
+              {pollOpts.map((o, i) => <input key={i} className="input" placeholder={`Option ${i + 1}`} value={o} onChange={(e) => setPollOpts(pollOpts.map((x, k) => (k === i ? e.target.value : x)))} />)}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 14, flexWrap: 'wrap' }}>
+                <a onClick={() => pollOpts.length < 8 && setPollOpts([...pollOpts, ''])} style={{ fontWeight: 600 }}>+ Add option</a>
+                <span style={{ marginLeft: 'auto', color: 'var(--color-neutral-700)' }}>Closes in</span>
+                <div className="seg">{[[1, '1 day'], [3, '3 days'], [7, '1 week']].map(([d, l]) => <label key={d} className="seg-opt"><input type="radio" name="dur" checked={pollDays === d} onChange={() => setPollDays(d as number)} />{l}</label>)}</div>
+              </div>
+            </div>
+          </div>
+        )}
+        {type === 'team' && (
+          <div className="grid-2" style={{ marginTop: 28, gap: 20 }}>
+            <div><Label>Event / hackathon</Label><input className="input" placeholder="Smart India Hackathon 2026" value={team.event} onChange={(e) => setTeam({ ...team, event: e.target.value })} /></div>
+            <div><Label>Applications close</Label><input className="input" type="date" value={team.closes} onChange={(e) => setTeam({ ...team, closes: e.target.value })} /></div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <Label>Kind</Label>
+              <div className="seg" style={{ marginBottom: 14 }}>{[['hackathon', 'Hackathon'], ['project', 'Project'], ['competition', 'Competition'], ['research', 'Research']].map(([k, l]) => <label key={k} className="seg-opt"><input type="radio" name="tk" checked={team.category === k} onChange={() => setTeam({ ...team, category: k })} />{l}</label>)}</div>
+              <Label>Roles</Label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+                {team.roles.map((r, i) => (
+                  <button key={i} className={`tag ${r.filled ? 'tag-neutral' : 'tag-accent'}`} title="Click to toggle filled/open; double-click to remove" style={{ padding: '6px 12px', fontSize: 13, border: 0, cursor: 'pointer', fontFamily: 'var(--font-body)' }}
+                    onClick={() => setTeam({ ...team, roles: team.roles.map((x, k) => (k === i ? { ...x, filled: !x.filled } : x)) })}
+                    onDoubleClick={() => setTeam({ ...team, roles: team.roles.filter((_, k) => k !== i) })}>{r.name} · {r.filled ? 'filled' : 'open'}</button>
+                ))}
+                <input className="input" placeholder="+ Add role" value={team.roleDraft} onChange={(e) => setTeam({ ...team, roleDraft: e.target.value })}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && team.roleDraft.trim()) { e.preventDefault(); setTeam({ ...team, roles: [...team.roles, { name: team.roleDraft.trim(), filled: false }], roleDraft: '' }); } }}
+                  style={{ width: 160, minHeight: 30, height: 30, border: '1px solid var(--color-accent)', background: 'transparent' }} />
+              </div>
+            </div>
+          </div>
+        )}
+        {type === 'event' && (
+          <div className="grid-3" style={{ marginTop: 28, gap: 20 }}>
+            <div><Label>Kind</Label><div className="seg">{[['event', 'Event'], ['recruiting', 'Recruiting'], ['workshop', 'Workshop'], ['talk', 'Talk']].map(([k, l]) => <label key={k} className="seg-opt"><input type="radio" name="ek" checked={ev.kind === k} onChange={() => setEv({ ...ev, kind: k })} />{l}</label>)}</div></div>
+            <div><Label>When</Label><input className="input" placeholder="Fri 23 Oct · 5:00 pm" value={ev.when} onChange={(e) => setEv({ ...ev, when: e.target.value })} /></div>
+            <div><Label>Where</Label><input className="input" placeholder="SPS-12" value={ev.where} onChange={(e) => setEv({ ...ev, where: e.target.value })} /></div>
+            <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--color-neutral-800)' }}>
+              <Icon name="seal-check" size={20} color="var(--color-accent)" />
+              {societies.length ? <>Posting as a verified society shows the badge and lists this on the <Link href="/societies">Society board</Link> and the Today timeline.</> : <>Only verified society accounts can post here. Ask your society’s admin to add you.</>}
+            </div>
+          </div>
+        )}
+        {type === 'article' && (
+          <div style={{ marginTop: 28, padding: '16px 18px', background: 'var(--color-accent-100)', borderRadius: 2, fontSize: 14.5, lineHeight: 1.5, color: 'var(--color-accent-900)', display: 'flex', gap: 12 }}>
+            <Icon name="users-four" size={22} color="var(--color-accent-700)" />
+            <div><b>Wiki articles are shared.</b> Anyone can suggest edits after you publish; every editor is credited. Start from a template:{' '}
+              <a onClick={() => setText('### What this guide covers\n\n\n### Step by step\n\n\n### Common mistakes\n\n')}>Guide</a> · <a onClick={() => setText('### Month 1\n\n\n### Month 2\n\n\n### Resources\n\n')}>Roadmap</a> · <a onClick={() => setText('### How the course is graded\n\n\n### Units that matter\n\n\n### PYQs and notes\n\n')}>Subject survival</a>
+            </div>
+          </div>
+        )}
+
+        {(type === 'thread' || type === 'question' || type === 'poll') && (
+          <div style={{ marginTop: 28 }}>
+            <Label>Tags</Label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, minHeight: 44, padding: '6px 10px', background: 'var(--color-surface)', borderRadius: 2 }}>
+              {tags.map((t) => <button key={t} className="tag tag-accent" onClick={() => setTags(tags.filter((x) => x !== t))} style={{ border: 0, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>{t} ×</button>)}
+              <input value={tagDraft} onChange={(e) => setTagDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(); } }} onBlur={addTag}
+                placeholder="Add a tag…" style={{ flex: 1, minWidth: 120, border: 0, background: 'transparent', outline: 'none', font: '400 14px var(--font-body)', color: 'var(--color-text)' }} />
+            </div>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 34, paddingTop: 20, borderTop: '1px solid var(--color-divider)', flexWrap: 'wrap' }}>
+          <label className="radio"><input type="checkbox" defaultChecked /><span className="dot" />Notify me about replies</label>
+          <button className="btn btn-ghost" style={{ marginLeft: 'auto' }} onClick={save}>Save draft</button>
+          <button className="btn btn-secondary" onClick={() => setPreview(!preview)}><Icon name="eye" size={17} />{preview ? 'Edit' : 'Preview'}</button>
+          <button className="btn btn-primary" disabled={busy} onClick={submit}><Icon name="paper-plane-tilt" size={17} />Post</button>
+        </div>
+      </div>
+
+      <aside style={{ display: 'flex', flexDirection: 'column', gap: 36, paddingTop: 120 }}>
+        <div>
+          <h6 style={{ margin: '0 0 12px', color: 'var(--color-neutral-700)' }}>Already asked?</h6>
+          {similar.length ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {similar.map((s) => (
+                <Link key={s.route} href={s.route} className="title-link">
+                  <div style={{ font: '600 16px/1.3 var(--font-heading)' }}>{s.title}</div>
+                  <div style={{ fontSize: 12.5, color: 'var(--color-neutral-700)', marginTop: 3 }}>{s.sub}</div>
+                </Link>
+              ))}
+            </div>
+          ) : <div style={{ fontSize: 14, color: 'var(--color-neutral-700)', lineHeight: 1.5 }}>Start typing a title — we&apos;ll show similar threads so the answer you need might already be here.</div>}
+        </div>
+        {board && board.rules.length > 0 && type !== 'team' && type !== 'event' && (
+          <div>
+            <h6 style={{ margin: '0 0 12px', color: 'var(--color-neutral-700)' }}>Board rules · {board.path[board.path.length - 1]}</h6>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 14, lineHeight: 1.45, color: 'var(--color-neutral-800)' }}>{board.rules.map((r, i) => <div key={i}>{i + 1}. {r}</div>)}</div>
+          </div>
+        )}
+        <div>
+          <h6 style={{ margin: '0 0 12px', color: 'var(--color-neutral-700)' }}>Good posts get</h6>
+          <div style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--color-neutral-800)' }}>+10 karma per upvote, +25 when your reply is accepted.</div>
+        </div>
+      </aside>
+    </div>
+  );
+}

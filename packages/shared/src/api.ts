@@ -110,6 +110,12 @@ async function withPollPct(sb: DB, threads: ThreadCard[]) {
 
 export type FeedTab = 'hot' | 'new' | 'top' | 'branch';
 
+/** Hot = votes + replies, decayed by age (HN-style). */
+export function hotness(t: { score: number; reply_count: number; created_at: string }) {
+  const hours = (Date.now() - Date.parse(t.created_at)) / 3600e3;
+  return (t.score + t.reply_count * 0.5) / Math.pow(hours + 2, 1.5);
+}
+
 export async function listThreads(sb: DB, opts: {
   tab?: FeedTab; categoryId?: number; boardIds?: string[]; limit?: number; excludeNews?: boolean; branch?: string | null;
 }) {
@@ -123,7 +129,9 @@ export async function listThreads(sb: DB, opts: {
   else if (tab === 'branch' && opts.branch) {
     q = q.or(`tags.cs.{${opts.branch}},title.ilike.%${opts.branch}%`).order('score', { ascending: false });
   } else q = q.order('score', { ascending: false }).order('created_at', { ascending: false });
-  const rows = must(await q.limit(opts.limit ?? 20)) as unknown as ThreadCard[];
+  const limit = opts.limit ?? 20;
+  let rows = must(await q.limit(tab === 'hot' ? Math.max(limit, 40) : limit)) as unknown as ThreadCard[];
+  if (tab === 'hot') rows = rows.sort((a, b) => hotness(b) - hotness(a)).slice(0, limit);
   return withPollPct(sb, rows);
 }
 

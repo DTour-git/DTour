@@ -210,6 +210,7 @@ select setval(pg_get_serial_sequence('public.replies', 'id'), 100);
 
 update public.threads set accepted_reply_id = 1 where id = 1;
 update public.threads set accepted_reply_id = 4 where id = 14;
+update public.karma_events set created_at = now() - interval '10 days' where reason = 'accepted answer';
 
 insert into public.poll_options (thread_id, label, votes, sort) values
   (9, 'Sec-11 momo lane', 165, 1), (9, 'Unity One food court', 98, 2), (9, 'Chole bhature, Sec-7', 55, 3);
