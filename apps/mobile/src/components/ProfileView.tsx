@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
 import { useData } from '@/lib/useData';
 import { appRoute } from '@/lib/routes';
-import { registerPush, unregisterPush } from '@/lib/push';
+import { pushSupported, registerPush, unregisterPush } from '@/lib/push';
 import { T, Kicker } from './T';
 import { Icon } from './Icon';
 import { AppBar, Avatar, CmykNum, IconBtn, PrimaryBtn, Screen, Tag, rowRule } from './ui';
@@ -36,6 +36,7 @@ export function ProfileView({ handle, isTab }: { handle: string; isTab?: boolean
     { text: 'Enable phone alerts', onPress: async () => {
       try {
         if (!me) return;
+        if (!pushSupported) { Alert.alert('Not available in Expo Go', 'Phone alerts work in the installed DTour app. In-app notifications still work here.'); return; }
         const enabled = await registerPush(me.id, true);
         Alert.alert(enabled ? 'Phone alerts enabled' : 'Permission not granted', enabled ? 'You will receive DTour updates on this device.' : 'You can allow notifications in your phone settings.');
       } catch (error) { Alert.alert('Could not enable alerts', (error as Error).message); }

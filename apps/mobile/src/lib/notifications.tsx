@@ -1,18 +1,17 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { Platform } from 'react-native';
 import { useRouter } from 'expo-router';
-import * as Notifications from 'expo-notifications';
 import { unreadNotificationCount } from '@dtour/shared';
 import { supabase } from './supabase';
 import { useAuth } from './auth';
 import { appRoute } from './routes';
-import { registerPush } from './push';
+import { loadNotifications, pushSupported, registerPush } from './push';
 
 const Ctx = createContext<{ unread: number; setUnread: (n: number) => void; version: number }>({ unread: 0, setUnread: () => {}, version: 0 });
 export const useNotifications = () => useContext(Ctx);
 
 function PushResponseListener() {
   const router = useRouter();
+  const Notifications = loadNotifications()!; // only rendered when pushSupported
   const lastResponse = Notifications.useLastNotificationResponse();
   useEffect(() => {
     if (!lastResponse || lastResponse.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) return;
@@ -21,7 +20,7 @@ function PushResponseListener() {
       Notifications.clearLastNotificationResponse();
       router.push(appRoute(route));
     }
-  }, [lastResponse, router]);
+  }, [lastResponse, router, Notifications]);
   return null;
 }
 
@@ -52,7 +51,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   }, [profile, session]);
 
   return <Ctx.Provider value={{ unread: profile ? unread : 0, setUnread, version }}>
-    {profile && Platform.OS !== 'web' && <PushResponseListener />}
+    {profile && pushSupported && <PushResponseListener />}
     {children}
   </Ctx.Provider>;
 }

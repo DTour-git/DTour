@@ -1,18 +1,27 @@
 import { Platform } from 'react-native';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
-import * as Notifications from 'expo-notifications';
-import { AndroidImportance } from 'expo-notifications';
 import { supabase } from './supabase';
+
+type NotificationsModule = typeof import('expo-notifications');
+
+/** Phone push needs a development or store build: Expo Go can't load expo-notifications' native modules. */
+export const pushSupported = Platform.OS !== 'web' && Constants.executionEnvironment !== ExecutionEnvironment.StoreClient;
+
+/** Loads expo-notifications lazily, so importing this file never crashes Expo Go. */
+export function loadNotifications(): NotificationsModule | null {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  return pushSupported ? (require('expo-notifications') as NotificationsModule) : null;
+}
 
 let registeredToken: string | null = null;
 
 /** Registers this installation after permission is granted. */
 export async function registerPush(userId: string, requestPermission = false) {
-  // Expo Go can't receive remote push (Android dropped it in SDK 53); only dev/store builds register.
-  if (Platform.OS === 'web' || Constants.executionEnvironment === ExecutionEnvironment.StoreClient) return false;
+  const Notifications = loadNotifications();
+  if (!Notifications) return false;
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
-      name: 'DTour updates', importance: AndroidImportance.DEFAULT,
+      name: 'DTour updates', importance: Notifications.AndroidImportance.DEFAULT,
     });
   }
   let permission = await Notifications.getPermissionsAsync();
