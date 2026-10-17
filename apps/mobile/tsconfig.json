@@ -8,8 +8,12 @@
       ],
       "@/assets/*": [
         "./assets/*"
+      ],
+      "phosphor-react-native/src/icons/*": [
+        "./src/types/phosphor-icon.d.ts"
       ]
-    }
+    },
+    "skipLibCheck": true
   },
   "include": [
     "**/*.ts",

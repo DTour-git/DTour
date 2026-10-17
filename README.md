@@ -1,0 +1,43 @@
+# DTour
+
+The campus, all in one place. A community platform for DTU students: campus news, boards, a student wiki, a notes/PYQ library, the society board, Team Up, Kahan chalein? and the Lounge (a live chat).
+
+| | |
+|---|---|
+| `apps/web` | Website. Next.js 16 (App Router) with the Broadsheet CSS tokens |
+| `apps/mobile` | iOS + Android app. Expo SDK 58, React Native, Expo Router |
+| `packages/shared` | Shared code: design tokens, data API, fzf-style fuzzy search, formatting, markdown, generated DB types |
+| `supabase/` | Postgres schema, RLS, triggers, auth hook and demo seed |
+| `design_handoff_dtour/` | Design source of truth: prototypes, tokens and screenshots |
+
+## Running locally
+
+```bash
+npm install
+npm run web        # http://localhost:3000
+npm run mobile     # Expo dev server: scan the QR code with Expo Go, or press w for web
+```
+
+Environment files are gitignored. Copy the examples and fill them in from the Supabase dashboard (Project Settings → API keys):
+
+- `apps/web/.env.local`: copy from `apps/web/.env.example`
+- `apps/mobile/.env`: copy from `apps/mobile/.env.example`
+
+## Backend (Supabase)
+
+- **Project:** `dtour` (ref `pvtgvraqbgncrexnkoof`), region ap-south-1 (Mumbai).
+- **Schema:** `supabase/migrations`. Apply it with `supabase db push`.
+- **Demo content:** `supabase/seed.sql` holds all the copy from the prototypes. Every seeded row is flagged `is_demo`. To remove it before launch, run `select public.dtour_clear_demo();` in the SQL editor.
+- **Counters:** reply counts, scores, karma, downloads and RSVPs are kept current by triggers. Karma is +10 per upvote received and +25 for an accepted answer.
+- **Search:** the server pre-filters with a subsequence regex (`public.search`), and the client re-ranks results fzf-style (`packages/shared/src/fuzzy.ts`).
+- **Realtime:** Lounge messages use Postgres changes. "N online" counts come from a presence channel shared by the website and the app.
+
+### Auth: DTU accounts only
+
+- **Who can sign up:** only `@dtu.ac.in` addresses. This is enforced server-side by the `before_user_created` auth hook, plus a trigger on `auth.users`. The allowed domains live in `public.allowed_email_domains`.
+- **Sign-in methods:** Google sign-in (restricted to the DTU domain), or a 6-digit email code. The code lets students read their DTU mail on another device and type it on their phone.
+- **Profile setup:** each new profile is pre-filled from the roll number in the email address, e.g. `name_2k23co123@dtu.ac.in` gives branch COE, batch '27 and the current semester. Onboarding lets the student confirm or correct these.
+
+## Mobile builds
+
+There is no Xcode or Android SDK on this machine, so builds go through EAS: `npx eas-cli@latest build`. Expo Go works for day-to-day development.
