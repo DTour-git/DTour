@@ -94,10 +94,10 @@ export default async function ProfilePage({ params, searchParams }: { params: Pr
             </Link>
           ))}
           {tab === 'drafts' && drafts.map((dr) => (
-            <div key={dr.id} className="row-rule" style={{ padding: '16px 0' }}>
+            <Link key={dr.id} href={`/new?draft=${dr.id}`} className="row-rule title-link" style={{ display: 'block', padding: '16px 0' }}>
               <div style={{ font: '600 17px/1.3 var(--font-heading)' }}>{dr.title || 'Untitled draft'}</div>
               <div style={{ fontSize: 13, color: 'var(--color-neutral-700)' }}>{dr.kind} · saved {agoLong(dr.updated_at)}</div>
-            </div>
+            </Link>
           ))}
           {((tab === 'activity' && !d.activities.length) || (tab === 'threads' && !d.threads.length) || (tab === 'replies' && !d.replies.length) || (tab === 'uploads' && !d.uploads.length) || (tab === 'saved' && !saved.length) || (tab === 'drafts' && !drafts.length)) &&
             <div style={{ padding: '24px 0', color: 'var(--color-neutral-700)', fontStyle: 'italic' }}>Nothing here yet.</div>}

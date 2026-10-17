@@ -38,6 +38,9 @@ Environment files are gitignored. Copy the examples and fill them in from the Su
 - **Wiki moderation.** New guides (`status = 'pending'`) and edits (`status = 'suggested'`) wait in the moderation queue (`/mod` on the website) until a moderator approves them. Authors are notified either way. The `ai_verdict` column is reserved for a future AI pre-check.
 - **Making someone a moderator:** run `update public.profiles set role = 'moderator' where handle = '<handle>';` (or `'admin'`). Members can't change their own role.
 - **Notifications** (the bell): @mentions in the Lounge, threads and replies; replies to your threads; replies to your comments; upvotes (grouped per post); accepted answers; team join requests; wiki review results. They arrive live over Supabase Realtime.
+- **Reply preference:** the composer checkbox controls reply alerts per thread. This uses `notify_on_reply` from migration `20261017000006_reply_preferences.sql`.
+- **Drafts:** both composers save and reopen drafts from your profile. Publishing removes the saved draft.
+- **Event reminders:** society events with a start date can notify students who RSVP about 30 minutes before the event. Migration `20261017000009_event_reminders.sql` provides the idempotent reminder job.
 
 ### Auth: DTU accounts only
 
@@ -48,3 +51,15 @@ Environment files are gitignored. Copy the examples and fill them in from the Su
 ## Mobile builds
 
 There is no Xcode or Android SDK on this machine, so builds go through EAS: `npx eas-cli@latest build`. Expo Go works for day-to-day development.
+
+Phone push requires a development or preview build, an EAS project ID, and iOS/Android push credentials. The app registers a device token after the student enables alerts in Settings; the `push` Edge Function sends new in-app notifications to those devices. To activate it later:
+
+1. Apply all migrations, including `20261017000007_push_tokens.sql`.
+2. Run `npx eas-cli@latest init` in `apps/mobile` to set `extra.eas.projectId` in `app.json`. Configure Android FCM v1 and Apple push credentials in EAS, then build with `npx eas-cli@latest build --profile development` (or `preview`).
+3. Deploy the function with `supabase functions deploy push`. If Expo enhanced push security is enabled, set `EXPO_ACCESS_TOKEN` as a Supabase function secret.
+4. In Supabase Database Webhooks, create a webhook for `INSERT` on `public.notifications` targeting the `push` function. Add an `apikey` header holding a **secret** Supabase API key; the function uses secret-key authentication. Do not put that key in the app or web environment files.
+5. Sign in on the built app, open Settings, and choose **Enable phone alerts**. Test delivery with a reply or mention.
+
+For RSVP event reminders, enable `pg_cron` in Supabase and schedule `select public.enqueue_event_reminders();` every 15 minutes. For example, in the SQL editor: `select cron.schedule('dtour-event-reminders', '*/15 * * * *', 'select public.enqueue_event_reminders()');`. Event posts need a start date for this job to find them.
+
+Google OAuth client creation, the email-code sender, assigning moderator accounts, applying migrations to the live project, and EAS credential/build setup require your service accounts. The code and local configuration do not perform those account changes.

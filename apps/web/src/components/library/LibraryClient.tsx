@@ -12,7 +12,7 @@ export function SubjectSearch() {
   const [q, setQ] = useState('');
   const [res, setRes] = useState<SubjectRow[]>([]);
   useEffect(() => {
-    if (!q.trim()) { setRes([]); return; }
+    if (!q.trim()) return;
     const t = setTimeout(async () => setRes(await searchSubjects(supabaseBrowser(), q.trim())), 120);
     return () => clearTimeout(t);
   }, [q]);
@@ -20,7 +20,7 @@ export function SubjectSearch() {
     <div style={{ position: 'relative' }}>
       <label style={{ display: 'flex', alignItems: 'center', gap: 8, width: 'min(340px, 70vw)', height: 44, padding: '0 14px', background: 'var(--color-surface)', borderRadius: 2, color: 'var(--color-neutral-700)', fontSize: 15 }}>
         <Icon name="magnifying-glass" size={19} />
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search subjects, codes like CO201" aria-label="Search subjects"
+        <input value={q} onChange={(e) => { setQ(e.target.value); if (!e.target.value.trim()) setRes([]); }} placeholder="Search subjects, codes like CO201" aria-label="Search subjects"
           style={{ flex: 1, minWidth: 0, border: 0, background: 'transparent', outline: 'none', font: '400 15px var(--font-body)', color: 'var(--color-text)' }} />
       </label>
       {res.length > 0 && (

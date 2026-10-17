@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { useMe, useRequireMe } from '@/lib/auth';
 import { useData } from '@/lib/useData';
 import { T, Kicker } from '@/components/T';
-import { AppBar, IconBtn, Pill, PillRow, PrimaryBtn, Screen, Seal, rowRule } from '@/components/ui';
+import { AppBar, Halftone, IconBtn, Pill, PillRow, PrimaryBtn, Screen, Seal, rowRule } from '@/components/ui';
 
 const FILTERS: [string | null, string, 'accent' | 'accent2' | undefined][] = [[null, 'All', undefined], ['event', 'Events', 'accent2'], ['recruiting', 'Recruiting', 'accent2'], ['workshop', 'Workshops', 'accent'], ['talk', 'Talks', 'accent']];
 
@@ -36,6 +36,7 @@ export default function Societies() {
           const kick = `${POST_KIND_LABEL[p.kind]} · ${p.when_label}${p.where_label && p.kind !== 'event' ? ` · ${p.where_label}` : ''}`;
           if (p.featured) return (
             <View key={p.id} style={{ marginTop: 16, padding: 18, backgroundColor: colors.accent2_100, borderRadius: 2 }}>
+              {(p.poster_path || p.poster_label) && <Halftone height={150} label={p.poster_label ?? p.title} src={p.poster_path} style={{ marginBottom: 12 }} />}
               <Kicker color={colors.accent2_800}>{kick}</Kicker>
               <T size={24} w={600} lh={1.1} color={colors.accent2_900} style={{ marginVertical: 6 }}>{p.title}</T>
               {p.body ? <T size={14.5} lh={1.5} color={colors.accent2_900}>{p.body}</T> : null}
@@ -47,6 +48,7 @@ export default function Societies() {
           );
           return (
             <View key={p.id} style={[{ paddingVertical: 18 }, rowRule]}>
+              {(p.poster_path || p.poster_label) && <Halftone height={120} label={p.poster_label ?? p.title} src={p.poster_path} style={{ marginBottom: 10 }} />}
               <Kicker color={postKindTone(p.kind) === 'accent2' ? colors.accent2_700 : colors.accent700}>{kick}</Kicker>
               <T size={20} w={600} lh={1.2} style={{ marginVertical: 6 }}>{p.title}</T>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>

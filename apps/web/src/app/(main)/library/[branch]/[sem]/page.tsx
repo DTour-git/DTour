@@ -14,7 +14,6 @@ export default async function LibraryPage({ params }: { params: Promise<{ branch
   const sem = Math.min(8, Math.max(1, Number(rawSem) || 1));
   const { sb } = await currentUser();
   const d = await getLibrary(sb, branch, sem === 2 ? 2 : sem);
-  const b = d.branches.find((x) => x.code === branch);
   const sel = sem <= 2 ? 1 : sem;
 
   return (

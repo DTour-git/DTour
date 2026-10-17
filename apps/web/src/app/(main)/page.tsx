@@ -125,7 +125,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
           ) : <div style={{ color: 'var(--color-neutral-700)', fontStyle: 'italic' }}>No threads here yet.</div>}
           {d.guide && (
             <Link href={`/wiki/${d.guide.slug}`} style={{ color: 'var(--color-text)' }}>
-              <Halftone height={150} />
+              <Halftone height={150} src={d.guide?.cover_path} label={d.guide?.cover_label} />
               <div className="kicker" style={{ color: 'var(--color-accent-700)', marginTop: 14 }}>Wiki guide</div>
               <div style={{ font: '600 23px/1.18 var(--font-heading)', marginTop: 6 }}>{d.guide.title}</div>
               <div style={{ fontSize: 13, color: 'var(--color-neutral-700)', marginTop: 6 }}>{d.guide.editor_count} editors{d.guide.checked_at ? ' · checked by a senior' : ''}</div>

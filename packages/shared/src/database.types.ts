@@ -372,6 +372,35 @@ export type Database = {
         }
         Relationships: []
       }
+      device_push_tokens: {
+        Row: {
+          token: string
+          user_id: string
+          platform: string
+          updated_at: string
+        }
+        Insert: {
+          token: string
+          user_id: string
+          platform: string
+          updated_at?: string
+        }
+        Update: {
+          token?: string
+          user_id?: string
+          platform?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_push_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drafts: {
         Row: {
           board_id: string | null
@@ -1660,6 +1689,7 @@ export type Database = {
           image_path: string | null
           is_demo: boolean
           kind: string
+          notify_on_reply: boolean
           poll_closes_at: string | null
           reply_count: number
           score: number
@@ -1682,6 +1712,7 @@ export type Database = {
           image_path?: string | null
           is_demo?: boolean
           kind?: string
+          notify_on_reply?: boolean
           poll_closes_at?: string | null
           reply_count?: number
           score?: number
@@ -1704,6 +1735,7 @@ export type Database = {
           image_path?: string | null
           is_demo?: boolean
           kind?: string
+          notify_on_reply?: boolean
           poll_closes_at?: string | null
           reply_count?: number
           score?: number
@@ -1760,6 +1792,7 @@ export type Database = {
           checked_at: string | null
           checked_by: string | null
           cover_label: string | null
+          cover_path: string | null
           created_at: string
           dek: string | null
           editor_count: number
@@ -1786,6 +1819,7 @@ export type Database = {
           checked_at?: string | null
           checked_by?: string | null
           cover_label?: string | null
+          cover_path?: string | null
           created_at?: string
           dek?: string | null
           editor_count?: number
@@ -1812,6 +1846,7 @@ export type Database = {
           checked_at?: string | null
           checked_by?: string | null
           cover_label?: string | null
+          cover_path?: string | null
           created_at?: string
           dek?: string | null
           editor_count?: number

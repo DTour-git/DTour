@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Linking, Pressable, RefreshControl, ScrollView, View } from 'react-native';
-import { colors, dayNum, getPlaces, toggleHeart, weekdayCaps } from '@dtour/shared';
+import { Alert, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, RefreshControl, ScrollView, TextInput, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { colors, dayNum, fonts, getPlaces, recommendPlace, toggleHeart, uploadImage, weekdayCaps } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
 import { useMe, useRequireMe } from '@/lib/auth';
 import { useData } from '@/lib/useData';
 import { T } from '@/components/T';
 import { Icon } from '@/components/Icon';
-import { AppBar, Halftone, IconBtn, Pill, PillRow, Screen, SectionRule, rowRule } from '@/components/ui';
+import { AppBar, Halftone, IconBtn, Pill, PillRow, PrimaryBtn, Screen, SectionRule, rowRule } from '@/components/ui';
 
 const FILTERS: [string, string, 'accent' | 'accent2' | undefined][] = [['all', 'Everything', undefined], ['campus', 'On campus', 'accent2'], ['nearby', 'Khaana nearby', 'accent'], ['delhi', 'Delhi events', 'accent'], ['cheap', 'Under ₹100', undefined]];
 const k = (x: number) => (x >= 1000 ? `${(x / 1000).toFixed(1).replace(/\.0$/, '')}k` : String(x));
@@ -15,7 +16,11 @@ export default function Kahan() {
   const me = useMe();
   const requireMe = useRequireMe();
   const [f, setF] = useState('all');
-  const { data, setData, refreshing, refresh } = useData(() => getPlaces(supabase, me?.id ?? null));
+  const [adding, setAdding] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [place, setPlace] = useState({ category: 'nearby', name: '', where: '', price: '' });
+  const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const { data, setData, refreshing, refresh, reload } = useData(() => getPlaces(supabase, me?.id ?? null));
   const keep = <P extends { under_100: boolean; on_campus: boolean }>(xs: P[]) => xs.filter((x) => (f !== 'cheap' || x.under_100) && (f !== 'campus' || x.on_campus));
   const show = (s: string) => f === 'all' || f === 'cheap' || f === s || (f === 'campus' && (s === 'canteen' || s === 'chill'));
 
@@ -26,11 +31,28 @@ export default function Kahan() {
     await toggleHeart(supabase, id).catch(refresh);
   };
 
+  const savePlace = async () => {
+    const viewer = requireMe();
+    if (!viewer) return;
+    if (!place.name.trim()) return Alert.alert('Add a place name first.');
+    setSaving(true);
+    try {
+      const imagePath = photo ? await uploadImage(supabase, viewer.id, await (await fetch(photo.uri)).arrayBuffer(), photo.fileName ?? 'place.jpg', photo.mimeType ?? 'image/jpeg') : null;
+      await recommendPlace(supabase, { userId: viewer.id, category: place.category, name: place.name.trim(), whereLabel: place.where.trim(), priceLabel: place.price.trim(), imagePath });
+      setAdding(false); setPlace({ category: 'nearby', name: '', where: '', price: '' }); setPhoto(null);
+      await reload();
+    } catch (error) { Alert.alert('Could not add place', (error as Error).message); }
+    finally { setSaving(false); }
+  };
+
+  const formInput = { minHeight: 44, paddingHorizontal: 12, backgroundColor: colors.surface, color: colors.text, fontFamily: fonts.regular, fontSize: 15 } as const;
+
   return (
     <Screen>
       <AppBar title="Kahan chalein?" subtitle="Recommended by students" right={<IconBtn name="map-trifold" label="Open map" onPress={() => Linking.openURL('https://www.google.com/maps/search/food+near+Delhi+Technological+University')} />} />
       <PillRow>{FILTERS.map(([key, l, t]) => <Pill key={key} label={l} tone={t ?? 'surface'} active={f === key} onPress={() => setF(key)} />)}</PillRow>
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.accent} />}>
+        <Pressable onPress={() => { if (requireMe()) setAdding(true); }} style={{ alignSelf: 'flex-start', marginHorizontal: 20, marginTop: 16, minHeight: 44, justifyContent: 'center', flexDirection: 'row', alignItems: 'center', gap: 6 }}><Icon name="plus" size={17} color={colors.accent700} /><T size={14} w={600} color={colors.accent700}>Recommend a place</T></Pressable>
         {data && show('canteen') && keep(data.canteen).length > 0 && (
           <View style={{ marginTop: 22 }}>
             <View style={{ paddingHorizontal: 20 }}><SectionRule num="01" title="Canteen favourites" tone="accent2" /></View>
@@ -56,7 +78,7 @@ export default function Kahan() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingHorizontal: 20, paddingTop: 14, paddingBottom: 4 }}>
               {keep(data.nearby).map((p) => (
                 <View key={p.id} style={{ width: 200 }}>
-                  <Halftone height={110} label="photo" />
+                  <Halftone height={110} label={p.name} src={p.image_path} />
                   <T size={16} w={600} style={{ marginTop: 8 }}>{p.short_name ?? p.name}</T>
                   <T size={12.5} color={colors.neutral700}>{[p.distance_km && `${p.distance_km} km`, p.price_label, p.recs ? `${p.recs} recs` : p.tags[0]].filter(Boolean).join(' · ')}</T>
                 </View>
@@ -95,6 +117,19 @@ export default function Kahan() {
           )}
         </View>
       </ScrollView>
+      <Modal visible={adding} transparent animationType="slide" onRequestClose={() => setAdding(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: '#0007' }}>
+          <View style={{ backgroundColor: colors.bg, padding: 20, paddingBottom: 36, gap: 10 }}>
+            <T size={23} w={600}>Recommend a place</T>
+            <View style={{ flexDirection: 'row', gap: 8 }}>{[['canteen', 'Canteen'], ['nearby', 'Nearby'], ['chill', 'Chill spot']].map(([category, label]) => <Pill key={category} label={label} active={place.category === category} onPress={() => setPlace({ ...place, category })} />)}</View>
+            <TextInput value={place.name} onChangeText={(name) => setPlace({ ...place, name })} placeholder="Place name" placeholderTextColor={colors.neutral700} style={formInput} />
+            <TextInput value={place.where} onChangeText={(where) => setPlace({ ...place, where })} placeholder="Where is it?" placeholderTextColor={colors.neutral700} style={formInput} />
+            <TextInput value={place.price} onChangeText={(price) => setPlace({ ...place, price })} placeholder="Price, e.g. ₹60" placeholderTextColor={colors.neutral700} style={formInput} />
+            <Pressable onPress={async () => { const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 }); if (!result.canceled) setPhoto(result.assets[0] ?? null); }} style={{ minHeight: 44, justifyContent: 'center' }}><T size={14} w={600} color={colors.accent700}>{photo ? `Photo: ${photo.fileName ?? 'selected image'}` : '+ Add photo'}</T></Pressable>
+            <View style={{ flexDirection: 'row', gap: 10 }}><PrimaryBtn label="Cancel" secondary onPress={() => setAdding(false)} style={{ flex: 1 }} /><PrimaryBtn label="Add place" onPress={savePlace} disabled={saving} style={{ flex: 1 }} /></View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </Screen>
   );
 }

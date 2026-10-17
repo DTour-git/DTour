@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, View, type ViewStyle } from 'react-native';
 import Svg, { Circle, Defs, Pattern, Rect } from 'react-native-svg';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { colors, initials, tagTone, tint, tone as toneMap, flair, type Tint, type Tone, type TagTone, type SocietyLite } from '@dtour/shared';
@@ -72,10 +73,11 @@ export function CmykNum({ children, size, tracking = -0.04 }: { children: string
 }
 
 /** Striped placeholder with the 3px halftone dot screen. */
-export function Halftone({ height, label, style }: { height: number; label?: string | null; style?: ViewStyle }) {
+export function Halftone({ height, label, src, style }: { height: number; label?: string | null; src?: string | null; style?: ViewStyle }) {
   return (
     <View style={[{ height, overflow: 'hidden', justifyContent: 'flex-end', padding: 8 }, style]}>
-      <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
+      {src ? <Image source={src} style={StyleSheet.absoluteFill} contentFit="cover" accessibilityLabel={label ?? 'Photo'} /> : null}
+      <Svg width="100%" height="100%" style={StyleSheet.absoluteFill} pointerEvents="none">
         <Defs>
           <Pattern id="stripes" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
             <Rect width="8" height="16" fill={colors.neutral200} />
@@ -85,10 +87,10 @@ export function Halftone({ height, label, style }: { height: number; label?: str
             <Circle cx="1.5" cy="1.5" r="0.7" fill="#000" fillOpacity={0.22} />
           </Pattern>
         </Defs>
-        <Rect width="100%" height="100%" fill="url(#stripes)" />
+        {!src && <Rect width="100%" height="100%" fill="url(#stripes)" />}
         <Rect width="100%" height="100%" fill="url(#dots)" />
       </Svg>
-      {label ? <T size={10.5} color={colors.neutral700} style={{ fontFamily: 'Menlo' }}>{label}</T> : null}
+      {!src && label ? <T size={10.5} color={colors.neutral700} style={{ fontFamily: 'Menlo' }}>{label}</T> : null}
     </View>
   );
 }

@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, TextInput, View, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
-import { agoLong, colors, fonts, getProfile, getSaved, n, updateProfile, yearLabel, flair } from '@dtour/shared';
+import { agoLong, colors, fonts, getDrafts, getProfile, getSaved, n, updateProfile, yearLabel, flair } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
 import { useData } from '@/lib/useData';
 import { appRoute } from '@/lib/routes';
+import { registerPush, unregisterPush } from '@/lib/push';
 import { T, Kicker } from './T';
 import { Icon } from './Icon';
 import { AppBar, Avatar, CmykNum, IconBtn, PrimaryBtn, Screen, Tag, rowRule } from './ui';
@@ -18,10 +19,11 @@ export function ProfileView({ handle, isTab }: { handle: string; isTab?: boolean
   const { profile: me, refreshProfile } = useAuth();
   const { data, refreshing, refresh, reload } = useData(async () => {
     const p = await getProfile(supabase, handle);
-    const saved = p && me?.id === p.profile.id ? await getSaved(supabase, p.profile.id) : [];
-    return p && { ...p, saved };
+    const mine = p && me?.id === p.profile.id;
+    const [saved, drafts] = mine ? await Promise.all([getSaved(supabase, p.profile.id), getDrafts(supabase)]) : [[], []];
+    return p && { ...p, saved, drafts };
   }, [handle]);
-  const [tab, setTab] = useState<'activity' | 'threads' | 'saved' | 'library'>('activity');
+  const [tab, setTab] = useState<'activity' | 'threads' | 'saved' | 'library' | 'drafts'>('activity');
   const [editing, setEditing] = useState(false);
   if (!data) return <Screen>{!isTab && <AppBar />}</Screen>;
   const p = data.profile;
@@ -31,7 +33,14 @@ export function ProfileView({ handle, isTab }: { handle: string; isTab?: boolean
 
   const settings = () => Alert.alert('Settings', 'Signed in with your DTU account.', [
     { text: 'Cancel', style: 'cancel' },
-    { text: 'Sign out', style: 'destructive', onPress: () => supabase.auth.signOut() },
+    { text: 'Enable phone alerts', onPress: async () => {
+      try {
+        if (!me) return;
+        const enabled = await registerPush(me.id, true);
+        Alert.alert(enabled ? 'Phone alerts enabled' : 'Permission not granted', enabled ? 'You will receive DTour updates on this device.' : 'You can allow notifications in your phone settings.');
+      } catch (error) { Alert.alert('Could not enable alerts', (error as Error).message); }
+    } },
+    { text: 'Sign out', style: 'destructive', onPress: async () => { await unregisterPush(); await supabase.auth.signOut(); } },
   ]);
 
   return (
@@ -68,13 +77,13 @@ export function ProfileView({ handle, isTab }: { handle: string; isTab?: boolean
           <T size={14} style={{ flex: 1 }} numberOfLines={1}><T size={14} w={600}>Open to teams</T>{p.skills.length ? ` · ${p.skills.slice(0, 3).join(', ')}` : ''}</T>
           <Tag tone={p.open_to_teams ? 'accent' : 'neutral'}>{p.open_to_teams ? 'On' : 'Off'}</Tag>
         </Pressable>
-        <View style={{ flexDirection: 'row', gap: 20, marginTop: 22, borderBottomWidth: 1, borderBottomColor: colors.divider }}>
-          {(['activity', 'threads', ...(mine ? ['saved'] : []), 'library'] as const).map((k) => (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 20, marginTop: 22, borderBottomWidth: 1, borderBottomColor: colors.divider }}>
+          {(['activity', 'threads', ...(mine ? ['saved', 'drafts'] : []), 'library'] as const).map((k) => (
             <Pressable key={k} onPress={() => setTab(k as typeof tab)} style={{ paddingBottom: 8, marginBottom: -1, borderBottomWidth: 2, borderBottomColor: tab === k ? colors.accent : 'transparent', minHeight: 32 }}>
               <T size={14.5} w={600} color={tab === k ? colors.text : colors.neutral700}>{k[0].toUpperCase() + k.slice(1)}</T>
             </Pressable>
           ))}
-        </View>
+        </ScrollView>
         {tab === 'activity' && data.activities.map((a) => (
           <Pressable key={a.id} onPress={() => router.push(appRoute(a.route))} style={[{ flexDirection: 'row', gap: 12, paddingVertical: 14 }, rowRule]}>
             <Icon name={ACT_ICON[a.kind] ?? 'chat-circle'} size={20} color={colors.accent} />
@@ -95,6 +104,12 @@ export function ProfileView({ handle, isTab }: { handle: string; isTab?: boolean
           <Pressable key={u.id} onPress={() => router.push(`/library/${u.subject_code}`)} style={[{ flexDirection: 'row', gap: 12, paddingVertical: 14 }, rowRule]}>
             <Icon name={u.kind === 'pyq' ? 'file-pdf' : 'file-text'} size={20} color={colors.accent} />
             <View style={{ flex: 1 }}><T size={16} w={600} lh={1.3}>{u.title}</T><T size={12.5} color={colors.neutral700}>{u.subject_code} · {n(u.downloads)} downloads</T></View>
+          </Pressable>
+        ))}
+        {tab === 'drafts' && data.drafts.map((draft) => (
+          <Pressable key={draft.id} onPress={() => router.push({ pathname: '/new', params: { draft: draft.id } })} style={[{ paddingVertical: 14 }, rowRule]}>
+            <T size={16} w={600}>{draft.title || 'Untitled draft'}</T>
+            <T size={12.5} color={colors.neutral700}>{draft.kind} · saved {agoLong(draft.updated_at)}</T>
           </Pressable>
         ))}
       </ScrollView>

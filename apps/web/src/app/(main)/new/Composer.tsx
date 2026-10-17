@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   createSocietyPost, createTeam, createThread, createWikiArticle, flair, saveDraft, similarThreads, uploadImage, uploadLibraryItem,
-  type PostType, type ProfileRow, type SocietyLite, type Tone,
+  type Database, type PostType, type ProfileRow, type SocietyLite, type Tone,
 } from '@dtour/shared';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Icon } from '@/components/Icon';
@@ -20,11 +20,17 @@ const TYPES: [PostType, string, string, string][] = [
   ['poll', 'Poll', 'chart-bar-horizontal', 'Let campus vote'], ['event', 'Society post', 'megaphone', 'Events, recruiting, talks'],
 ];
 const TONE_SQ: Record<Tone, string> = { accent: 'var(--color-accent)', accent2: 'var(--color-accent-2)', ink: 'var(--color-text)' };
+const FORMATS: [string, string, string, string][] = [
+  ['text-b', '**', '**', 'bold'], ['text-italic', '*', '*', 'italic'], ['link', '[', '](https://)', 'link'],
+  ['quotes', '\n> ', '', 'quote'], ['code', '`', '`', 'code'], ['list-bullets', '\n- ', '', 'item'], ['function', '$', '$', 'x^2'],
+];
 const Label = ({ children }: { children: React.ReactNode }) => <div className="label-caps">{children}</div>;
 
-export function Composer({ me, boards, societies, subjects, initialType, initialBoard, initialTitle }: {
+type Draft = Database['public']['Tables']['drafts']['Row'];
+
+export function Composer({ me, boards, societies, subjects, initialType, initialBoard, initialTitle, initialDraft }: {
   me: ProfileRow; boards: Board[]; societies: SocietyLite[]; subjects: { code: string; name: string }[];
-  initialType?: string; initialBoard?: string; initialTitle?: string;
+  initialType?: string; initialBoard?: string; initialTitle?: string; initialDraft?: Draft | null;
 }) {
   const { toast } = useShell();
   const router = useRouter();
@@ -33,31 +39,33 @@ export function Composer({ me, boards, societies, subjects, initialType, initial
   const imgRef = useRef<HTMLInputElement>(null);
   const postable = boards.filter((b) => !b.verified_only || societies.length > 0);
   const defBoard = postable.find((b) => b.slug === initialBoard) ?? postable.find((b) => b.slug === `academics-${(me.branch_code ?? '').toLowerCase()}`) ?? postable.find((b) => b.slug === 'campus-buzz') ?? postable[0];
+  const saved = initialDraft?.payload && typeof initialDraft.payload === 'object' && !Array.isArray(initialDraft.payload) ? initialDraft.payload as Record<string, unknown> : {};
 
-  const [type, setType] = useState<PostType>((TYPES.find(([k]) => k === initialType)?.[0]) ?? 'thread');
-  const [boardId, setBoardId] = useState(defBoard?.id ?? '');
+  const [type, setType] = useState<PostType>((TYPES.find(([k]) => k === (initialDraft?.kind ?? initialType))?.[0]) ?? 'thread');
+  const [boardId, setBoardId] = useState(initialDraft?.board_id ?? defBoard?.id ?? '');
   const [picking, setPicking] = useState(false);
   const [pickQ, setPickQ] = useState('');
-  const [asSociety, setAsSociety] = useState<SocietyLite | null>(null);
-  const [title, setTitle] = useState(initialTitle ?? '');
-  const [text, setText] = useState('');
-  const [tags, setTags] = useState<string[]>([]);
+  const [selectedSociety, setAsSociety] = useState<SocietyLite | null>(societies.find((s) => s.id === saved.societyId) ?? null);
+  const [title, setTitle] = useState(initialDraft?.title ?? initialTitle ?? '');
+  const [text, setText] = useState(initialDraft?.body ?? '');
+  const [tags, setTags] = useState<string[]>(Array.isArray(saved.tags) ? saved.tags as string[] : []);
   const [tagDraft, setTagDraft] = useState('');
   const [preview, setPreview] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  const [cover, setCover] = useState<File | null>(null);
+  const [poster, setPoster] = useState<File | null>(null);
   const [fileSubject, setFileSubject] = useState('');
-  const [pollOpts, setPollOpts] = useState(['', '']);
-  const [pollDays, setPollDays] = useState(3);
-  const [team, setTeam] = useState({ event: '', closes: '', category: 'hackathon', roles: [] as { name: string; filled: boolean }[], roleDraft: '' });
-  const [ev, setEv] = useState({ kind: 'event', when: '', where: '' });
+  const [fileKind, setFileKind] = useState<'notes' | 'pyq' | 'lab' | 'slides'>('notes');
+  const [pollOpts, setPollOpts] = useState<string[]>(Array.isArray(saved.pollOpts) ? saved.pollOpts as string[] : ['', '']);
+  const [pollDays, setPollDays] = useState(typeof saved.pollDays === 'number' ? saved.pollDays : 3);
+  const [notifyReplies, setNotifyReplies] = useState(saved.notifyReplies !== false);
+  const [team, setTeam] = useState({ event: '', closes: '', category: 'hackathon', roles: [] as { name: string; filled: boolean }[], roleDraft: '', ...(saved.team && typeof saved.team === 'object' ? saved.team as object : {}) });
+  const [ev, setEv] = useState({ kind: 'event', when: '', where: '', starts: '', applyUrl: '', ...(saved.ev && typeof saved.ev === 'object' ? saved.ev as object : {}) });
   const [similar, setSimilar] = useState<{ title: string; sub: string; route: string }[]>([]);
-  const [draftId, setDraftId] = useState<string | undefined>();
+  const [draftId, setDraftId] = useState<string | undefined>(initialDraft?.id);
   const [busy, setBusy] = useState(false);
+  const asSociety = selectedSociety ?? (type === 'event' ? societies[0] ?? null : null);
   const board = boards.find((b) => b.id === boardId);
-
-  useEffect(() => {
-    if (type === 'event' && !asSociety && societies[0]) setAsSociety(societies[0]);
-  }, [type, asSociety, societies]);
 
   useEffect(() => {
     const t = setTimeout(async () => setSimilar(title.trim().length > 3 ? await similarThreads(supabaseBrowser(), title) : []), 250);
@@ -93,35 +101,48 @@ export function Composer({ me, boards, societies, subjects, initialType, initial
     const sb = supabaseBrowser();
     setBusy(true);
     try {
+      const discardDraft = async () => { if (draftId) await sb.from('drafts').delete().eq('id', draftId).eq('user_id', me.id); };
       if (type === 'article') {
-        const slug = await createWikiArticle(sb, { userId: me.id, title, body: text, boardId: boardId || null });
+        const coverPath = cover ? await uploadImage(sb, me.id, cover, cover.name, cover.type) : null;
+        const slug = await createWikiArticle(sb, { userId: me.id, title, body: text, boardId: boardId || null, coverPath });
+        await discardDraft();
         toast(me.role === 'member' ? 'Sent to the moderators — your guide goes live once approved.' : 'Published.');
         router.push(`/wiki/${slug}`); return;
       }
       if (type === 'team') {
         if (!team.event.trim()) throw new Error('Name the event or hackathon.');
         await createTeam(sb, { userId: me.id, category: team.category, eventName: team.event, title, description: text, deadlineOn: team.closes || null, roles: team.roles });
+        await discardDraft();
         router.push('/teams'); return;
       }
       if (type === 'event') {
         if (!asSociety) throw new Error('Only verified society accounts can post to the Society board.');
-        await createSocietyPost(sb, { userId: me.id, societyId: asSociety.id, kind: ev.kind, title, body: text, whenLabel: ev.when || 'soon', whereLabel: ev.where });
+        if (ev.starts && Number.isNaN(Date.parse(ev.starts))) throw new Error('Enter a valid start date and time.');
+        const posterPath = poster ? await uploadImage(sb, me.id, poster, poster.name, poster.type) : null;
+        await createSocietyPost(sb, { userId: me.id, societyId: asSociety.id, kind: ev.kind, title, body: text, whenLabel: ev.when || 'soon', whereLabel: ev.where, startsAt: ev.starts ? new Date(ev.starts).toISOString() : null, applyUrl: ev.applyUrl, posterPath });
+        await discardDraft();
         router.push('/societies'); return;
       }
       if (!boardId) throw new Error('Pick a board.');
+      if (type === 'poll' && pollOpts.filter((option) => option.trim()).length < 2) throw new Error('Add at least two poll options.');
+      if (file && !fileSubject) throw new Error('Pick a Library subject for the attachment.');
       const kind = type === 'poll' ? 'poll' : type === 'question' ? 'question' : 'thread';
-      const id = await createThread(sb, { userId: me.id, boardId, kind, title, body: text, tags, pollOptions: pollOpts.map((o) => o.trim()).filter(Boolean), pollDays, societyId: asSociety?.id ?? null });
+      const id = await createThread(sb, { userId: me.id, boardId, kind, title, body: text, tags: [...tags, tagDraft.trim().replace(/^#/, '')].filter(Boolean), pollOptions: pollOpts.map((o) => o.trim()).filter(Boolean), pollDays, societyId: asSociety?.id ?? null, notifyOnReply: notifyReplies });
       if (file && fileSubject) {
-        const itemId = await uploadLibraryItem(sb, { userId: me.id, subjectCode: fileSubject, kind: 'notes', title: file.name.replace(/\.[^.]+$/, ''), file, fileName: file.name, contentType: file.type || 'application/octet-stream', size: file.size });
-        await sb.from('threads').update({ attachment: { name: file.name, size: `${(file.size / 1048576).toFixed(1)} MB`, subject: fileSubject, library_item_id: itemId } }).eq('id', id);
+        try {
+          const itemId = await uploadLibraryItem(sb, { userId: me.id, subjectCode: fileSubject, kind: fileKind, title: file.name.replace(/\.[^.]+$/, ''), file, fileName: file.name, contentType: file.type || 'application/octet-stream', size: file.size });
+          const { error } = await sb.from('threads').update({ attachment: { name: file.name, size: `${(file.size / 1048576).toFixed(1)} MB`, subject: fileSubject, library_item_id: itemId } }).eq('id', id);
+          if (error) throw error;
+        } catch (error) { toast(`Post published, but the attachment failed: ${(error as Error).message}`); }
       }
+      await discardDraft();
       router.push(`/t/${id}`);
     } catch (e) { toast((e as Error).message); setBusy(false); }
   };
 
   const save = async () => {
     try {
-      setDraftId(await saveDraft(supabaseBrowser(), { id: draftId, userId: me.id, kind: type, boardId: boardId || null, title, body: text, payload: { tags, pollOpts, team, ev } }));
+      setDraftId(await saveDraft(supabaseBrowser(), { id: draftId, userId: me.id, kind: type, boardId: boardId || null, title, body: text, payload: { tags, pollOpts, pollDays, notifyReplies, team, ev, societyId: asSociety?.id ?? null } }));
       toast('Draft saved.');
     } catch (e) { toast((e as Error).message); }
   };
@@ -187,9 +208,10 @@ export function Composer({ me, boards, societies, subjects, initialType, initial
               {asSociety ? <Avatar society={asSociety} size={28} /> : <Avatar person={me} size={28} />}
               <span style={{ font: '600 15px var(--font-heading)' }}>{asSociety ? asSociety.name : `@${me.handle}`}</span>
               {!asSociety && flair(me.branch_code, me.grad_year) && <Tag>{flair(me.branch_code, me.grad_year)}</Tag>}
-              {societies.length > 0 && (
-                <button onClick={() => setAsSociety(asSociety ? (type === 'event' ? asSociety : null) : societies[0])} style={{ marginLeft: 'auto', fontSize: 13.5, fontWeight: 600, color: 'var(--color-accent-700)', background: 'none', border: 0, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>Change</button>
-              )}
+              {societies.length > 0 && <select aria-label="Posting account" value={asSociety?.id ?? ''} onChange={(e) => setAsSociety(societies.find((s) => s.id === e.target.value) ?? null)} style={{ marginLeft: 'auto', maxWidth: 160, fontSize: 13, border: 0, background: 'transparent', color: 'var(--color-accent-700)', fontFamily: 'var(--font-body)' }}>
+                {type !== 'event' && <option value="">Personal</option>}
+                {societies.map((society) => <option key={society.id} value={society.id}>{society.name}</option>)}
+              </select>}
             </div>
             <div style={{ fontSize: 12.5, color: 'var(--color-neutral-700)', marginTop: 8 }}>{asSociety ? 'Posts as the verified society, with its badge.' : 'Your branch and year flair show on the post.'}</div>
           </div>
@@ -205,12 +227,12 @@ export function Composer({ me, boards, societies, subjects, initialType, initial
         <div style={{ marginTop: 28 }}>
           <Label>Body</Label>
           <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: 6, background: 'var(--color-surface)', borderRadius: '2px 2px 0 0', borderBottom: '1px solid var(--color-divider)', flexWrap: 'wrap' }}>
-            {([['text-b', () => wrap('**', '**', 'bold')], ['text-italic', () => wrap('*', '*', 'italic')], ['link', () => wrap('[', '](https://)', 'link')], ['quotes', () => wrap('\n> ', '', 'quote')], ['code', () => wrap('`', '`', 'code')], ['list-bullets', () => wrap('\n- ', '', 'item')], ['function', () => wrap('$', '$', 'x^2')]] as [string, () => void][]).map(([ic, fn]) => (
-              <button key={ic} className="btn btn-icon" onClick={fn} aria-label={ic}><Icon name={ic} size={18} /></button>
+            {FORMATS.map(([ic, before, after, placeholder]) => (
+              <button key={ic} className="btn btn-icon" onClick={() => wrap(before, after, placeholder)} aria-label={ic}><Icon name={ic} size={18} /></button>
             ))}
             <span style={{ width: 1, height: 22, background: 'var(--color-divider)', margin: '0 6px' }} />
             <button className="btn btn-icon" onClick={() => imgRef.current?.click()} aria-label="Insert image"><Icon name="image" size={18} /></button>
-            <button className="btn btn-icon" onClick={() => fileRef.current?.click()} aria-label="Attach"><Icon name="paperclip" size={18} /></button>
+            {(type === 'thread' || type === 'question' || type === 'poll') && <button className="btn btn-icon" onClick={() => fileRef.current?.click()} aria-label="Attach"><Icon name="paperclip" size={18} /></button>}
             <span className="hide-mobile" style={{ marginLeft: 'auto', fontSize: 12.5, color: 'var(--color-neutral-700)', paddingRight: 8 }}>Markdown + LaTeX supported</span>
           </div>
           {preview
@@ -225,7 +247,7 @@ export function Composer({ me, boards, societies, subjects, initialType, initial
             try { const url = await uploadImage(supabaseBrowser(), me.id, f, f.name, f.type); setText((t) => `${t}${t && !t.endsWith('\n') ? '\n\n' : ''}![${f.name.replace(/\.[^.]+$/, '')}](${url})\n`); }
             catch (err) { toast((err as Error).message); }
           }} />
-          <div onClick={() => fileRef.current?.click()} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); setFile(e.dataTransfer.files[0] ?? null); }}
+          {(type === 'thread' || type === 'question' || type === 'poll') && <><div onClick={() => fileRef.current?.click()} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); setFile(e.dataTransfer.files[0] ?? null); }}
             style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10, padding: '12px 14px', border: '1px dashed var(--color-neutral-400)', borderRadius: 2, fontSize: 14, color: 'var(--color-neutral-700)', cursor: 'pointer', flexWrap: 'wrap' }}>
             <Icon name="upload-simple" size={20} color="var(--color-accent)" />
             {file ? <>{file.name} · file it under
@@ -234,6 +256,13 @@ export function Composer({ me, boards, societies, subjects, initialType, initial
               </select></>
               : <>Drop PDFs, notes or images · files also get filed in the <Link href="/library" onClick={(e) => e.stopPropagation()}>Library</Link> under this subject</>}
           </div>
+          {file && <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, fontSize: 13 }}>
+            <label htmlFor="attachment-kind">File type</label>
+            <select id="attachment-kind" className="input" value={fileKind} onChange={(e) => setFileKind(e.target.value as typeof fileKind)} style={{ width: 'auto', height: 32 }}>
+              <option value="notes">Notes</option><option value="pyq">PYQ</option><option value="lab">Lab</option><option value="slides">Slides</option>
+            </select>
+            <button className="btn btn-ghost" onClick={() => setFile(null)}>Remove</button>
+          </div>}</>}
         </div>
 
         {type === 'poll' && (
@@ -275,6 +304,9 @@ export function Composer({ me, boards, societies, subjects, initialType, initial
             <div><Label>Kind</Label><div className="seg">{[['event', 'Event'], ['recruiting', 'Recruiting'], ['workshop', 'Workshop'], ['talk', 'Talk']].map(([k, l]) => <label key={k} className="seg-opt"><input type="radio" name="ek" checked={ev.kind === k} onChange={() => setEv({ ...ev, kind: k })} />{l}</label>)}</div></div>
             <div><Label>When</Label><input className="input" placeholder="Fri 23 Oct · 5:00 pm" value={ev.when} onChange={(e) => setEv({ ...ev, when: e.target.value })} /></div>
             <div><Label>Where</Label><input className="input" placeholder="SPS-12" value={ev.where} onChange={(e) => setEv({ ...ev, where: e.target.value })} /></div>
+            {ev.kind !== 'recruiting' && <div style={{ gridColumn: '1 / -1' }}><Label>Start date and time (for reminders)</Label><input className="input" type="datetime-local" value={ev.starts} onChange={(e) => setEv({ ...ev, starts: e.target.value })} /></div>}
+            {ev.kind === 'recruiting' && <div style={{ gridColumn: '1 / -1' }}><Label>Application link</Label><input className="input" type="url" placeholder="https://…" value={ev.applyUrl} onChange={(e) => setEv({ ...ev, applyUrl: e.target.value })} /></div>}
+            <div style={{ gridColumn: '1 / -1' }}><Label>Poster image</Label><input type="file" accept="image/*" onChange={(e) => setPoster(e.target.files?.[0] ?? null)} />{poster && <div style={{ marginTop: 5, fontSize: 13 }}>{poster.name}</div>}</div>
             <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--color-neutral-800)' }}>
               <Icon name="seal-check" size={20} color="var(--color-accent)" />
               {societies.length ? <>Posting as a verified society shows the badge and lists this on the <Link href="/societies">Society board</Link> and the Today timeline.</> : <>Only verified society accounts can post here. Ask your society’s admin to add you.</>}
@@ -289,6 +321,7 @@ export function Composer({ me, boards, societies, subjects, initialType, initial
             </div>
           </div>
         )}
+        {type === 'article' && <div style={{ marginTop: 16 }}><Label>Cover image</Label><input type="file" accept="image/*" onChange={(e) => setCover(e.target.files?.[0] ?? null)} />{cover && <div style={{ marginTop: 5, fontSize: 13 }}>{cover.name}</div>}</div>}
 
         {(type === 'thread' || type === 'question' || type === 'poll') && (
           <div style={{ marginTop: 28 }}>
@@ -302,7 +335,7 @@ export function Composer({ me, boards, societies, subjects, initialType, initial
         )}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 34, paddingTop: 20, borderTop: '1px solid var(--color-divider)', flexWrap: 'wrap' }}>
-          <label className="radio"><input type="checkbox" defaultChecked /><span className="dot" />Notify me about replies</label>
+          {(type === 'thread' || type === 'question' || type === 'poll') && <label className="radio"><input type="checkbox" checked={notifyReplies} onChange={(e) => setNotifyReplies(e.target.checked)} /><span className="dot" />Notify me about replies</label>}
           <button className="btn btn-ghost" style={{ marginLeft: 'auto' }} onClick={save}>Save draft</button>
           <button className="btn btn-secondary" onClick={() => setPreview(!preview)}><Icon name="eye" size={17} />{preview ? 'Edit' : 'Preview'}</button>
           <button className="btn btn-primary" disabled={busy} onClick={submit}><Icon name="paper-plane-tilt" size={17} />Post</button>

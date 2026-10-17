@@ -163,7 +163,7 @@ export async function getToday(sb: DB, tab: FeedTab = 'hot', branch: string | nu
     sb.from('threads').select(THREAD_SELECT).eq('kind', 'news').order('created_at', { ascending: false }).limit(1).maybeSingle(),
     getTimeline(sb),
     listThreads(sb, { tab, excludeNews: true, limit: 1, branch }),
-    sb.from('wiki_articles').select('id,slug,title,editor_count,checked_at,cover_label').eq('status', 'published').order('views_week', { ascending: false }).limit(1).maybeSingle(),
+    sb.from('wiki_articles').select('id,slug,title,editor_count,checked_at,cover_label,cover_path').eq('status', 'published').order('views_week', { ascending: false }).limit(1).maybeSingle(),
     getDesks(sb),
     sb.from('teams').select('id,title,short_title,deadline_on,deadline_label,urgent,team_roles(name,filled,sort)').order('deadline_on', { nullsFirst: false }).limit(2),
     sb.from('teams').select('id', { count: 'exact', head: true }),
@@ -387,12 +387,12 @@ export async function similarThreads(sb: DB, title: string, limit = 3) {
 
 export interface NewThreadInput {
   userId: string; boardId: string; kind: 'thread' | 'question' | 'poll'; title: string; body: string;
-  tags: string[]; pollOptions?: string[]; pollDays?: number; societyId?: string | null;
+  tags: string[]; pollOptions?: string[]; pollDays?: number; societyId?: string | null; notifyOnReply?: boolean;
 }
 export async function createThread(sb: DB, i: NewThreadInput) {
   const row = must(await sb.from('threads').insert({
     board_id: i.boardId, author_id: i.userId, kind: i.kind, title: i.title.trim(), body: i.body,
-    tags: i.tags, society_id: i.societyId ?? null,
+    tags: i.tags, society_id: i.societyId ?? null, notify_on_reply: i.notifyOnReply ?? true,
     poll_closes_at: i.kind === 'poll' ? new Date(Date.now() + (i.pollDays ?? 3) * 864e5).toISOString() : null,
   }).select('id').single());
   if (i.kind === 'poll' && i.pollOptions?.length) {
@@ -406,13 +406,13 @@ export async function isModerator(sb: DB) {
 }
 
 /** New guides go to the moderation queue (moderators publish directly). Returns the slug. */
-export async function createWikiArticle(sb: DB, i: { userId: string; title: string; body: string; dek?: string; categoryId?: number | null; boardId?: string | null }) {
+export async function createWikiArticle(sb: DB, i: { userId: string; title: string; body: string; dek?: string; categoryId?: number | null; boardId?: string | null; coverPath?: string | null }) {
   const mod = await isModerator(sb);
   const base = i.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
   const slug = `${base}-${Math.random().toString(36).slice(2, 6)}`;
   const words = i.body.split(/\s+/).filter(Boolean).length;
   const row = must(await sb.from('wiki_articles').insert({
-    slug, title: i.title.trim(), body: i.body, dek: i.dek ?? null, category_id: i.categoryId ?? null,
+    slug, title: i.title.trim(), body: i.body, dek: i.dek ?? null, cover_path: i.coverPath ?? null, category_id: i.categoryId ?? null,
     board_id: i.boardId ?? null, started_by: i.userId, read_minutes: Math.max(1, Math.round(words / 220)),
     status: mod ? 'published' : 'pending',
   }).select('id,slug').single());
@@ -430,10 +430,12 @@ export async function createTeam(sb: DB, i: { userId: string; category: string; 
   return row.id;
 }
 
-export async function createSocietyPost(sb: DB, i: { userId: string; societyId: string; kind: string; title: string; body: string; whenLabel: string; whereLabel: string; startsAt?: string | null }) {
+export async function createSocietyPost(sb: DB, i: { userId: string; societyId: string; kind: string; title: string; body: string; whenLabel: string; whereLabel: string; startsAt?: string | null; applyUrl?: string | null; posterPath?: string | null }) {
+  const applyUrl = i.applyUrl?.trim() || null;
+  if (applyUrl && !/^https?:\/\//i.test(applyUrl)) throw new Error('Application link must start with https:// or http://.');
   return must(await sb.from('society_posts').insert({
     society_id: i.societyId, author_id: i.userId, kind: i.kind, title: i.title, body: i.body,
-    when_label: i.whenLabel, short_when: i.whenLabel, where_label: i.whereLabel || null, starts_at: i.startsAt ?? null,
+    when_label: i.whenLabel, short_when: i.whenLabel, where_label: i.whereLabel || null, starts_at: i.startsAt ?? null, apply_url: applyUrl, poster_path: i.posterPath ?? null,
   }).select('id').single()).id;
 }
 
@@ -472,7 +474,7 @@ export async function boardPicker(sb: DB) {
 export async function getWikiIndex(sb: DB) {
   const [cats, arts, editors] = await Promise.all([
     sb.from('wiki_categories').select('*').order('id'),
-    sb.from('wiki_articles').select('id,slug,title,category_id,editor_count,read_minutes,checked_at,cover_label,views_week').eq('status', 'published').order('views_week', { ascending: false }),
+    sb.from('wiki_articles').select('id,slug,title,category_id,editor_count,read_minutes,checked_at,cover_label,cover_path,views_week').eq('status', 'published').order('views_week', { ascending: false }),
     sb.from('wiki_revisions').select('editor_id'),
   ]);
   const articles = must(arts);
@@ -573,6 +575,8 @@ export const NOTIFICATION_ICON: Record<string, string> = {
 // ── Images ────────────────────────────────────────────────────────────────
 /** Upload an image to the public media bucket; returns its URL for ![](…) markdown. */
 export async function uploadImage(sb: DB, userId: string, file: Blob | ArrayBuffer, fileName: string, contentType: string) {
+  if (!contentType.startsWith('image/')) throw new Error('Choose an image file.');
+  if ((file instanceof ArrayBuffer ? file.byteLength : file.size) > 10 * 1048576) throw new Error('Images can be up to 10 MB.');
   const ext = (fileName.split('.').pop() ?? 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
   const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
   const up = await sb.storage.from('media').upload(path, file, { contentType, upsert: false });
@@ -728,8 +732,8 @@ export async function toggleHeart(sb: DB, placeId: number) {
   return must(await sb.rpc('toggle_heart', { p_place: placeId }));
 }
 
-export async function recommendPlace(sb: DB, i: { userId: string; category: string; name: string; whereLabel: string; priceLabel: string; distanceKm?: number | null }) {
-  must(await sb.from('places').insert({ author_id: i.userId, category: i.category, name: i.name, where_label: i.whereLabel, price_label: i.priceLabel, distance_km: i.distanceKm ?? null, sort: 50 }));
+export async function recommendPlace(sb: DB, i: { userId: string; category: string; name: string; whereLabel: string; priceLabel: string; distanceKm?: number | null; imagePath?: string | null }) {
+  must(await sb.from('places').insert({ author_id: i.userId, category: i.category, name: i.name, where_label: i.whereLabel, price_label: i.priceLabel, distance_km: i.distanceKm ?? null, image_path: i.imagePath ?? null, sort: 50 }));
 }
 
 // ── Profile ───────────────────────────────────────────────────────────────

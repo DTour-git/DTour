@@ -52,7 +52,7 @@ export default async function WikiIndex({ searchParams }: { searchParams: Promis
         <aside style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
           {d.mostRead && (
             <Link href={`/wiki/${d.mostRead.slug}`} className="title-link">
-              <Halftone height={150} label={d.mostRead.cover_label} />
+              <Halftone height={150} label={d.mostRead.cover_label} src={d.mostRead.cover_path} />
               <div className="kicker" style={{ color: 'var(--color-accent-2-700)', marginTop: 12 }}>Most read this week</div>
               <div style={{ font: '600 23px/1.15 var(--font-heading)', marginTop: 6 }}>{d.mostRead.title}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--color-neutral-700)', marginTop: 6 }}>

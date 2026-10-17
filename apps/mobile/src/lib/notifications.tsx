@@ -1,10 +1,29 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { Platform } from 'react-native';
+import { useRouter } from 'expo-router';
+import * as Notifications from 'expo-notifications';
 import { unreadNotificationCount } from '@dtour/shared';
 import { supabase } from './supabase';
 import { useAuth } from './auth';
+import { appRoute } from './routes';
+import { registerPush } from './push';
 
 const Ctx = createContext<{ unread: number; setUnread: (n: number) => void; version: number }>({ unread: 0, setUnread: () => {}, version: 0 });
 export const useNotifications = () => useContext(Ctx);
+
+function PushResponseListener() {
+  const router = useRouter();
+  const lastResponse = Notifications.useLastNotificationResponse();
+  useEffect(() => {
+    if (!lastResponse || lastResponse.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) return;
+    const route = lastResponse.notification.request.content.data?.route;
+    if (typeof route === 'string') {
+      Notifications.clearLastNotificationResponse();
+      router.push(appRoute(route));
+    }
+  }, [lastResponse, router]);
+  return null;
+}
 
 /** Live unread count (realtime on the user's own notification rows). */
 export function NotificationsProvider({ children }: { children: ReactNode }) {
@@ -25,5 +44,15 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     })();
     return () => { if (ch) supabase.removeChannel(ch); };
   }, [profile?.id, session?.access_token]); // eslint-disable-line react-hooks/exhaustive-deps
-  return <Ctx.Provider value={{ unread: profile ? unread : 0, setUnread, version }}>{children}</Ctx.Provider>;
+
+  useEffect(() => {
+    if (!profile || !session) return;
+    // Previously granted permission is enough to refresh the token silently.
+    registerPush(profile.id).catch(() => {});
+  }, [profile, session]);
+
+  return <Ctx.Provider value={{ unread: profile ? unread : 0, setUnread, version }}>
+    {profile && Platform.OS !== 'web' && <PushResponseListener />}
+    {children}
+  </Ctx.Provider>;
 }
