@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="_ds/broadsheet-ecafd855-9c12-463d-94f1-fdd38a6e629f/styles.css"><script src="_ds/broadsheet-ecafd855-9c12-463d-94f1-fdd38a6e629f/_ds_bundle.js"></script><link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/duotone/style.css"><style>body{margin:0;background:var(--color-bg)}a{color:var(--color-accent-700);text-decoration:none;cursor:pointer}a:hover{color:var(--color-accent-800)}</style></helmet>
+<div style="max-width:1280px;margin:0 auto;font-family:var(--font-body);color:var(--color-text);padding-bottom:80px">
+
+<sc-if value="{{ is.home }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 24px;padding:14px 48px 0;font-size:13px;color:var(--color-neutral-700)"><span>Vol. 1 · No. 214</span><span>Saturday, 17 October 2026</span><span>Bawana Road, Delhi</span><span style="margin-left:auto;display:flex;align-items:center;gap:6px"><i class="ph-duotone ph-users-three" style="font-size:16px;color:var(--color-accent)"></i>412 in the Lounge</span></div>
+</sc-if>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:16px 32px;padding:18px 48px 18px">
+<a onClick="{{ go.home }}" style="display:flex;align-items:center;gap:14px;color:var(--color-text)"><div style="position:relative;width:40px;height:38px"><span style="position:absolute;left:0;top:0;width:34px;height:34px;border-radius:50% 50% 50% 0;background:var(--color-accent);mix-blend-mode:multiply"></span><span style="position:absolute;left:4px;top:3px;width:34px;height:34px;border-radius:50% 50% 50% 0;background:var(--color-accent-2);mix-blend-mode:multiply"></span></div><span style="font:600 48px/0.9 var(--font-heading);letter-spacing:-.035em">DTour</span></a>
+<span style="font:italic 400 18px/1.3 var(--font-body);color:var(--color-neutral-700)">The campus, all in one place.</span>
+<div style="margin-left:auto;display:flex;align-items:center;gap:12px">
+<div onClick="{{ openSearch }}" style="cursor:text;display:flex;align-items:center;gap:8px;width:280px;height:40px;padding:0 8px 0 12px;background:var(--color-surface);border-radius:2px;color:var(--color-neutral-700);font-size:14px"><i class="ph-duotone ph-magnifying-glass" style="font-size:18px"></i>Search anything<span style="margin-left:auto;display:flex;gap:4px"><span style="font-size:12px;padding:1px 7px;border:1px solid var(--color-divider);border-radius:2px;background:var(--color-bg)">/</span></span></div>
+<button class="btn btn-primary" onClick="{{ go.post }}" style="height:40px"><i class="ph-duotone ph-pencil-simple-line" style="font-size:17px"></i>Post</button>
+<i class="ph-duotone ph-bell" style="font-size:24px;width:40px;display:flex;justify-content:center"></i>
+<span onClick="{{ go.profile }}" style="cursor:pointer;width:36px;height:36px;border-radius:50%;background:var(--color-accent-200);color:var(--color-accent-800);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px">AK</span>
+</div></div>
+<div class="nav" style="margin:0 48px;border-top:3px solid var(--color-text);border-bottom:1px solid var(--color-text);padding:10px 0;gap:28px;flex-wrap:wrap">
+<a onClick="{{ go.home }}" aria-current="{{ cur.home }}" style="font:600 15px var(--font-heading)">Today</a>
+<a onClick="{{ go.boards }}" aria-current="{{ cur.boards }}" style="font:600 15px var(--font-heading)">Boards</a>
+<a onClick="{{ go.article }}" aria-current="{{ cur.article }}" style="font:600 15px var(--font-heading)">Articles</a>
+<a onClick="{{ go.library }}" aria-current="{{ cur.library }}" style="font:600 15px var(--font-heading)">Library</a>
+<a onClick="{{ go.societies }}" aria-current="{{ cur.societies }}" style="font:600 15px var(--font-heading)">Societies</a>
+<a onClick="{{ go.teams }}" aria-current="{{ cur.teams }}" style="font:600 15px var(--font-heading)">Team Up</a>
+<a onClick="{{ go.kahan }}" aria-current="{{ cur.kahan }}" style="font:600 15px var(--font-heading)">Kahan chalein?</a>
+<span style="margin-left:auto;display:flex;align-items:center;gap:8px;font-size:14px;color:var(--color-neutral-800)"><i class="ph-duotone ph-hourglass-medium" style="font-size:18px;color:var(--color-accent-2)"></i>End-sems in <b style="color:var(--color-accent-2-700)">19 days</b><span style="color:var(--color-neutral-500)">·</span><a onClick="{{ go.library }}" style="font-weight:600">Your sem 3 notes →</a></span>
+</div>
+
+<sc-if value="{{ is.home }}" hint-placeholder-val="{{ true }}">
+<div style="display:grid;grid-template-columns:minmax(0,7fr) minmax(0,4fr);gap:56px;padding:36px 48px 0">
+<div>
+<div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-2-700);font-weight:600">Pata hai aaj kya hua? · 2:05 pm</div>
+<h1 style="font-size:46px;line-height:1.06;margin:12px 0 14px;text-wrap:balance">Engifest passes move to SPS-10, and the library goes 24×7 for end-sems</h1>
+<p style="font:italic 400 19px/1.45 var(--font-body);color:var(--color-neutral-800);max-width:620px;margin:0 0 20px">Bring your college ID. Distribution runs till 6 pm or until passes run out — whichever comes first, knowing us.</p>
+<div class="halftone" style="height:280px;background:repeating-linear-gradient(135deg,var(--color-neutral-200) 0 9px,var(--color-neutral-300) 9px 18px);display:flex;align-items:flex-end;padding:14px"><span style="font:12px ui-monospace,Menlo,monospace;color:var(--color-neutral-700);position:relative;z-index:1">photo: queue outside SPS</span></div>
+<div style="display:flex;align-items:center;gap:16px;margin-top:12px;font-size:13px;color:var(--color-neutral-700)"><span>Posted by <b style="color:var(--color-text)">@council_dtu</b> <i class="ph-duotone ph-seal-check" style="color:var(--color-accent);font-size:15px;vertical-align:-2px"></i></span><span>184 replies</span><a onClick="{{ go.thread }}" style="margin-left:auto;font-weight:600">Join the thread →</a></div>
+</div>
+<div>
+<div style="display:flex;align-items:flex-end;gap:16px">
+<div class="cmyk-num" style="font:600 104px/0.9 var(--font-heading);letter-spacing:-.04em"><span class="paper">17</span><span class="plate plate-c" aria-hidden="true">17</span><span class="plate plate-m" aria-hidden="true">17</span><span class="plate plate-y" aria-hidden="true">17</span></div>
+<div style="padding-bottom:6px"><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-700)">Sat · Week 11 of odd sem</div><div style="font:600 28px/1.05 var(--font-heading)">Today at DTU</div></div></div>
+<div style="display:flex;flex-direction:column;margin-top:26px">
+<div style="display:grid;grid-template-columns:54px 14px minmax(0,1fr);gap:10px;padding-bottom:18px"><span style="font-size:12.5px;color:var(--color-neutral-700);text-align:right">8:02</span><span style="width:10px;height:10px;margin-top:5px;border-radius:50%;background:var(--color-neutral-500)"></span><div><div style="font:600 16.5px/1.3 var(--font-heading)">H-6 Wi-Fi goes down</div><div style="font-size:12.5px;color:var(--color-neutral-700)">140 replies</div></div></div>
+<div style="display:grid;grid-template-columns:54px 14px minmax(0,1fr);gap:10px;padding-bottom:18px"><span style="font-size:12.5px;color:var(--color-neutral-700);text-align:right">10:15</span><span style="width:10px;height:10px;margin-top:5px;border-radius:50%;background:var(--color-neutral-500)"></span><div><div style="font:600 16.5px/1.3 var(--font-heading)">Robotics team wins nationals, again</div><div style="font-size:12.5px;color:var(--color-neutral-700)">92 replies</div></div></div>
+<div style="display:grid;grid-template-columns:54px 14px minmax(0,1fr);gap:10px;padding-bottom:18px"><span style="font-size:12.5px;color:var(--color-accent-2-700);text-align:right;font-weight:600">NOW</span><span style="width:10px;height:10px;margin-top:5px;border-radius:50%;background:var(--color-accent-2)"></span><div><div style="font:600 16.5px/1.3 var(--font-heading)">Engifest passes at SPS-10</div><div style="font-size:12.5px;color:var(--color-neutral-700)">till 6 pm · bring ID</div></div></div>
+<div style="display:grid;grid-template-columns:54px 14px minmax(0,1fr);gap:10px;padding-bottom:18px"><span style="font-size:12.5px;color:var(--color-neutral-700);text-align:right">7 pm</span><span style="width:10px;height:10px;margin-top:5px;border-radius:50%;border:2px solid var(--color-accent)"></span><div><div style="font:600 16.5px/1.3 var(--font-heading)">OAT jamming night</div><div style="font-size:12.5px;color:var(--color-neutral-700)">Music Society · 140 going</div></div></div>
+<div style="display:grid;grid-template-columns:54px 14px minmax(0,1fr);gap:10px"><span style="font-size:12.5px;color:var(--color-neutral-700);text-align:right">12 am</span><span style="width:10px;height:10px;margin-top:5px;border-radius:50%;border:2px solid var(--color-accent)"></span><div style="font:600 16.5px/1.3 var(--font-heading)">Library opens 24×7</div></div>
+</div></div>
+</div>
+
+<div style="padding:72px 48px 0">
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:12px 24px"><h2 style="margin:0">From the boards</h2><div style="display:flex;gap:20px;font:600 15px var(--font-heading)"><span style="border-bottom:2px solid var(--color-accent);padding-bottom:3px">Hot</span><span style="color:var(--color-neutral-700)">New</span><span style="color:var(--color-neutral-700)">Top this week</span><span style="color:var(--color-neutral-700)">My branch</span></div><a onClick="{{ go.boards }}" style="margin-left:auto;font-size:14px;font-weight:600">All 22 boards →</a></div>
+
+<div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:56px;margin-top:34px;align-items:start">
+<div onClick="{{ go.thread }}" style="cursor:pointer;display:grid;grid-template-columns:52px minmax(0,1fr);gap:18px">
+<div style="display:flex;flex-direction:column;align-items:center;color:var(--color-neutral-700)"><i class="ph-duotone ph-arrow-fat-up" style="font-size:26px;color:var(--color-accent)"></i><span style="font:600 20px var(--font-heading);color:var(--color-text)">284</span><span style="font-size:11px">votes</span></div>
+<div>
+<div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--color-neutral-700)"><span class="tag tag-accent-2">Padhai · Academics</span><b style="color:var(--color-text)">@segfault_sneha</b><span class="tag tag-neutral">IT '27</span>2h</div>
+<h3 style="font-size:32px;line-height:1.14;margin:12px 0 10px;text-wrap:balance">DSA end-sem: which units actually matter? Six years of PYQs inside</h3>
+<p style="font-size:17px;line-height:1.55;color:var(--color-neutral-800);margin:0;max-width:600px">Trees and graphs are roughly 45% of marks every year. Topic-wise breakdown attached — add your branch's if it differs.</p>
+<div style="display:flex;gap:22px;margin-top:14px;font-size:14px;color:var(--color-neutral-700)"><span style="display:flex;align-items:center;gap:6px"><i class="ph-duotone ph-chat-circle" style="font-size:18px"></i>63 replies</span><span style="display:flex;align-items:center;gap:6px"><i class="ph-duotone ph-file-pdf" style="font-size:18px;color:var(--color-accent-2)"></i>PYQ sheet</span><span style="display:flex;align-items:center;gap:6px"><i class="ph-duotone ph-check-circle" style="font-size:18px;color:var(--color-accent)"></i>Answered by GDSC</span></div>
+</div></div>
+<div onClick="{{ go.article }}" style="cursor:pointer">
+<div class="halftone" style="height:150px;background:repeating-linear-gradient(135deg,var(--color-neutral-200) 0 8px,var(--color-neutral-300) 8px 16px)"></div>
+<div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-700);font-weight:600;margin-top:14px">Wiki guide</div>
+<div style="font:600 23px/1.18 var(--font-heading);margin-top:6px">How to get a 9+ CGPA at DTU</div>
+<div style="font-size:13px;color:var(--color-neutral-700);margin-top:6px">14 editors · checked by a senior</div>
+</div></div>
+
+<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;margin-top:56px">
+<div style="background:var(--color-surface);border-top:3px solid var(--color-accent);border-radius:2px;padding:18px 22px 22px">
+<div style="display:flex;align-items:center;gap:10px"><span style="font:600 14px var(--font-heading);color:var(--color-accent-700)">01</span><span style="font:600 19px var(--font-heading)">Campus</span><i class="ph-duotone ph-megaphone" style="margin-left:auto;font-size:22px;color:var(--color-accent)"></i></div>
+<div style="display:flex;flex-direction:column;gap:20px;margin-top:18px"><div><div style="font:600 17px/1.3 var(--font-heading)">Who keeps taking cycles from the H-4 stand?</div><div style="font-size:13px;color:var(--color-neutral-700);margin-top:5px">201 votes · 118 replies</div></div><div><div style="font:600 17px/1.3 var(--font-heading)">Mess menu changed again — rate it</div><div style="font-size:13px;color:var(--color-neutral-700);margin-top:5px">88 votes · 64 replies</div></div></div>
+<a onClick="{{ go.boards }}" style="display:block;margin-top:18px;font-size:14px;font-weight:600">More in Campus →</a></div>
+<div style="background:var(--color-surface);border-top:3px solid var(--color-accent-2);border-radius:2px;padding:18px 22px 22px">
+<div style="display:flex;align-items:center;gap:10px"><span style="font:600 14px var(--font-heading);color:var(--color-accent-2-700)">02</span><span style="font:600 19px var(--font-heading)">Padhai</span><i class="ph-duotone ph-book-open-text" style="margin-left:auto;font-size:22px;color:var(--color-accent-2)"></i></div>
+<div style="display:flex;flex-direction:column;gap:20px;margin-top:18px"><div onClick="{{ go.thread }}" style="cursor:pointer"><div style="font:600 17px/1.3 var(--font-heading)">Odd-sem datesheet (tentative) is out</div><div style="font-size:13px;color:var(--color-neutral-700);margin-top:5px">172 votes · 40 replies</div></div><div onClick="{{ go.thread }}" style="cursor:pointer"><div style="font:600 17px/1.3 var(--font-heading)">Best prof for Engg. Maths III?</div><div style="font-size:13px;color:var(--color-neutral-700);margin-top:5px">64 votes · 52 replies</div></div></div>
+<a onClick="{{ go.boards }}" style="display:block;margin-top:18px;font-size:14px;font-weight:600">More in Padhai →</a></div>
+<div style="background:var(--color-surface);border-top:3px solid var(--color-accent);border-radius:2px;padding:18px 22px 22px">
+<div style="display:flex;align-items:center;gap:10px"><span style="font:600 14px var(--font-heading);color:var(--color-accent-700)">03</span><span style="font:600 19px var(--font-heading)">Career</span><i class="ph-duotone ph-briefcase" style="margin-left:auto;font-size:22px;color:var(--color-accent)"></i></div>
+<div style="display:flex;flex-direction:column;gap:20px;margin-top:18px"><div><div style="font:600 17px/1.3 var(--font-heading)">Interview experience: SDE intern, three rounds</div><div style="font-size:13px;color:var(--color-neutral-700);margin-top:5px">156 votes · 41 replies</div></div><div><div style="font:600 17px/1.3 var(--font-heading)">Is VLSI worth it in 2027?</div><div style="font-size:13px;color:var(--color-neutral-700);margin-top:5px">97 votes · 33 replies</div></div></div>
+<a onClick="{{ go.boards }}" style="display:block;margin-top:18px;font-size:14px;font-weight:600">More in Career →</a></div>
+<div style="background:var(--color-surface);border-top:3px solid var(--color-text);border-radius:2px;padding:18px 22px 22px">
+<div style="display:flex;align-items:center;gap:10px"><span style="font:600 14px var(--font-heading);color:var(--color-text)">04</span><span style="font:600 19px var(--font-heading)">Bahar</span><i class="ph-duotone ph-bowl-food" style="margin-left:auto;font-size:22px;color:var(--color-text)"></i></div>
+<div style="display:flex;flex-direction:column;gap:20px;margin-top:18px"><div><div style="font:600 17px/1.3 var(--font-heading)">Post-exam treat: Sec-11 momos win the poll</div><div style="font-size:13px;color:var(--color-neutral-700);margin-top:5px">318 votes · 52%</div></div><div><div style="font:600 17px/1.3 var(--font-heading)">Cab to IGI Friday, 2 seats left</div><div style="font-size:13px;color:var(--color-neutral-700);margin-top:5px">12 replies</div></div></div>
+<a onClick="{{ go.boards }}" style="display:block;margin-top:18px;font-size:14px;font-weight:600">More in Bahar →</a></div>
+</div>
+
+<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;margin-top:20px;align-items:stretch">
+<div style="background:var(--color-surface);border-radius:2px;padding:20px 22px 22px">
+<div style="display:flex;align-items:center;gap:10px"><i class="ph-duotone ph-users-three" style="font-size:22px;color:var(--color-accent)"></i><h4 style="margin:0">Teams looking for you</h4><a onClick="{{ go.teams }}" style="margin-left:auto;font-size:14px;font-weight:600">38 open →</a></div>
+<div style="display:flex;flex-direction:column;gap:20px;margin-top:18px">
+<div><div style="display:flex;justify-content:space-between;gap:12px"><div style="font:600 18px/1.3 var(--font-heading)">SIH · crop-disease ML tool</div><span style="font-size:13px;color:var(--color-accent-2-700);font-weight:600;white-space:nowrap">3 days left</span></div><div style="font-size:14px;color:var(--color-neutral-800);margin-top:4px">Needs <b>Frontend</b>, <b>Designer</b></div></div>
+<div><div style="display:flex;justify-content:space-between;gap:12px"><div style="font:600 18px/1.3 var(--font-heading)">Invictus CTF</div><span style="font-size:13px;color:var(--color-neutral-700);white-space:nowrap">1 week left</span></div><div style="font-size:14px;color:var(--color-neutral-800);margin-top:4px">Needs <b>Reverse eng.</b>, <b>Crypto</b></div></div>
+</div></div>
+<div style="background:var(--color-surface);border-radius:2px;padding:20px 22px 22px">
+<div style="display:flex;align-items:center;gap:10px"><i class="ph-duotone ph-map-pin" style="font-size:22px;color:var(--color-accent)"></i><h4 style="margin:0">Kahan chalein?</h4><a onClick="{{ go.kahan }}" style="margin-left:auto;font-size:14px;font-weight:600">See all →</a></div>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:18px">
+<div><div class="halftone" style="height:90px;background:repeating-linear-gradient(135deg,var(--color-neutral-200) 0 8px,var(--color-neutral-300) 8px 16px)"></div><div style="font:600 15.5px var(--font-heading);margin-top:8px">Sec-11 momo lane</div><div style="font-size:12.5px;color:var(--color-neutral-700)">5.8 km · ₹</div></div>
+<div><div class="halftone" style="height:90px;background:repeating-linear-gradient(135deg,var(--color-neutral-200) 0 8px,var(--color-neutral-300) 8px 16px)"></div><div style="font:600 15.5px var(--font-heading);margin-top:8px">Japanese Park</div><div style="font-size:12.5px;color:var(--color-neutral-700)">6.2 km · free</div></div>
+<div><div class="halftone" style="height:90px;background:repeating-linear-gradient(135deg,var(--color-neutral-200) 0 8px,var(--color-neutral-300) 8px 16px)"></div><div style="font:600 15.5px var(--font-heading);margin-top:8px">Maggi point</div><div style="font-size:12.5px;color:var(--color-neutral-700)">Gate 2 · late night</div></div>
+</div></div>
+</div>
+</div>
+
+<div style="padding:72px 48px 0">
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:12px 24px"><h2 style="margin:0">Society board</h2><div style="display:flex;gap:8px"><span class="tag tag-accent-2">Events</span><span class="tag tag-neutral">Recruitments</span><span class="tag tag-neutral">Workshops</span><span class="tag tag-neutral">Talks</span></div><a onClick="{{ go.societies }}" style="margin-left:auto;font-size:14px;font-weight:600">All 46 societies →</a></div>
+<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:40px;margin-top:28px">
+<div><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-2-700);font-weight:600">Event · tonight 7 pm</div><div style="font:600 19px/1.25 var(--font-heading);margin:6px 0 6px">OAT jamming night</div><div style="font-size:13px;color:var(--color-neutral-700);display:flex;align-items:center;gap:4px">Music Society <i class="ph-duotone ph-seal-check" style="color:var(--color-accent)"></i> · 140 going</div></div>
+<div><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-2-700);font-weight:600">Recruiting · till Sun</div><div style="font:600 19px/1.25 var(--font-heading);margin:6px 0 6px">Dramatics Society auditions</div><div style="font-size:13px;color:var(--color-neutral-700);display:flex;align-items:center;gap:4px">Dramatics Soc. <i class="ph-duotone ph-seal-check" style="color:var(--color-accent)"></i> · Apply</div></div>
+<div><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-700);font-weight:600">Workshop · Mon 5 pm</div><div style="font:600 19px/1.25 var(--font-heading);margin:6px 0 6px">Intro to Rust, SPS-12</div><div style="font-size:13px;color:var(--color-neutral-700);display:flex;align-items:center;gap:4px">GDSC DTU <i class="ph-duotone ph-seal-check" style="color:var(--color-accent)"></i> · 88 going</div></div>
+<div><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-700);font-weight:600">Talk · Wed 3 pm</div><div style="font:600 19px/1.25 var(--font-heading);margin:6px 0 6px">Alumni talk: life at a chip startup</div><div style="font-size:13px;color:var(--color-neutral-700);display:flex;align-items:center;gap:4px">IEEE DTU <i class="ph-duotone ph-seal-check" style="color:var(--color-accent)"></i> · 210 interested</div></div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.boards }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:flex-end;gap:40px;padding:36px 48px 0">
+<div><h1 style="font-size:54px;margin:0;letter-spacing:-.03em">The Boards</h1><div style="font:italic 400 19px var(--font-body);color:var(--color-neutral-800);margin-top:6px">Five categories, twenty-two boards — every corner of campus life has one.</div></div>
+<div style="margin-left:auto;display:flex;gap:36px;padding-bottom:6px">
+<div><div style="font:600 30px/1 var(--font-heading)">14,820</div><div style="font-size:13px;color:var(--color-neutral-700);margin-top:4px">members</div></div>
+<div><div style="font:600 30px/1 var(--font-heading)">196k</div><div style="font-size:13px;color:var(--color-neutral-700);margin-top:4px">posts</div></div>
+<div><div style="font:600 30px/1 var(--font-heading);color:var(--color-accent-700)">412</div><div style="font-size:13px;color:var(--color-neutral-700);margin-top:4px">online now</div></div>
+</div></div>
+<div style="padding:40px 48px 0">
+<div style="display:flex;align-items:flex-end;gap:18px;border-bottom:3px solid var(--color-accent);padding-bottom:10px">
+<div class="cmyk-num" style="font:600 64px/0.9 var(--font-heading)"><span class="paper">01</span><span class="plate plate-c" aria-hidden="true">01</span><span class="plate plate-m" aria-hidden="true">01</span><span class="plate plate-y" aria-hidden="true">01</span></div>
+<div style="padding-bottom:4px"><h3 style="margin:0;color:var(--color-accent-800)">Campus</h3><div style="font-size:14px;color:var(--color-neutral-700)">Life inside the gates</div></div>
+<div style="margin-left:auto;display:grid;grid-template-columns:90px 90px 270px;gap:16px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-700);padding-bottom:4px"><span style="text-align:right">Threads</span><span style="text-align:right">Posts</span><span>Latest</span></div></div>
+<div style="display:grid;grid-template-columns:52px minmax(0,1fr) 90px 90px 270px;gap:16px;align-items:center;padding:18px 0;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent)">
+<span style="width:48px;height:48px;border-radius:2px;background:var(--color-accent-100);color:var(--color-accent-700);display:flex;align-items:center;justify-content:center"><i class="ph-duotone ph-megaphone" style="font-size:26px"></i></span>
+<div><div style="display:flex;align-items:center;gap:8px;font:600 19px var(--font-heading)">Campus Buzz <span class="tag tag-accent-2">48 new</span></div><div style="font-size:14.5px;color:var(--color-neutral-800);margin-top:2px">Gossip, announcements and whatever just happened near the main gate.</div><div style="display:flex;gap:14px;font-size:13px;margin-top:6px"><a>Lost &amp; found</a><a>Hostel life</a><a>Mess &amp; canteen</a></div></div>
+<span style="text-align:right;font:600 17px var(--font-heading)">2,418</span><span style="text-align:right;font-size:15px;color:var(--color-neutral-700)">31.2k</span>
+<div style="display:flex;gap:10px;align-items:center"><span style="width:30px;height:30px;flex:none;border-radius:50%;background:var(--color-neutral-200);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:11px">BB</span><div style="min-width:0;line-height:1.3"><div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Who keeps taking cycles from H-4?</div><div style="font-size:12.5px;color:var(--color-neutral-700)">@bawana_bandit · 4 min ago</div></div></div></div>
+<div style="display:grid;grid-template-columns:52px minmax(0,1fr) 90px 90px 270px;gap:16px;align-items:center;padding:18px 0">
+<span style="width:48px;height:48px;border-radius:2px;background:var(--color-accent-100);color:var(--color-accent-700);display:flex;align-items:center;justify-content:center"><i class="ph-duotone ph-newspaper" style="font-size:26px"></i></span>
+<div><div style="display:flex;align-items:center;gap:8px;font:600 19px var(--font-heading)">Pata Hai Aaj Kya Hua? <i class="ph-duotone ph-seal-check" style="color:var(--color-accent);font-size:17px"></i></div><div style="font-size:14.5px;color:var(--color-neutral-800);margin-top:2px">Verified news from the council, CRs and societies.</div></div>
+<span style="text-align:right;font:600 17px var(--font-heading)">612</span><span style="text-align:right;font-size:15px;color:var(--color-neutral-700)">8.4k</span>
+<div style="display:flex;gap:10px;align-items:center"><span style="width:30px;height:30px;flex:none;border-radius:50%;background:var(--color-accent-100);color:var(--color-accent-800);display:flex;align-items:center;justify-content:center"><i class="ph-duotone ph-bank" style="font-size:16px"></i></span><div style="min-width:0;line-height:1.3"><div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Engifest passes move to SPS-10</div><div style="font-size:12.5px;color:var(--color-neutral-700)">@council_dtu · 2:05 pm</div></div></div></div>
+</div>
+<div style="padding:36px 48px 0">
+<div style="display:flex;align-items:flex-end;gap:18px;border-bottom:3px solid var(--color-accent-2);padding-bottom:10px">
+<div class="cmyk-num" style="font:600 64px/0.9 var(--font-heading)"><span class="paper">02</span><span class="plate plate-c" aria-hidden="true">02</span><span class="plate plate-m" aria-hidden="true">02</span><span class="plate plate-y" aria-hidden="true">02</span></div>
+<div style="padding-bottom:4px"><h3 style="margin:0;color:var(--color-accent-2-800)">Padhai</h3><div style="font-size:14px;color:var(--color-neutral-700)">Courses, exams and getting through them</div></div></div>
+<div onClick="{{ go.thread }}" style="cursor:pointer;display:grid;grid-template-columns:52px minmax(0,1fr) 90px 90px 270px;gap:16px;align-items:center;padding:18px 0;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent)">
+<span style="width:48px;height:48px;border-radius:2px;background:var(--color-accent-2-100);color:var(--color-accent-2-700);display:flex;align-items:center;justify-content:center"><i class="ph-duotone ph-book-open-text" style="font-size:26px"></i></span>
+<div><div style="display:flex;align-items:center;gap:8px;font:600 19px var(--font-heading)">Academics <span class="tag tag-accent-2">91 new</span></div><div style="font-size:14.5px;color:var(--color-neutral-800);margin-top:2px">Doubts, PYQs and prof reviews — one sub-board per branch and semester.</div><div style="display:flex;gap:14px;font-size:13px;margin-top:6px"><a>COE</a><a>IT</a><a>ECE</a><a>EE</a><a>ME</a><a>SE</a><a>MCE</a><a>+4 more</a></div></div>
+<span style="text-align:right;font:600 17px var(--font-heading)">5,102</span><span style="text-align:right;font-size:15px;color:var(--color-neutral-700)">48.9k</span>
+<div style="display:flex;gap:10px;align-items:center"><span style="width:30px;height:30px;flex:none;border-radius:50%;background:var(--color-accent-2-200);color:var(--color-accent-2-800);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:11px">SS</span><div style="min-width:0;line-height:1.3"><div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">DSA end-sem: which units matter?</div><div style="font-size:12.5px;color:var(--color-neutral-700)">@segfault_sneha · 2 min ago</div></div></div></div>
+<div style="display:grid;grid-template-columns:52px minmax(0,1fr) 90px 90px 270px;gap:16px;align-items:center;padding:18px 0">
+<span style="width:48px;height:48px;border-radius:2px;background:var(--color-accent-2-100);color:var(--color-accent-2-700);display:flex;align-items:center;justify-content:center"><i class="ph-duotone ph-exam" style="font-size:26px"></i></span>
+<div><div style="font:600 19px var(--font-heading)">Exams &amp; Results</div><div style="font-size:14.5px;color:var(--color-neutral-800);margin-top:2px">Datesheets, re-evaluation, supplementaries, the "is it out yet" thread.</div></div>
+<span style="text-align:right;font:600 17px var(--font-heading)">1,340</span><span style="text-align:right;font-size:15px;color:var(--color-neutral-700)">22.1k</span>
+<div style="display:flex;gap:10px;align-items:center"><span style="width:30px;height:30px;flex:none;border-radius:50%;background:var(--color-neutral-200);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:11px">RC</span><div style="min-width:0;line-height:1.3"><div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Odd-sem datesheet (tentative)</div><div style="font-size:12.5px;color:var(--color-neutral-700)">@riya_codes · 1 hr ago</div></div></div></div>
+</div>
+<div style="padding:36px 48px 0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:40px">
+<div><div style="display:flex;align-items:flex-end;gap:12px;border-bottom:3px solid var(--color-accent);padding-bottom:8px"><span style="font:600 34px/0.9 var(--font-heading);color:var(--color-accent-700)">03</span><h4 style="margin:0">Career</h4></div>
+<div style="display:flex;flex-direction:column;gap:14px;margin-top:14px">
+<div style="display:flex;gap:12px"><i class="ph-duotone ph-briefcase" style="font-size:24px;color:var(--color-accent)"></i><div><div style="font:600 16px var(--font-heading)">Placements &amp; Internships</div><div style="font-size:13px;color:var(--color-neutral-700)">1,877 threads · 26.4k posts</div></div></div>
+<div style="display:flex;gap:12px"><i class="ph-duotone ph-users-three" style="font-size:24px;color:var(--color-accent)"></i><div><div style="font:600 16px var(--font-heading)">Team Up</div><div style="font-size:13px;color:var(--color-neutral-700)">642 threads · 38 open teams</div></div></div>
+<div style="display:flex;gap:12px"><i class="ph-duotone ph-path" style="font-size:24px;color:var(--color-accent)"></i><div><div style="font:600 16px var(--font-heading)">Roadmaps &amp; New Fields</div><div style="font-size:13px;color:var(--color-neutral-700)">410 threads · 6.1k posts</div></div></div>
+</div></div>
+<div><div style="display:flex;align-items:flex-end;gap:12px;border-bottom:3px solid var(--color-accent-2);padding-bottom:8px"><span style="font:600 34px/0.9 var(--font-heading);color:var(--color-accent-2-700)">04</span><h4 style="margin:0">Culture</h4></div>
+<div style="display:flex;flex-direction:column;gap:14px;margin-top:14px">
+<div style="display:flex;gap:12px"><i class="ph-duotone ph-confetti" style="font-size:24px;color:var(--color-accent-2)"></i><div><div style="font:600 16px var(--font-heading)">Fests: Engifest, Invictus</div><div style="font-size:13px;color:var(--color-neutral-700)">964 threads · 12.7k posts</div></div></div>
+<div style="display:flex;gap:12px;cursor:pointer" onClick="{{ go.societies }}"><i class="ph-duotone ph-flag-banner" style="font-size:24px;color:var(--color-accent-2)"></i><div><div style="font:600 16px var(--font-heading)">Societies <span style="font:400 13px var(--font-body);color:var(--color-neutral-700)">· 46 verified</span></div><div style="font-size:13px;color:var(--color-neutral-700)">Events, recruitments, workshops</div></div></div>
+<div style="display:flex;gap:12px"><i class="ph-duotone ph-paint-brush" style="font-size:24px;color:var(--color-accent-2)"></i><div><div style="font:600 16px var(--font-heading)">Made at DTU</div><div style="font-size:13px;color:var(--color-neutral-700)">Art, music, projects, photos</div></div></div>
+</div></div>
+<div><div style="display:flex;align-items:flex-end;gap:12px;border-bottom:3px solid var(--color-text);padding-bottom:8px"><span style="font:600 34px/0.9 var(--font-heading)">05</span><h4 style="margin:0">Bahar</h4></div>
+<div style="display:flex;flex-direction:column;gap:14px;margin-top:14px">
+<div style="display:flex;gap:12px"><i class="ph-duotone ph-bowl-food" style="font-size:24px"></i><div><div style="font:600 16px var(--font-heading)">Food &amp; Hangouts</div><div style="font-size:13px;color:var(--color-neutral-700)">1,230 threads · 19.8k posts</div></div></div>
+<div style="display:flex;gap:12px"><i class="ph-duotone ph-car-profile" style="font-size:24px"></i><div><div style="font:600 16px var(--font-heading)">Rides &amp; Commute</div><div style="font-size:13px;color:var(--color-neutral-700)">Metro, cabs, carpools home</div></div></div>
+<div style="display:flex;gap:12px"><i class="ph-duotone ph-chat-teardrop-dots" style="font-size:24px"></i><div><div style="font:600 16px var(--font-heading)">Off-topic</div><div style="font-size:13px;color:var(--color-neutral-700)">Anything goes (mostly)</div></div></div>
+</div></div>
+</div>
+<div style="margin:44px 48px 0;padding:22px 26px;background:var(--color-surface);border-radius:2px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:center">
+<div><div style="display:flex;align-items:center;gap:8px;font:600 16px var(--font-heading)"><span style="width:8px;height:8px;border-radius:50%;background:var(--color-accent)"></span>Who's online · 412</div>
+<div style="font-size:14px;line-height:1.7;margin-top:6px;color:var(--color-neutral-800)"><a>segfault_sneha</a>, <a>dhruv.ece</a>, <a>riya_codes</a>, <a style="color:var(--color-accent-2-700)">GDSC DTU</a>, <a>oat_regular</a>, <a>pixelpushr</a>, <a>momo_maxxer</a> and 405 others</div></div>
+<div style="text-align:right;font-size:13.5px;color:var(--color-neutral-700);line-height:1.6">Newest member: <b style="color:var(--color-text)">@fresher_kabir</b> (ME '30)<br>Most online ever: 2,140 on Engifest night '26</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.thread }}" hint-placeholder-val="{{ false }}">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:64px;padding:28px 48px 0">
+<div>
+<div style="font-size:13px;color:var(--color-neutral-700)"><a onClick="{{ go.boards }}">Boards</a> / <a onClick="{{ go.boards }}">Academics</a> / <a onClick="{{ go.library }}">COE · 3rd sem</a></div>
+<div style="display:grid;grid-template-columns:48px minmax(0,1fr);gap:20px;margin-top:22px">
+<div style="display:flex;flex-direction:column;align-items:center;color:var(--color-neutral-700)"><i class="ph-duotone ph-arrow-fat-up" style="font-size:26px;color:var(--color-accent)"></i><span style="font:600 18px var(--font-heading);color:var(--color-text)">284</span><i class="ph-duotone ph-arrow-fat-down" style="font-size:26px"></i><i class="ph-duotone ph-bookmark-simple" style="font-size:22px;margin-top:16px"></i><i class="ph-duotone ph-share-network" style="font-size:22px;margin-top:12px"></i></div>
+<div>
+<div style="display:flex;gap:8px"><span class="tag tag-accent">DSA</span><span class="tag tag-neutral">end-sem</span><span class="tag tag-neutral">PYQ</span></div>
+<h1 style="font-size:40px;line-height:1.1;margin:14px 0 14px;text-wrap:balance">DSA end-sem: which units actually matter? Six years of PYQs inside</h1>
+<div style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--color-neutral-700)"><span style="width:32px;height:32px;border-radius:50%;background:var(--color-accent-2-200);color:var(--color-accent-2-800);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px">SS</span><b style="color:var(--color-text)">@segfault_sneha</b><span class="tag tag-neutral">IT '27</span><span>3,210 karma</span><span>· 2 hours ago</span></div>
+<div style="font-size:17px;line-height:1.65;margin-top:22px;max-width:680px"><p>Went through every DSA end-sem since 2020. Short version: trees and graphs are roughly 45% of the marks, every single year. Hashing shows up as one 10-marker and that's it.</p><p>Breakdown by unit is in the sheet. If your branch's paper differs, reply and I'll add a column.</p></div>
+<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--color-surface);border-radius:2px;max-width:420px"><i class="ph-duotone ph-file-pdf" style="font-size:28px;color:var(--color-accent-2)"></i><div style="line-height:1.3"><a style="font-weight:600">DSA_PYQ_2020–26.pdf</a><div style="font-size:12.5px;color:var(--color-neutral-700)">2.4 MB · also in <a onClick="{{ go.library }}">Library › COE › Sem 3</a></div></div><i class="ph-duotone ph-download-simple" style="margin-left:auto;font-size:22px;color:var(--color-accent)"></i></div>
+</div></div>
+<div style="display:flex;align-items:baseline;gap:20px;margin:48px 0 22px 68px"><h4 style="margin:0">63 replies</h4><span style="font:600 14px var(--font-heading);color:var(--color-accent-700)">Best</span><span style="font-size:14px;color:var(--color-neutral-700)">Newest</span><span style="font-size:14px;color:var(--color-neutral-700)">Oldest</span></div>
+<div style="margin-left:68px;display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--color-surface);border-radius:2px;color:var(--color-neutral-700);font-size:15px;margin-bottom:34px"><span style="width:30px;height:30px;flex:none;border-radius:50%;background:var(--color-accent-200);color:var(--color-accent-800);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:11px">AK</span><span style="padding-top:4px">Add a reply…</span></div>
+<div style="display:flex;flex-direction:column;gap:30px;margin-left:68px">
+<div style="display:grid;grid-template-columns:36px minmax(0,1fr);gap:14px">
+<span style="width:36px;height:36px;border-radius:50%;background:var(--color-accent-100);color:var(--color-accent-800);display:flex;align-items:center;justify-content:center"><i class="ph-duotone ph-code" style="font-size:18px"></i></span>
+<div>
+<div style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--color-neutral-700)"><b style="color:var(--color-text)">GDSC DTU</b><i class="ph-duotone ph-seal-check" style="color:var(--color-accent);font-size:16px"></i><span>Society</span><span>· 1h</span><span class="tag tag-accent" style="margin-left:6px"><i class="ph-duotone ph-check" style="margin-right:4px"></i>Accepted</span></div>
+<div style="font-size:16px;line-height:1.6;margin-top:6px;max-width:640px">Can confirm from our doubt sessions. We're running a 2-hour graphs revision on Wednesday in SPS-12 — we'll use this sheet as the base.</div>
+<div style="display:flex;gap:18px;margin-top:8px;font-size:13.5px;color:var(--color-neutral-700)"><span style="display:flex;align-items:center;gap:4px"><i class="ph-duotone ph-arrow-fat-up" style="font-size:17px;color:var(--color-accent)"></i>96</span><span>Reply</span></div>
+</div></div>
+<div style="display:grid;grid-template-columns:36px minmax(0,1fr);gap:14px">
+<span style="width:36px;height:36px;border-radius:50%;background:var(--color-neutral-200);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px">DE</span>
+<div>
+<div style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--color-neutral-700)"><b style="color:var(--color-text)">@dhruv.ece</b><span class="tag tag-neutral">ECE '27</span><span>· 1h</span></div>
+<div style="font-size:16px;line-height:1.6;margin-top:6px;max-width:640px">ECE paper last year had two questions on heaps, not graphs. Adding our column tonight.</div>
+<div style="display:flex;gap:18px;margin-top:8px;font-size:13.5px;color:var(--color-neutral-700)"><span style="display:flex;align-items:center;gap:4px"><i class="ph-duotone ph-arrow-fat-up" style="font-size:17px"></i>41</span><span>Reply</span></div>
+<div style="display:grid;grid-template-columns:30px minmax(0,1fr);gap:12px;margin-top:20px;padding-left:16px;border-left:2px solid var(--color-neutral-300)">
+<span style="width:30px;height:30px;border-radius:50%;background:var(--color-accent-2-200);color:var(--color-accent-2-800);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:11px">SS</span>
+<div><div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--color-neutral-700)"><b style="color:var(--color-text)">@segfault_sneha</b><span class="tag tag-accent-2">OP</span><span>· 52m</span></div><div style="font-size:15.5px;line-height:1.55;margin-top:4px">Perfect, tag me when it's in.</div></div>
+</div></div></div>
+</div></div>
+<div style="display:flex;flex-direction:column;gap:36px;padding-top:44px">
+<div><h6 style="margin:0 0 10px;color:var(--color-neutral-700)">About this board</h6><div style="font:600 20px var(--font-heading)">COE · 3rd semester</div><p style="font-size:14.5px;color:var(--color-neutral-800);margin:6px 0 10px">Doubts, PYQs and prof reviews for second-year COE.</p><div style="font-size:13.5px;color:var(--color-neutral-700)">1,204 members · 86 online</div><button class="btn btn-secondary" style="margin-top:12px">Joined</button></div>
+<div><h6 style="margin:0 0 12px;color:var(--color-neutral-700)">Related in Library</h6>
+<div style="display:flex;flex-direction:column;gap:10px;font-size:14.5px">
+<a onClick="{{ go.library }}" style="display:flex;gap:8px;align-items:center"><i class="ph-duotone ph-file-text" style="font-size:18px"></i>DSA unit 4 notes (handwritten)</a>
+<a onClick="{{ go.library }}" style="display:flex;gap:8px;align-items:center"><i class="ph-duotone ph-file-text" style="font-size:18px"></i>Graph algorithms cheat sheet</a>
+<a onClick="{{ go.library }}" style="display:flex;gap:8px;align-items:center"><i class="ph-duotone ph-video" style="font-size:18px"></i>Recorded revision, Nov '25</a>
+</div></div>
+<div><h6 style="margin:0 0 12px;color:var(--color-neutral-700)">Wiki</h6><a onClick="{{ go.article }}" style="color:var(--color-text)"><div style="font:600 17px/1.3 var(--font-heading)">How to get a 9+ CGPA at DTU</div></a><div style="font-size:13px;color:var(--color-neutral-700);margin-top:4px">14 editors · checked Oct 2026</div></div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.article }}" hint-placeholder-val="{{ false }}">
+<div style="display:grid;grid-template-columns:200px minmax(0,1fr) 250px;gap:52px;padding:28px 48px 0">
+<div style="padding-top:110px">
+<h6 style="margin:0 0 14px;color:var(--color-neutral-700)">On this page</h6>
+<div style="display:flex;flex-direction:column;gap:10px;font-size:14.5px">
+<a style="font-weight:600">1. How DTU grading works</a><span style="color:var(--color-neutral-800)">2. Mid-sems are 30%, use them</span><span style="color:var(--color-neutral-800)">3. Building a PYQ habit</span><span style="color:var(--color-neutral-800)">4. The week before end-sems</span><span style="color:var(--color-neutral-800)">5. Labs and viva</span><span style="color:var(--color-neutral-800)">6. Branch-specific notes</span></div>
+</div>
+<div>
+<div style="display:flex;align-items:center;gap:14px;font-size:13.5px;color:var(--color-neutral-700)"><a>Articles</a><span>/</span><a>Academics</a><div style="margin-left:auto;display:flex;gap:4px;font:600 14px var(--font-heading)"><span style="padding:6px 12px;border-bottom:2px solid var(--color-text);color:var(--color-text)">Read</span><span style="padding:6px 12px">Edit</span><span style="padding:6px 12px">History</span><span style="padding:6px 12px">Talk · 23</span></div></div>
+<h1 style="font-size:52px;line-height:1.02;margin:26px 0 14px;letter-spacing:-.025em">How to get a 9+ CGPA at DTU</h1>
+<p style="font:italic 400 21px/1.45 var(--font-body);color:var(--color-neutral-800);margin:0 0 18px;max-width:640px">A living guide maintained by students who've done it — without living in the library.</p>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:14px;font-size:13.5px;color:var(--color-neutral-700);margin-bottom:34px">
+<div style="display:flex"><span style="width:28px;height:28px;border-radius:50%;background:var(--color-accent-200);color:var(--color-accent-800);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:10px;box-shadow:0 0 0 2px var(--color-bg)">TN</span><span style="width:28px;height:28px;margin-left:-8px;border-radius:50%;background:var(--color-accent-2-200);color:var(--color-accent-2-800);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:10px;box-shadow:0 0 0 2px var(--color-bg)">RM</span><span style="width:28px;height:28px;margin-left:-8px;border-radius:50%;background:var(--color-neutral-200);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:10px;box-shadow:0 0 0 2px var(--color-bg)">+12</span></div>
+<span>Started by <b style="color:var(--color-text)">Tanya N.</b> (COE '26) · 14 editors · 9 min read</span>
+<span style="display:flex;align-items:center;gap:6px;color:var(--color-accent-800)"><i class="ph-duotone ph-shield-check" style="font-size:18px;color:var(--color-accent)"></i>Checked by a senior · Oct 2026</span></div>
+<div style="font-size:18px;line-height:1.7;max-width:680px">
+<h3 style="margin:0 0 12px">1. How DTU grading works</h3>
+<p>Every course is relative-graded within its section. That means the class average matters more than the paper's difficulty — a 62 can be an A+ in a hard batch. The first thing to learn is <a>how the grade boundaries are drawn</a>, not how to score 90.</p>
+<p>Internals (mid-sem, assignments, attendance) are typically 50% of the course. Most people who lose a 9 lose it here, not in the end-sem.</p>
+<div style="margin:26px 0;padding:20px 24px;background:var(--color-surface);border-radius:2px">
+<div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-2-700);font-weight:600;margin-bottom:6px">From a senior</div>
+<div style="font:italic 400 19px/1.5 var(--font-body)">"Ask your seniors for the professor's previous papers on day one. Same prof, same style, every year."</div>
+<div style="font-size:13.5px;color:var(--color-neutral-700);margin-top:8px">— @offer_letter_pls, IT '25</div></div>
+<h3 style="margin:30px 0 12px">2. Mid-sems are 30%, use them</h3>
+<p style="margin:0">Treat the mid-sem as the real exam. It covers fewer units, it's easier to top, and it sets your standing before the end-sem curve…</p>
+</div>
+<div style="display:flex;align-items:center;gap:16px;margin-top:34px;padding-top:20px;border-top:1px solid var(--color-divider);font-size:14px;color:var(--color-neutral-700)"><span>Was this useful?</span><span style="display:flex;align-items:center;gap:6px;color:var(--color-accent-700);font-weight:600"><i class="ph-duotone ph-thumbs-up" style="font-size:19px"></i>1,204</span><i class="ph-duotone ph-thumbs-down" style="font-size:19px"></i><button class="btn btn-secondary" style="margin-left:auto"><i class="ph-duotone ph-pencil-simple-line" style="font-size:17px"></i>Suggest an edit</button></div>
+</div>
+<div style="padding-top:110px;display:flex;flex-direction:column;gap:34px">
+<div><h6 style="margin:0 0 12px;color:var(--color-neutral-700)">Recent edits</h6>
+<div style="display:flex;flex-direction:column;gap:12px;font-size:14px;line-height:1.4">
+<div><b>@segfault_sneha</b> added IT lab tips<div style="font-size:12.5px;color:var(--color-neutral-700)">2 days ago · <span style="color:var(--color-accent-700)">+140</span> words</div></div>
+<div><b>@dhruv.ece</b> fixed ECE grading note<div style="font-size:12.5px;color:var(--color-neutral-700)">5 days ago · <span style="color:var(--color-accent-2-700)">−22</span> words</div></div>
+<div><b>Tanya N.</b> rewrote section 4<div style="font-size:12.5px;color:var(--color-neutral-700)">2 weeks ago</div></div>
+</div><a style="display:block;margin-top:12px;font-size:14px;font-weight:600">Full history →</a></div>
+<div><h6 style="margin:0 0 12px;color:var(--color-neutral-700)">More guides</h6>
+<div style="display:flex;flex-direction:column;gap:12px;font:600 15.5px/1.3 var(--font-heading)"><span>Placement prep: the 6-month plan</span><span>Web dev roadmap for 2nd years</span><span>Is VLSI worth it in 2027?</span><span>Forming a hackathon team that ships</span></div></div>
+<div><h6 style="margin:0 0 12px;color:var(--color-neutral-700)">Talk</h6><div style="font-size:14px;line-height:1.45"><b>@pixelpushr</b> <span style="font-style:italic">Should we add a section for design electives?</span></div><a style="display:block;margin-top:8px;font-size:14px;font-weight:600">Join the discussion · 23</a></div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.library }}" hint-placeholder-val="{{ false }}">
+<div style="padding:36px 48px 0;display:flex;flex-wrap:wrap;align-items:flex-end;gap:24px 40px">
+<div><h1 style="font-size:48px;margin:0;letter-spacing:-.025em">Library</h1><div style="font:italic 400 19px var(--font-body);color:var(--color-neutral-800);margin-top:6px">Notes, PYQs and lab files from every batch, organised the way DTU is.</div></div>
+<div style="margin-left:auto;display:flex;align-items:center;gap:12px"><div style="display:flex;align-items:center;gap:8px;width:340px;height:44px;padding:0 14px;background:var(--color-surface);border-radius:2px;color:var(--color-neutral-700);font-size:15px"><i class="ph-duotone ph-magnifying-glass" style="font-size:19px"></i>Search subjects, codes like CO201</div><button class="btn btn-primary" style="height:44px"><i class="ph-duotone ph-upload-simple" style="font-size:17px"></i>Upload</button></div>
+</div>
+<div style="display:grid;grid-template-columns:220px 170px minmax(0,1fr);margin:34px 48px 0;min-height:520px">
+<div style="padding-right:24px">
+<h6 style="margin:0 0 12px 10px;color:var(--color-neutral-700)">Branch</h6>
+<div style="display:flex;flex-direction:column;gap:2px;font-size:15.5px">
+<span style="display:flex;justify-content:space-between;padding:9px 10px;background:var(--color-accent-100);color:var(--color-accent-800);font-weight:600;border-radius:2px">Computer Engg. <i class="ph-duotone ph-caret-right"></i></span>
+<span style="display:flex;justify-content:space-between;padding:9px 10px">Information Tech.<span style="font-size:12.5px;color:var(--color-neutral-700)">2.1k</span></span>
+<span style="display:flex;justify-content:space-between;padding:9px 10px">Electronics &amp; Comm.<span style="font-size:12.5px;color:var(--color-neutral-700)">1.8k</span></span>
+<span style="display:flex;justify-content:space-between;padding:9px 10px">Electrical<span style="font-size:12.5px;color:var(--color-neutral-700)">940</span></span>
+<span style="display:flex;justify-content:space-between;padding:9px 10px">Mechanical<span style="font-size:12.5px;color:var(--color-neutral-700)">1.2k</span></span>
+<span style="display:flex;justify-content:space-between;padding:9px 10px">Software Engg.<span style="font-size:12.5px;color:var(--color-neutral-700)">860</span></span>
+<span style="display:flex;justify-content:space-between;padding:9px 10px">Maths &amp; Computing<span style="font-size:12.5px;color:var(--color-neutral-700)">710</span></span>
+<span style="display:flex;justify-content:space-between;padding:9px 10px">Civil<span style="font-size:12.5px;color:var(--color-neutral-700)">620</span></span>
+<span style="padding:9px 10px;color:var(--color-neutral-700)">First year (common)</span>
+</div></div>
+<div style="padding:0 24px;border-left:1px solid var(--color-divider)">
+<h6 style="margin:0 0 12px 10px;color:var(--color-neutral-700)">Semester</h6>
+<div style="display:flex;flex-direction:column;gap:2px;font-size:15.5px">
+<span style="padding:9px 10px">Sem 1–2</span>
+<span style="display:flex;justify-content:space-between;padding:9px 10px;background:var(--color-accent-100);color:var(--color-accent-800);font-weight:600;border-radius:2px">Sem 3 <i class="ph-duotone ph-caret-right"></i></span>
+<span style="padding:9px 10px">Sem 4</span><span style="padding:9px 10px">Sem 5</span><span style="padding:9px 10px">Sem 6</span><span style="padding:9px 10px">Sem 7</span><span style="padding:9px 10px">Sem 8</span>
+</div></div>
+<div style="padding-left:32px;border-left:1px solid var(--color-divider)">
+<div style="display:flex;align-items:baseline;gap:12px"><h6 style="margin:0;color:var(--color-neutral-700)">Subjects · COE · Sem 3</h6><span style="margin-left:auto;font-size:13px;color:var(--color-neutral-700)">Sorted by</span><span style="font:600 13px var(--font-heading);color:var(--color-accent-700)">Most used</span></div>
+<div style="display:flex;flex-direction:column;margin-top:10px">
+<div onClick="{{ go.thread }}" style="cursor:pointer;display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:16px;align-items:center;padding:16px 0;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent)"><span style="font-size:13px;color:var(--color-neutral-700)">CO201</span><div><div style="font:600 19px var(--font-heading)">Data Structures</div><div style="display:flex;gap:14px;font-size:13px;color:var(--color-neutral-700);margin-top:3px"><span>42 notes</span><span>18 PYQs</span><span>6 lab files</span><span>· 3 active threads</span></div></div><span class="tag tag-accent-2">End-sem in 19d</span></div>
+<div style="display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:16px;align-items:center;padding:16px 0;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent)"><span style="font-size:13px;color:var(--color-neutral-700)">CO203</span><div><div style="font:600 19px var(--font-heading)">Discrete Structures</div><div style="display:flex;gap:14px;font-size:13px;color:var(--color-neutral-700);margin-top:3px"><span>28 notes</span><span>14 PYQs</span></div></div><i class="ph-duotone ph-caret-right" style="color:var(--color-neutral-600)"></i></div>
+<div style="display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:16px;align-items:center;padding:16px 0;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent)"><span style="font-size:13px;color:var(--color-neutral-700)">CO205</span><div><div style="font:600 19px var(--font-heading)">Digital Electronics</div><div style="display:flex;gap:14px;font-size:13px;color:var(--color-neutral-700);margin-top:3px"><span>31 notes</span><span>16 PYQs</span><span>9 lab files</span></div></div><i class="ph-duotone ph-caret-right" style="color:var(--color-neutral-600)"></i></div>
+<div style="display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:16px;align-items:center;padding:16px 0;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent)"><span style="font-size:13px;color:var(--color-neutral-700)">CO207</span><div><div style="font:600 19px var(--font-heading)">Object Oriented Programming</div><div style="display:flex;gap:14px;font-size:13px;color:var(--color-neutral-700);margin-top:3px"><span>24 notes</span><span>11 PYQs</span><span>12 lab files</span></div></div><i class="ph-duotone ph-caret-right" style="color:var(--color-neutral-600)"></i></div>
+<div style="display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:16px;align-items:center;padding:16px 0"><span style="font-size:13px;color:var(--color-neutral-700)">MA201</span><div><div style="font:600 19px var(--font-heading)">Engineering Mathematics III</div><div style="display:flex;gap:14px;font-size:13px;color:var(--color-neutral-700);margin-top:3px"><span>19 notes</span><span>20 PYQs</span></div></div><i class="ph-duotone ph-caret-right" style="color:var(--color-neutral-600)"></i></div>
+</div>
+<h6 style="margin:36px 0 12px;color:var(--color-neutral-700)">Most downloaded this week · Sem 3</h6>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px">
+<div class="card"><div class="card-kicker">PYQ · CO201</div><div class="card-title">DSA end-sem papers 2020–26</div><div class="card-meta"><i class="ph-duotone ph-download-simple"></i>1,840 · @segfault_sneha</div></div>
+<div class="card"><div class="card-kicker">Notes · CO205</div><div class="card-title">K-maps &amp; flip-flops, handwritten</div><div class="card-meta"><i class="ph-duotone ph-download-simple"></i>920 · @dhruv.ece</div></div>
+<div class="card"><div class="card-kicker">Lab · CO207</div><div class="card-title">OOP lab file, all 10 programs</div><div class="card-meta"><i class="ph-duotone ph-download-simple"></i>760 · @riya_codes</div></div>
+</div>
+</div></div>
+</sc-if>
+
+<sc-if value="{{ is.societies }}" hint-placeholder-val="{{ false }}">
+<div style="padding:36px 48px 0;display:flex;flex-wrap:wrap;align-items:flex-end;gap:24px 40px">
+<div><h1 style="font-size:48px;margin:0;letter-spacing:-.025em">Society board</h1><div style="font:italic 400 19px var(--font-body);color:var(--color-neutral-800);margin-top:6px">Events, recruitments, workshops and talks from 46 verified societies.</div></div>
+<button class="btn btn-primary" style="margin-left:auto"><i class="ph-duotone ph-megaphone" style="font-size:17px"></i>Promote an event</button>
+</div>
+<div style="display:flex;gap:10px;padding:24px 48px 0;font:600 14px var(--font-heading)"><span style="padding:7px 14px;background:var(--color-text);color:var(--color-bg);border-radius:2px">All</span><span style="padding:7px 14px;background:var(--color-accent-2-100);color:var(--color-accent-2-800);border-radius:2px">Events</span><span style="padding:7px 14px;background:var(--color-accent-2-100);color:var(--color-accent-2-800);border-radius:2px">Recruitments</span><span style="padding:7px 14px;background:var(--color-accent-100);color:var(--color-accent-800);border-radius:2px">Workshops</span><span style="padding:7px 14px;background:var(--color-accent-100);color:var(--color-accent-800);border-radius:2px">Talks &amp; lectures</span></div>
+<div style="columns:3;column-gap:40px;padding:34px 48px 0">
+<div style="break-inside:avoid;margin-bottom:30px;padding:20px;background:var(--color-accent-2-100);border-radius:2px"><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-2-800);font-weight:600">Event · tonight 7 pm</div><div style="font:600 28px/1.1 var(--font-heading);margin:8px 0;color:var(--color-accent-2-900)">OAT jamming night</div><div style="font-size:15px;line-height:1.5;color:var(--color-accent-2-900)">Open mic, 4 slots left. Bring an instrument or just your voice.</div><div style="display:flex;align-items:center;gap:10px;margin-top:12px;font-size:13px;color:var(--color-accent-2-800)">Music Society <i class="ph-duotone ph-seal-check"></i> · 140 going<button class="btn btn-secondary" style="margin-left:auto">I'm going</button></div></div>
+<div style="break-inside:avoid;margin-bottom:30px"><div class="halftone" style="height:150px;margin-bottom:12px;background:repeating-linear-gradient(135deg,var(--color-neutral-200) 0 8px,var(--color-neutral-300) 8px 16px);display:flex;align-items:flex-end;padding:8px"><span style="font:11px ui-monospace,Menlo,monospace;color:var(--color-neutral-700);position:relative;z-index:1">society poster</span></div><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-700);font-weight:600">Workshop · Mon 5 pm · SPS-12</div><div style="font:600 24px/1.15 var(--font-heading);margin:6px 0">Intro to Rust</div><div style="font-size:15px;line-height:1.5;color:var(--color-neutral-800)">Laptops needed. Repo and setup guide are up.</div><div style="font-size:13px;color:var(--color-neutral-700);margin-top:8px;display:flex;align-items:center;gap:4px">GDSC DTU <i class="ph-duotone ph-seal-check" style="color:var(--color-accent)"></i> · 88 going</div></div>
+<div style="break-inside:avoid;margin-bottom:30px"><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-2-700);font-weight:600">Recruiting · closes Sunday</div><div style="font:600 24px/1.15 var(--font-heading);margin:6px 0">Dramatics Society auditions</div><div style="font-size:15px;line-height:1.5;color:var(--color-neutral-800)">Street play and stage. No experience needed — just turn up.</div><div style="font-size:13px;color:var(--color-neutral-700);margin-top:8px;display:flex;align-items:center;gap:4px">Dramatics Soc. <i class="ph-duotone ph-seal-check" style="color:var(--color-accent)"></i> · <a>Apply</a></div></div>
+<div style="break-inside:avoid;margin-bottom:30px"><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-700);font-weight:600">Talk · Wed 3 pm · Auditorium</div><div style="font:600 24px/1.15 var(--font-heading);margin:6px 0">Alumni talk: life at a chip startup</div><div style="font-size:15px;line-height:1.5;color:var(--color-neutral-800)">An ECE '18 grad on VLSI careers in India. Q&amp;A after.</div><div style="font-size:13px;color:var(--color-neutral-700);margin-top:8px;display:flex;align-items:center;gap:4px">IEEE DTU <i class="ph-duotone ph-seal-check" style="color:var(--color-accent)"></i> · 210 interested</div></div>
+<div style="break-inside:avoid;margin-bottom:30px"><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-2-700);font-weight:600">Recruiting · core team</div><div style="font:600 24px/1.15 var(--font-heading);margin:6px 0">Engifest '27 is hiring volunteers</div><div style="font-size:15px;line-height:1.5;color:var(--color-neutral-800)">Hospitality, sponsorship, media, logistics. All years welcome.</div><div style="font-size:13px;color:var(--color-neutral-700);margin-top:8px;display:flex;align-items:center;gap:4px">Engifest <i class="ph-duotone ph-seal-check" style="color:var(--color-accent)"></i> · <a>Apply</a></div></div>
+<div style="break-inside:avoid;margin-bottom:30px"><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-700);font-weight:600">Workshop · Sat 11 am</div><div style="font:600 24px/1.15 var(--font-heading);margin:6px 0">Figma from zero, for non-designers</div><div style="font-size:15px;line-height:1.5;color:var(--color-neutral-800)">Two hours, one landing page. Perfect for hackathon teams.</div><div style="font-size:13px;color:var(--color-neutral-700);margin-top:8px;display:flex;align-items:center;gap:4px">Design Club <i class="ph-duotone ph-seal-check" style="color:var(--color-accent)"></i> · 54 going</div></div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.teams }}" hint-placeholder-val="{{ false }}">
+<div style="padding:36px 48px 0;display:flex;flex-wrap:wrap;align-items:flex-end;gap:24px 40px">
+<div><h1 style="font-size:48px;margin:0;letter-spacing:-.025em">Team Up</h1><div style="font:italic 400 19px var(--font-body);color:var(--color-neutral-800);margin-top:6px">Find teammates for hackathons, projects and competitions — or put yourself out there.</div></div>
+<div style="margin-left:auto;display:flex;gap:10px"><button class="btn btn-secondary"><i class="ph-duotone ph-hand-waving" style="font-size:17px"></i>I'm looking for a team</button><button class="btn btn-primary"><i class="ph-duotone ph-plus" style="font-size:17px"></i>Post a team</button></div>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:10px;padding:24px 48px 0;font:600 14px var(--font-heading)"><span style="padding:7px 14px;background:var(--color-text);color:var(--color-bg);border-radius:2px">All · 38</span><span style="padding:7px 14px;background:var(--color-accent-100);color:var(--color-accent-800);border-radius:2px">Hackathons · 21</span><span style="padding:7px 14px;background:var(--color-accent-100);color:var(--color-accent-800);border-radius:2px">Projects · 9</span><span style="padding:7px 14px;background:var(--color-accent-2-100);color:var(--color-accent-2-800);border-radius:2px">Competitions · 5</span><span style="padding:7px 14px;background:var(--color-neutral-200);color:var(--color-neutral-800);border-radius:2px">Research · 3</span><span style="margin-left:auto;font:400 14px var(--font-body);color:var(--color-neutral-700);display:flex;align-items:center;gap:6px"><i class="ph-duotone ph-funnel" style="font-size:18px"></i>Needs my skills: React, Figma</span></div>
+<div style="display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:56px;padding:32px 48px 0">
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-content:start">
+<div class="card" style="padding:22px;gap:12px">
+<div style="display:flex;align-items:center;gap:8px;font-size:12.5px"><span class="tag tag-accent">Smart India Hackathon</span><span style="margin-left:auto;font-weight:600;color:var(--color-accent-2-700)">3 days left</span></div>
+<div style="font:600 21px/1.25 var(--font-heading)">Crop-disease detection from leaf photos</div>
+<div style="font-size:14.5px;line-height:1.5;color:var(--color-neutral-800)">ML model + farmer-facing app. Shortlisting round in 3 weeks.</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px 18px"><span style="display:flex;align-items:center;gap:5px;font-size:14px;color:var(--color-neutral-700)"><i class="ph-duotone ph-check-circle" style="font-size:17px"></i>ML</span><span style="display:flex;align-items:center;gap:5px;font-size:14px;color:var(--color-neutral-700)"><i class="ph-duotone ph-check-circle" style="font-size:17px"></i>Backend</span><span style="display:flex;align-items:center;gap:5px;font-weight:600;font-size:14px"><i class="ph-duotone ph-circle-dashed" style="font-size:17px;color:var(--color-accent)"></i>Frontend</span><span style="display:flex;align-items:center;gap:5px;font-weight:600;font-size:14px"><i class="ph-duotone ph-circle-dashed" style="font-size:17px;color:var(--color-accent)"></i>Designer</span></div>
+<div style="display:flex;align-items:center;margin-top:6px"><div style="display:flex"><span style="width:28px;height:28px;border-radius:50%;background:var(--color-accent-2-200);color:var(--color-accent-2-800);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:10px;box-shadow:0 0 0 2px var(--color-surface);margin-right:-6px">PS</span><span style="width:28px;height:28px;border-radius:50%;background:var(--color-accent-200);color:var(--color-accent-800);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:10px;box-shadow:0 0 0 2px var(--color-surface);margin-right:-6px">VJ</span></div><button class="btn btn-primary" style="margin-left:auto">Ask to join</button></div></div>
+<div class="card" style="padding:22px;gap:12px">
+<div style="display:flex;align-items:center;gap:8px;font-size:12.5px"><span class="tag tag-accent">Invictus CTF</span><span style="margin-left:auto;font-weight:600;color:var(--color-neutral-700)">1 week left</span></div>
+<div style="font:600 21px/1.25 var(--font-heading)">Team "segfault_squad" needs two more</div>
+<div style="font-size:14.5px;line-height:1.5;color:var(--color-neutral-800)">We have web and forensics. Looking for people who enjoy binaries.</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px 18px"><span style="display:flex;align-items:center;gap:5px;font-size:14px;color:var(--color-neutral-700)"><i class="ph-duotone ph-check-circle" style="font-size:17px"></i>Web</span><span style="display:flex;align-items:center;gap:5px;font-size:14px;color:var(--color-neutral-700)"><i class="ph-duotone ph-check-circle" style="font-size:17px"></i>Forensics</span><span style="display:flex;align-items:center;gap:5px;font-weight:600;font-size:14px"><i class="ph-duotone ph-circle-dashed" style="font-size:17px;color:var(--color-accent)"></i>Reverse eng.</span><span style="display:flex;align-items:center;gap:5px;font-weight:600;font-size:14px"><i class="ph-duotone ph-circle-dashed" style="font-size:17px;color:var(--color-accent)"></i>Crypto</span></div>
+<div style="display:flex;align-items:center;margin-top:6px"><div style="display:flex"><span style="width:28px;height:28px;border-radius:50%;background:var(--color-neutral-200);color:var(--color-text);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:10px;box-shadow:0 0 0 2px var(--color-surface);margin-right:-6px">RC</span><span style="width:28px;height:28px;border-radius:50%;background:var(--color-neutral-200);color:var(--color-text);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:10px;box-shadow:0 0 0 2px var(--color-surface);margin-right:-6px">DE</span></div><button class="btn btn-secondary" style="margin-left:auto">Ask to join</button></div></div>
+<div class="card" style="padding:22px;gap:12px">
+<div style="display:flex;align-items:center;gap:8px;font-size:12.5px"><span class="tag tag-neutral">Project · open-ended</span><span style="margin-left:auto;font-weight:600;color:var(--color-neutral-700)">Rolling</span></div>
+<div style="font:600 21px/1.25 var(--font-heading)">DTour mobile app (yes, this one)</div>
+<div style="font-size:14.5px;line-height:1.5;color:var(--color-neutral-800)">Help build the campus app. React Native, weekends only.</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px 18px"><span style="display:flex;align-items:center;gap:5px;font-size:14px;color:var(--color-neutral-700)"><i class="ph-duotone ph-check-circle" style="font-size:17px"></i>Product</span><span style="display:flex;align-items:center;gap:5px;font-weight:600;font-size:14px"><i class="ph-duotone ph-circle-dashed" style="font-size:17px;color:var(--color-accent)"></i>React Native</span><span style="display:flex;align-items:center;gap:5px;font-weight:600;font-size:14px"><i class="ph-duotone ph-circle-dashed" style="font-size:17px;color:var(--color-accent)"></i>Backend</span></div>
+<div style="display:flex;align-items:center;margin-top:6px"><div style="display:flex"><span style="width:28px;height:28px;border-radius:50%;background:var(--color-accent-200);color:var(--color-accent-800);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:10px;box-shadow:0 0 0 2px var(--color-surface);margin-right:-6px">AK</span></div><button class="btn btn-secondary" style="margin-left:auto">Ask to join</button></div></div>
+<div class="card" style="padding:22px;gap:12px">
+<div style="display:flex;align-items:center;gap:8px;font-size:12.5px"><span class="tag tag-accent-2">Robocon 2027</span><span style="margin-left:auto;font-weight:600;color:var(--color-accent-2-700)">Trials Nov 2</span></div>
+<div style="font:600 21px/1.25 var(--font-heading)">Robotics team recruiting first and second years</div>
+<div style="font-size:14.5px;line-height:1.5;color:var(--color-neutral-800)">Mechanical, electronics and controls. No prior experience needed.</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px 18px"><span style="display:flex;align-items:center;gap:5px;font-weight:600;font-size:14px"><i class="ph-duotone ph-circle-dashed" style="font-size:17px;color:var(--color-accent)"></i>Mechanical</span><span style="display:flex;align-items:center;gap:5px;font-weight:600;font-size:14px"><i class="ph-duotone ph-circle-dashed" style="font-size:17px;color:var(--color-accent)"></i>Embedded</span><span style="display:flex;align-items:center;gap:5px;font-weight:600;font-size:14px"><i class="ph-duotone ph-circle-dashed" style="font-size:17px;color:var(--color-accent)"></i>Controls</span></div>
+<div style="display:flex;align-items:center;margin-top:6px"><div style="display:flex"><span style="width:28px;height:28px;border-radius:50%;background:var(--color-accent-100);color:var(--color-accent-800);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:10px;box-shadow:0 0 0 2px var(--color-surface);margin-right:-6px">MS</span><span style="width:28px;height:28px;border-radius:50%;background:var(--color-neutral-200);color:var(--color-text);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:10px;box-shadow:0 0 0 2px var(--color-surface);margin-right:-6px">+9</span></div><button class="btn btn-secondary" style="margin-left:auto">Ask to join</button></div></div>
+</div>
+<div style="display:flex;flex-direction:column;gap:36px">
+<div><h4 style="margin:0 0 16px">Upcoming deadlines</h4>
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="display:grid;grid-template-columns:48px minmax(0,1fr);gap:12px"><div style="line-height:1"><div style="font:600 24px var(--font-heading);color:var(--color-accent-2-700)">20</div><div style="font-size:11px;letter-spacing:.1em;color:var(--color-neutral-700)">OCT</div></div><div><div style="font-weight:600;font-size:15px">SIH internal round</div><div style="font-size:13px;color:var(--color-neutral-700)">12 DTU teams registered</div></div></div>
+<div style="display:grid;grid-template-columns:48px minmax(0,1fr);gap:12px"><div style="line-height:1"><div style="font:600 24px var(--font-heading)">24</div><div style="font-size:11px;letter-spacing:.1em;color:var(--color-neutral-700)">OCT</div></div><div><div style="font-weight:600;font-size:15px">Invictus CTF registration</div><div style="font-size:13px;color:var(--color-neutral-700)">Teams of up to 4</div></div></div>
+<div style="display:grid;grid-template-columns:48px minmax(0,1fr);gap:12px"><div style="line-height:1"><div style="font:600 24px var(--font-heading)">02</div><div style="font-size:11px;letter-spacing:.1em;color:var(--color-neutral-700)">NOV</div></div><div><div style="font-weight:600;font-size:15px">Robocon trials</div><div style="font-size:13px;color:var(--color-neutral-700)">Mech workshop</div></div></div>
+</div></div>
+<div><h4 style="margin:0 0 6px">Looking for a team</h4><div style="font-size:13.5px;color:var(--color-neutral-700);margin-bottom:14px">Students who've put themselves out there</div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;gap:10px;align-items:center"><span style="width:34px;height:34px;flex:none;border-radius:50%;background:var(--color-accent-2-200);color:var(--color-accent-2-800);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px">NB</span><div style="line-height:1.3"><div style="font-weight:600;font-size:14.5px">@neha.builds <span style="font-weight:400;color:var(--color-neutral-700)">· SE '28</span></div><div style="font-size:13px;color:var(--color-neutral-700)">Flutter, Firebase</div></div></div>
+<div style="display:flex;gap:10px;align-items:center"><span style="width:34px;height:34px;flex:none;border-radius:50%;background:var(--color-neutral-200);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px">YT</span><div style="line-height:1.3"><div style="font-weight:600;font-size:14.5px">@yash.tensor <span style="font-weight:400;color:var(--color-neutral-700)">· MCE '27</span></div><div style="font-size:13px;color:var(--color-neutral-700)">PyTorch, CV</div></div></div>
+<div style="display:flex;gap:10px;align-items:center"><span style="width:34px;height:34px;flex:none;border-radius:50%;background:var(--color-accent-200);color:var(--color-accent-800);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px">IR</span><div style="line-height:1.3"><div style="font-weight:600;font-size:14.5px">@ishaan.r <span style="font-weight:400;color:var(--color-neutral-700)">· ECE '29</span></div><div style="font-size:13px;color:var(--color-neutral-700)">Arduino, PCB design</div></div></div>
+</div></div>
+</div></div>
+</sc-if>
+<sc-if value="{{ is.kahan }}" hint-placeholder-val="{{ false }}">
+<div style="padding:36px 48px 0;display:flex;flex-wrap:wrap;align-items:flex-end;gap:24px 40px">
+<div><h1 style="font-size:54px;margin:0;letter-spacing:-.03em">Kahan chalein?</h1><div style="font:italic 400 19px var(--font-body);color:var(--color-neutral-800);margin-top:6px">Canteen favourites, food near campus, and what's on in Delhi this week — recommended by students.</div></div>
+<button class="btn btn-primary" style="margin-left:auto"><i class="ph-duotone ph-plus" style="font-size:17px"></i>Recommend a place</button>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:10px;padding:24px 48px 0;font:600 14px var(--font-heading)"><span style="padding:7px 14px;background:var(--color-text);color:var(--color-bg);border-radius:2px">Everything</span><span style="padding:7px 14px;background:var(--color-accent-2-100);color:var(--color-accent-2-800);border-radius:2px">On campus</span><span style="padding:7px 14px;background:var(--color-accent-100);color:var(--color-accent-800);border-radius:2px">Khaana nearby</span><span style="padding:7px 14px;background:var(--color-accent-100);color:var(--color-accent-800);border-radius:2px">Events in Delhi</span><span style="padding:7px 14px;background:var(--color-neutral-200);color:var(--color-neutral-800);border-radius:2px">Chill spots</span><span style="padding:7px 14px;background:var(--color-neutral-200);color:var(--color-neutral-800);border-radius:2px">Under ₹100</span></div>
+
+<div style="padding:48px 48px 0">
+<div style="display:flex;align-items:flex-end;gap:16px;border-bottom:3px solid var(--color-accent-2);padding-bottom:10px"><span style="font:600 34px/0.9 var(--font-heading);color:var(--color-accent-2-700)">01</span><h3 style="margin:0">Canteen favourites</h3><span style="font-size:14px;color:var(--color-neutral-700);padding-bottom:2px">What DTU actually orders, ranked by hearts</span></div>
+<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:40px;margin-top:22px">
+<div><div style="font:600 19px/1.25 var(--font-heading)">Cheese Maggi</div><div style="font-size:13.5px;color:var(--color-neutral-700);margin-top:4px">Main canteen · after 10 pm</div><div style="display:flex;align-items:center;gap:12px;margin-top:8px;font-size:13.5px"><span style="font-weight:600">₹60</span><span style="display:flex;align-items:center;gap:4px;color:var(--color-accent-700)"><i class="ph-duotone ph-heart" style="font-size:16px"></i>1.2k</span></div></div>
+<div><div style="font:600 19px/1.25 var(--font-heading)">Bread pakoda + chai</div><div style="font-size:13.5px;color:var(--color-neutral-700);margin-top:4px">Hostel canteen, H-4</div><div style="display:flex;align-items:center;gap:12px;margin-top:8px;font-size:13.5px"><span style="font-weight:600">₹35</span><span style="display:flex;align-items:center;gap:4px;color:var(--color-accent-700)"><i class="ph-duotone ph-heart" style="font-size:16px"></i>980</span></div></div>
+<div><div style="font:600 19px/1.25 var(--font-heading)">Cold coffee</div><div style="font-size:13.5px;color:var(--color-neutral-700);margin-top:4px">Juice corner near the library</div><div style="display:flex;align-items:center;gap:12px;margin-top:8px;font-size:13.5px"><span style="font-weight:600">₹50</span><span style="display:flex;align-items:center;gap:4px;color:var(--color-accent-700)"><i class="ph-duotone ph-heart" style="font-size:16px"></i>860</span></div></div>
+<div><div style="font:600 19px/1.25 var(--font-heading)">Rajma chawal</div><div style="font-size:13.5px;color:var(--color-neutral-700);margin-top:4px">Mess, Thursdays only</div><div style="display:flex;align-items:center;gap:12px;margin-top:8px;font-size:13.5px"><span style="font-weight:600">included</span><span style="display:flex;align-items:center;gap:4px;color:var(--color-accent-700)"><i class="ph-duotone ph-heart" style="font-size:16px"></i>640</span></div></div>
+</div></div>
+
+<div style="padding:52px 48px 0">
+<div style="display:flex;align-items:flex-end;gap:16px;border-bottom:3px solid var(--color-accent);padding-bottom:10px"><span style="font:600 34px/0.9 var(--font-heading);color:var(--color-accent-700)">02</span><h3 style="margin:0">Khaana nearby</h3><span style="font-size:14px;color:var(--color-neutral-700);padding-bottom:2px">Within 10 km of the main gate</span><a style="margin-left:auto;font-size:14px;font-weight:600;padding-bottom:2px">Open map →</a></div>
+<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px;margin-top:24px">
+<div><div class="halftone" style="height:150px;background:repeating-linear-gradient(135deg,var(--color-neutral-200) 0 8px,var(--color-neutral-300) 8px 16px);display:flex;align-items:flex-end;padding:8px"><span style="font:11px ui-monospace,Menlo,monospace;color:var(--color-neutral-700);position:relative;z-index:1">photo: momo stall</span></div><div style="font:600 19px/1.25 var(--font-heading);margin-top:12px">Sec-11 momo lane</div><div style="font-size:13.5px;color:var(--color-neutral-700);margin-top:3px">Rohini · 5.8 km · ₹</div><div style="display:flex;gap:6px;margin-top:8px"><span class="tag tag-neutral">212 recs</span><span class="tag tag-accent">Late night</span></div></div>
+<div><div class="halftone" style="height:150px;background:repeating-linear-gradient(135deg,var(--color-neutral-200) 0 8px,var(--color-neutral-300) 8px 16px);display:flex;align-items:flex-end;padding:8px"><span style="font:11px ui-monospace,Menlo,monospace;color:var(--color-neutral-700);position:relative;z-index:1">photo: food court</span></div><div style="font:600 19px/1.25 var(--font-heading);margin-top:12px">Unity One food court</div><div style="font-size:13.5px;color:var(--color-neutral-700);margin-top:3px">Rohini · 7 km · ₹₹</div><div style="display:flex;gap:6px;margin-top:8px"><span class="tag tag-neutral">96 recs</span><span class="tag tag-accent">Groups</span></div></div>
+<div><div class="halftone" style="height:150px;background:repeating-linear-gradient(135deg,var(--color-neutral-200) 0 8px,var(--color-neutral-300) 8px 16px);display:flex;align-items:flex-end;padding:8px"><span style="font:11px ui-monospace,Menlo,monospace;color:var(--color-neutral-700);position:relative;z-index:1">photo: chole bhature</span></div><div style="font:600 19px/1.25 var(--font-heading);margin-top:12px">Chole bhature, Sec-7 market</div><div style="font-size:13.5px;color:var(--color-neutral-700);margin-top:3px">Rohini · 6 km · ₹</div><div style="display:flex;gap:6px;margin-top:8px"><span class="tag tag-neutral">140 recs</span><span class="tag tag-accent">Breakfast</span></div></div>
+<div><div class="halftone" style="height:150px;background:repeating-linear-gradient(135deg,var(--color-neutral-200) 0 8px,var(--color-neutral-300) 8px 16px);display:flex;align-items:flex-end;padding:8px"><span style="font:11px ui-monospace,Menlo,monospace;color:var(--color-neutral-700);position:relative;z-index:1">photo: cafe interior</span></div><div style="font:600 19px/1.25 var(--font-heading);margin-top:12px">Study-friendly cafés</div><div style="font-size:13.5px;color:var(--color-neutral-700);margin-top:3px">Rohini & Pitampura · list of 8</div><div style="display:flex;gap:6px;margin-top:8px"><span class="tag tag-neutral">Wi-Fi</span><span class="tag tag-accent">Quiet</span></div></div>
+</div></div>
+
+<div style="display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:56px;padding:52px 48px 0">
+<div>
+<div style="display:flex;align-items:flex-end;gap:16px;border-bottom:3px solid var(--color-accent);padding-bottom:10px"><span style="font:600 34px/0.9 var(--font-heading);color:var(--color-accent-700)">03</span><h3 style="margin:0">This week in Delhi</h3></div>
+<div style="display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:16px;align-items:center;padding:16px 0;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent)"><div style="line-height:1"><div style="font:600 28px var(--font-heading);color:var(--color-accent-2-700)">18</div><div style="font-size:11px;letter-spacing:.1em;color:var(--color-neutral-700)">SUN</div></div><div><div style="font:600 18px/1.3 var(--font-heading)">Sunday book market</div><div style="font-size:13.5px;color:var(--color-neutral-700);margin-top:3px">Daryaganj · 9 am onwards</div></div><div style="font-size:13px;color:var(--color-neutral-700);text-align:right;display:flex;align-items:center;gap:6px"><i class="ph-duotone ph-train-simple" style="font-size:17px;color:var(--color-accent)"></i>~70 min</div></div>
+<div style="display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:16px;align-items:center;padding:16px 0;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent)"><div style="line-height:1"><div style="font:600 28px var(--font-heading);color:var(--color-text)">19</div><div style="font-size:11px;letter-spacing:.1em;color:var(--color-neutral-700)">MON</div></div><div><div style="font:600 18px/1.3 var(--font-heading)">Stand-up open mic night</div><div style="font-size:13.5px;color:var(--color-neutral-700);margin-top:3px">Connaught Place · 8 pm · ₹199</div></div><div style="font-size:13px;color:var(--color-neutral-700);text-align:right;display:flex;align-items:center;gap:6px"><i class="ph-duotone ph-train-simple" style="font-size:17px;color:var(--color-accent)"></i>~60 min</div></div>
+<div style="display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:16px;align-items:center;padding:16px 0;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent)"><div style="line-height:1"><div style="font:600 28px var(--font-heading);color:var(--color-text)">21</div><div style="font-size:11px;letter-spacing:.1em;color:var(--color-neutral-700)">WED</div></div><div><div style="font:600 18px/1.3 var(--font-heading)">Indie gig: three Delhi bands</div><div style="font-size:13.5px;color:var(--color-neutral-700);margin-top:3px">Hauz Khas Village · 9 pm</div></div><div style="font-size:13px;color:var(--color-neutral-700);text-align:right;display:flex;align-items:center;gap:6px"><i class="ph-duotone ph-train-simple" style="font-size:17px;color:var(--color-accent)"></i>~80 min</div></div>
+<div style="display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:16px;align-items:center;padding:16px 0;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent)"><div style="line-height:1"><div style="font:600 28px var(--font-heading);color:var(--color-text)">23</div><div style="font-size:11px;letter-spacing:.1em;color:var(--color-neutral-700)">FRI</div></div><div><div style="font:600 18px/1.3 var(--font-heading)">Regional food festival</div><div style="font-size:13.5px;color:var(--color-neutral-700);margin-top:3px">Dilli Haat, INA · all weekend</div></div><div style="font-size:13px;color:var(--color-neutral-700);text-align:right;display:flex;align-items:center;gap:6px"><i class="ph-duotone ph-train-simple" style="font-size:17px;color:var(--color-accent)"></i>~75 min</div></div>
+<div style="font-size:13px;color:var(--color-neutral-700);margin-top:12px">Travel times from Samaypur Badli metro (Yellow Line).</div>
+</div>
+<div>
+<div style="display:flex;align-items:flex-end;gap:16px;border-bottom:3px solid var(--color-text);padding-bottom:10px"><span style="font:600 34px/0.9 var(--font-heading)">04</span><h3 style="margin:0">Chill spots</h3></div>
+<div style="display:flex;flex-direction:column;gap:18px;margin-top:20px">
+<div style="display:flex;gap:14px;align-items:center"><i class="ph-duotone ph-tree" style="font-size:26px;color:var(--color-accent)"></i><div><div style="font:600 18px var(--font-heading)">Japanese Park</div><div style="font-size:13.5px;color:var(--color-neutral-700)">Rohini · 6.2 km · free · sunsets</div></div></div>
+<div style="display:flex;gap:14px;align-items:center"><i class="ph-duotone ph-ticket" style="font-size:26px;color:var(--color-accent)"></i><div><div style="font:600 18px var(--font-heading)">Adventure Island</div><div style="font-size:13.5px;color:var(--color-neutral-700)">Rohini · 7 km · post-exam rides</div></div></div>
+<div style="display:flex;gap:14px;align-items:center"><i class="ph-duotone ph-person-simple-walk" style="font-size:26px;color:var(--color-accent)"></i><div><div style="font:600 18px var(--font-heading)">Swarna Jayanti Park</div><div style="font-size:13.5px;color:var(--color-neutral-700)">Rohini · 6.5 km · morning walks</div></div></div>
+<div style="display:flex;gap:14px;align-items:center"><i class="ph-duotone ph-moon-stars" style="font-size:26px;color:var(--color-accent)"></i><div><div style="font:600 18px var(--font-heading)">OAT after dark</div><div style="font-size:13.5px;color:var(--color-neutral-700)">On campus · the classic</div></div></div>
+</div></div>
+</div>
+</sc-if>
+<sc-if value="{{ is.post }}" hint-placeholder-val="{{ false }}">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:64px;padding:32px 48px 0">
+<div>
+<div style="font-size:13px;color:var(--color-neutral-700)"><a onClick="{{ go.home }}">Today</a> / New post</div>
+<h1 style="font-size:44px;margin:14px 0 28px;letter-spacing:-.025em">What do you want to share?</h1>
+<div style="font:600 11px var(--font-body);letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-700);margin-bottom:10px">Type</div>
+<div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px">
+<sc-for list="{{ postTypes }}" as="t" hint-placeholder-count="6">
+<div onClick="{{ t.pick }}" style="{{ t.style }}"><i class="ph-duotone {{ t.icon }}" style="font-size:24px"></i><div style="font:600 15px var(--font-heading);margin-top:8px">{{ t.label }}</div><div style="font-size:12px;line-height:1.35;opacity:.8;margin-top:2px">{{ t.hint }}</div></div>
+</sc-for>
+</div>
+
+<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;margin-top:34px">
+<div><div style="font:600 11px var(--font-body);letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-700);margin-bottom:10px">Post in</div>
+<div style="display:flex;align-items:center;gap:10px;height:46px;padding:0 14px;background:var(--color-surface);border-radius:2px;font-family:var(--font-body);cursor:pointer"><span style="width:10px;height:10px;flex:none;border-radius:2px;background:var(--color-accent-2)"></span><span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px;color:var(--color-neutral-700)">Padhai › Academics › <span style="font:600 15px var(--font-heading);color:var(--color-text)">COE · 3rd sem</span></span><i class="ph-duotone ph-caret-down" style="flex:none;font-size:16px;color:var(--color-neutral-700)"></i></div>
+<div style="display:flex;gap:6px;margin-top:8px;font-size:12.5px;color:var(--color-neutral-700);align-items:center">Suggested: <span class="tag tag-neutral">Exams &amp; Results</span><span class="tag tag-neutral">Campus Buzz</span></div></div>
+<div><div style="font:600 11px var(--font-body);letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-700);margin-bottom:10px">Posting as</div>
+<div style="display:flex;align-items:center;gap:10px;height:46px;padding:0 14px;background:var(--color-surface);border-radius:2px;font-family:var(--font-body)"><span style="width:28px;height:28px;flex:none;border-radius:50%;background:var(--color-accent-200);color:var(--color-accent-800);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:10px">AK</span><span style="font:600 15px var(--font-heading)">@aarav.k</span><span class="tag tag-neutral">COE '28</span><a style="margin-left:auto;font-size:13.5px;font-weight:600">Change</a></div>
+<div style="font-size:12.5px;color:var(--color-neutral-700);margin-top:8px">Your branch and year flair show on the post.</div></div>
+</div>
+
+<div style="margin-top:34px"><div style="font:600 11px var(--font-body);letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-700);margin-bottom:10px">Title</div>
+<input value="{{ title }}" onChange="{{ onTitle }}" placeholder="Make it specific — e.g. “DSA unit 4 notes for COE sem 3?”" style="width:100%;box-sizing:border-box;border:none;border-bottom:2px solid var(--color-text);background:transparent;padding:6px 0 12px;font:600 30px/1.2 var(--font-heading);color:var(--color-text);outline:none"></input>
+<div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--color-neutral-700);margin-top:6px"><span>{{ titleHint }}</span><span>{{ titleCount }}/140</span></div></div>
+
+<div style="margin-top:28px"><div style="font:600 11px var(--font-body);letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-700);margin-bottom:10px">Body</div>
+<div style="display:flex;align-items:center;gap:2px;padding:6px;background:var(--color-surface);border-radius:2px 2px 0 0;border-bottom:1px solid var(--color-divider)">
+<button class="btn btn-icon"><i class="ph-duotone ph-text-b" style="font-size:18px"></i></button><button class="btn btn-icon"><i class="ph-duotone ph-text-italic" style="font-size:18px"></i></button><button class="btn btn-icon"><i class="ph-duotone ph-link" style="font-size:18px"></i></button><button class="btn btn-icon"><i class="ph-duotone ph-quotes" style="font-size:18px"></i></button><button class="btn btn-icon"><i class="ph-duotone ph-code" style="font-size:18px"></i></button><button class="btn btn-icon"><i class="ph-duotone ph-list-bullets" style="font-size:18px"></i></button><button class="btn btn-icon"><i class="ph-duotone ph-function" style="font-size:18px"></i></button>
+<span style="width:1px;height:22px;background:var(--color-divider);margin:0 6px"></span>
+<button class="btn btn-icon"><i class="ph-duotone ph-image" style="font-size:18px"></i></button><button class="btn btn-icon"><i class="ph-duotone ph-paperclip" style="font-size:18px"></i></button>
+<span style="margin-left:auto;font-size:12.5px;color:var(--color-neutral-700);padding-right:8px">Markdown + LaTeX supported</span></div>
+<textarea class="input" placeholder="Add context. What have you tried? Which branch, semester, professor?" style="border-radius:0 0 2px 2px;min-height:180px;font:400 16px/1.6 var(--font-body);border-top:none;display:block"></textarea>
+<div style="display:flex;align-items:center;gap:12px;margin-top:10px;padding:12px 14px;border:1px dashed var(--color-neutral-400);border-radius:2px;font-size:14px;color:var(--color-neutral-700)"><i class="ph-duotone ph-upload-simple" style="font-size:20px;color:var(--color-accent)"></i>Drop PDFs, notes or images · files also get filed in the <a onClick="{{ go.library }}">Library</a> under this subject</div>
+</div>
+
+<sc-if value="{{ pt.poll }}" hint-placeholder-val="{{ false }}">
+<div style="margin-top:28px"><div style="font:600 11px var(--font-body);letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-700);margin-bottom:10px">Poll options</div>
+<div style="display:flex;flex-direction:column;gap:8px;max-width:520px">
+<input class="input" placeholder="Option 1" value="Sec-11 momo lane"></input><input class="input" placeholder="Option 2" value="Unity One food court"></input><input class="input" placeholder="Option 3"></input>
+<div style="display:flex;align-items:center;gap:16px;font-size:14px"><a style="font-weight:600">+ Add option</a><span style="margin-left:auto;color:var(--color-neutral-700)">Closes in</span><div class="seg"><label class="seg-opt"><input type="radio" name="dur"></input>1 day</label><label class="seg-opt"><input type="radio" name="dur" checked></input>3 days</label><label class="seg-opt"><input type="radio" name="dur"></input>1 week</label></div></div>
+</div></div>
+</sc-if>
+<sc-if value="{{ pt.team }}" hint-placeholder-val="{{ false }}">
+<div style="margin-top:28px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px">
+<div><div style="font:600 11px var(--font-body);letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-700);margin-bottom:10px">Event / hackathon</div><input class="input" value="Smart India Hackathon 2026"></input></div>
+<div><div style="font:600 11px var(--font-body);letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-700);margin-bottom:10px">Applications close</div><input class="input" value="20 Oct 2026"></input></div>
+<div style="grid-column:span 2"><div style="font:600 11px var(--font-body);letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-700);margin-bottom:10px">Roles</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px"><span class="tag tag-neutral" style="padding:6px 12px;font-size:13px">ML · filled</span><span class="tag tag-neutral" style="padding:6px 12px;font-size:13px">Backend · filled</span><span class="tag tag-accent" style="padding:6px 12px;font-size:13px">Frontend · open</span><span class="tag tag-accent" style="padding:6px 12px;font-size:13px">Designer · open</span><span class="tag tag-outline" style="padding:6px 12px;font-size:13px">+ Add role</span></div></div>
+</div>
+</sc-if>
+<sc-if value="{{ pt.event }}" hint-placeholder-val="{{ false }}">
+<div style="margin-top:28px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px">
+<div><div style="font:600 11px var(--font-body);letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-700);margin-bottom:10px">Kind</div><div class="seg"><label class="seg-opt"><input type="radio" name="ek" checked></input>Event</label><label class="seg-opt"><input type="radio" name="ek"></input>Recruiting</label><label class="seg-opt"><input type="radio" name="ek"></input>Workshop</label><label class="seg-opt"><input type="radio" name="ek"></input>Talk</label></div></div>
+<div><div style="font:600 11px var(--font-body);letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-700);margin-bottom:10px">When</div><input class="input" value="Fri 23 Oct · 5:00 pm"></input></div>
+<div><div style="font:600 11px var(--font-body);letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-700);margin-bottom:10px">Where</div><input class="input" value="SPS-12"></input></div>
+<div style="grid-column:span 3;display:flex;align-items:center;gap:10px;font-size:14px;color:var(--color-neutral-800)"><i class="ph-duotone ph-seal-check" style="font-size:20px;color:var(--color-accent)"></i>Posting as a verified society shows the badge and lists this on the <a onClick="{{ go.societies }}">Society board</a> and the Today timeline.</div>
+</div>
+</sc-if>
+<sc-if value="{{ pt.article }}" hint-placeholder-val="{{ false }}">
+<div style="margin-top:28px;padding:16px 18px;background:var(--color-accent-100);border-radius:2px;font-size:14.5px;line-height:1.5;color:var(--color-accent-900);display:flex;gap:12px"><i class="ph-duotone ph-users-four" style="font-size:22px;color:var(--color-accent-700)"></i><div><b>Wiki articles are shared.</b> Anyone can suggest edits after you publish; every editor is credited. Start from a template: <a>Guide</a> · <a>Roadmap</a> · <a>Subject survival</a></div></div>
+</sc-if>
+
+<div style="margin-top:28px"><div style="font:600 11px var(--font-body);letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-700);margin-bottom:10px">Tags</div>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-height:44px;padding:6px 10px;background:var(--color-surface);border-radius:2px"><span class="tag tag-accent">DSA ×</span><span class="tag tag-accent">end-sem ×</span><span style="font-size:14px;color:var(--color-neutral-700)">Add a tag…</span></div></div>
+
+<div style="display:flex;align-items:center;gap:12px;margin-top:34px;padding-top:20px;border-top:1px solid var(--color-divider)">
+<label class="radio"><input type="checkbox" checked></input><span class="dot"></span>Notify me about replies</label>
+<button class="btn btn-ghost" style="margin-left:auto">Save draft</button>
+<button class="btn btn-secondary"><i class="ph-duotone ph-eye" style="font-size:17px"></i>Preview</button>
+<button class="btn btn-primary" onClick="{{ go.thread }}"><i class="ph-duotone ph-paper-plane-tilt" style="font-size:17px"></i>Post</button>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:36px;padding-top:120px">
+<div><h6 style="margin:0 0 12px;color:var(--color-neutral-700)">Already asked?</h6>
+<sc-if value="{{ hasSimilar }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:14px">
+<sc-for list="{{ similar }}" as="s" hint-placeholder-count="2">
+<div onClick="{{ s.open }}" style="cursor:pointer"><div style="font:600 16px/1.3 var(--font-heading)">{{ s.title }}</div><div style="font-size:12.5px;color:var(--color-neutral-700);margin-top:3px">{{ s.sub }}</div></div>
+</sc-for></div>
+</sc-if>
+<sc-if value="{{ noSimilar }}" hint-placeholder-val="{{ true }}"><div style="font-size:14px;color:var(--color-neutral-700);line-height:1.5">Start typing a title — we'll show similar threads so the answer you need might already be here.</div></sc-if>
+</div>
+<div><h6 style="margin:0 0 12px;color:var(--color-neutral-700)">Board rules · COE sem 3</h6>
+<div style="display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.45;color:var(--color-neutral-800)"><div>1. Mention the subject code (CO201…)</div><div>2. Share PYQs as PDFs, not photos</div><div>3. No leaked papers — ever</div><div>4. Mark the answer that helped</div></div></div>
+<div><h6 style="margin:0 0 12px;color:var(--color-neutral-700)">Good posts get</h6><div style="font-size:14px;line-height:1.5;color:var(--color-neutral-800)">+10 karma per upvote, +25 when your reply is accepted.</div></div>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{ is.profile }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:28px 40px;padding:44px 48px 0">
+<span style="width:112px;height:112px;border-radius:50%;background:var(--color-accent-200);color:var(--color-accent-800);display:flex;align-items:center;justify-content:center;font:600 40px var(--font-heading)">AK</span>
+<div>
+<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><h1 style="font-size:46px;margin:0;letter-spacing:-.025em">@aarav.k</h1><span class="tag tag-neutral" style="font-size:13px;padding:4px 10px">COE '28</span><span class="tag tag-accent" style="font-size:13px;padding:4px 10px">2nd year</span></div>
+<div style="font:italic 400 18px/1.45 var(--font-body);color:var(--color-neutral-800);margin-top:8px;max-width:560px">Learning backend, breaking things, fixing them at 3 am. Usually in the library or at the H-4 canteen.</div>
+<div style="display:flex;flex-wrap:wrap;gap:18px;margin-top:12px;font-size:13.5px;color:var(--color-neutral-700)"><span style="display:flex;align-items:center;gap:6px"><i class="ph-duotone ph-calendar-blank" style="font-size:17px"></i>Joined Aug 2024</span><span style="display:flex;align-items:center;gap:6px"><i class="ph-duotone ph-buildings" style="font-size:17px"></i>Hostel H-4</span><a style="display:flex;align-items:center;gap:6px"><i class="ph-duotone ph-github-logo" style="font-size:17px"></i>aaravk</a><a style="display:flex;align-items:center;gap:6px"><i class="ph-duotone ph-linkedin-logo" style="font-size:17px"></i>LinkedIn</a></div>
+</div>
+<div style="margin-left:auto;display:flex;gap:10px"><button class="btn btn-secondary"><i class="ph-duotone ph-gear-six" style="font-size:17px"></i>Settings</button><button class="btn btn-primary"><i class="ph-duotone ph-pencil-simple-line" style="font-size:17px"></i>Edit profile</button></div>
+</div>
+<div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:48px;padding:40px 48px 0">
+<div style="display:flex;align-items:flex-end;gap:14px"><div class="cmyk-num" style="font:600 72px/0.9 var(--font-heading);letter-spacing:-.03em"><span class="paper">1,420</span><span class="plate plate-c" aria-hidden="true">1,420</span><span class="plate plate-m" aria-hidden="true">1,420</span><span class="plate plate-y" aria-hidden="true">1,420</span></div><div style="padding-bottom:6px;font-size:14px;color:var(--color-neutral-700);line-height:1.3">karma<br><span style="color:var(--color-accent-700);font-weight:600">+86 this week</span></div></div>
+<div><div style="font:600 30px/1 var(--font-heading);">48</div><div style="font-size:13px;color:var(--color-neutral-700);margin-top:5px">threads</div></div><div><div style="font:600 30px/1 var(--font-heading);">312</div><div style="font-size:13px;color:var(--color-neutral-700);margin-top:5px">replies</div></div><div><div style="font:600 30px/1 var(--font-heading);color:var(--color-accent-700)">17</div><div style="font-size:13px;color:var(--color-neutral-700);margin-top:5px">accepted answers</div></div><div><div style="font:600 30px/1 var(--font-heading);">9</div><div style="font-size:13px;color:var(--color-neutral-700);margin-top:5px">Library uploads</div></div><div><div style="font:600 30px/1 var(--font-heading);">2,960</div><div style="font-size:13px;color:var(--color-neutral-700);margin-top:5px">downloads of your files</div></div>
+</div>
+<div style="display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:64px;padding:44px 48px 0">
+<div>
+<div style="display:flex;gap:26px;font:600 16px var(--font-heading);border-bottom:1px solid var(--color-divider)"><span style="border-bottom:2px solid var(--color-accent);padding-bottom:10px;margin-bottom:-1px">Activity</span><span style="color:var(--color-neutral-700)">Threads</span><span style="color:var(--color-neutral-700)">Replies</span><span style="color:var(--color-neutral-700)">Uploads</span><span style="color:var(--color-neutral-700)">Saved · 34</span><span style="color:var(--color-neutral-700)">Drafts · 2</span></div>
+<div onClick="{{ go.thread }}" style="cursor:pointer;display:grid;grid-template-columns:28px minmax(0,1fr);gap:14px;padding:18px 0;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent)"><i class="ph-duotone ph-check-circle" style="font-size:22px;color:var(--color-accent)"></i><div><div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-700);font-weight:600">Accepted answer · Academics</div><div style="font:600 18px/1.3 var(--font-heading);margin-top:4px">Re: Why does my linked list segfault on delete?</div><div style="font-size:13px;color:var(--color-neutral-700);margin-top:4px">2h ago · +25 karma · 41 votes</div></div></div>
+<div onClick="{{ go.library }}" style="cursor:pointer;display:grid;grid-template-columns:28px minmax(0,1fr);gap:14px;padding:18px 0;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent)"><i class="ph-duotone ph-file-pdf" style="font-size:22px;color:var(--color-accent)"></i><div><div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-700);font-weight:600">Uploaded to Library · CO207</div><div style="font:600 18px/1.3 var(--font-heading);margin-top:4px">OOP lab file — programs 6 to 10 with outputs</div><div style="font-size:13px;color:var(--color-neutral-700);margin-top:4px">Yesterday · 312 downloads</div></div></div>
+<div onClick="{{ go.thread }}" style="cursor:pointer;display:grid;grid-template-columns:28px minmax(0,1fr);gap:14px;padding:18px 0;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent)"><i class="ph-duotone ph-chat-circle" style="font-size:22px;color:var(--color-accent)"></i><div><div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-700);font-weight:600">Thread · Placements</div><div style="font:600 18px/1.3 var(--font-heading);margin-top:4px">Is it worth doing a startup internship in 2nd year?</div><div style="font-size:13px;color:var(--color-neutral-700);margin-top:4px">3 days ago · 96 votes · 58 replies</div></div></div>
+<div onClick="{{ go.article }}" style="cursor:pointer;display:grid;grid-template-columns:28px minmax(0,1fr);gap:14px;padding:18px 0;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent)"><i class="ph-duotone ph-pencil-simple-line" style="font-size:22px;color:var(--color-accent)"></i><div><div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-700);font-weight:600">Edited wiki · Academics</div><div style="font:600 18px/1.3 var(--font-heading);margin-top:4px">How to get a 9+ CGPA at DTU — added COE lab tips</div><div style="font-size:13px;color:var(--color-neutral-700);margin-top:4px">5 days ago · +140 words</div></div></div>
+<div onClick="{{ go.teams }}" style="cursor:pointer;display:grid;grid-template-columns:28px minmax(0,1fr);gap:14px;padding:18px 0;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent)"><i class="ph-duotone ph-users-three" style="font-size:22px;color:var(--color-accent)"></i><div><div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-700);font-weight:600">Joined team · Team Up</div><div style="font:600 18px/1.3 var(--font-heading);margin-top:4px">SIH: crop-disease ML tool (Backend)</div><div style="font-size:13px;color:var(--color-neutral-700);margin-top:4px">1 week ago</div></div></div>
+</div>
+<div style="display:flex;flex-direction:column;gap:20px">
+<div style="background:var(--color-surface);border-radius:2px;padding:20px 22px">
+<h4 style="margin:0 0 14px">Where the karma comes from</h4>
+<div style="display:flex;flex-direction:column;gap:14px"><div><div style="display:flex;justify-content:space-between;font-size:14px"><span>Academics</span><b>820</b></div><div style="height:6px;background:var(--color-neutral-200);margin-top:6px;border-radius:1px"><div style="height:100%;width:72%;background:var(--color-accent-2);border-radius:1px"></div></div></div><div><div style="display:flex;justify-content:space-between;font-size:14px"><span>Placements</span><b>310</b></div><div style="height:6px;background:var(--color-neutral-200);margin-top:6px;border-radius:1px"><div style="height:100%;width:30%;background:var(--color-accent);border-radius:1px"></div></div></div><div><div style="display:flex;justify-content:space-between;font-size:14px"><span>Campus Buzz</span><b>190</b></div><div style="height:6px;background:var(--color-neutral-200);margin-top:6px;border-radius:1px"><div style="height:100%;width:18%;background:var(--color-neutral-600);border-radius:1px"></div></div></div><div><div style="display:flex;justify-content:space-between;font-size:14px"><span>Library uploads</span><b>100</b></div><div style="height:6px;background:var(--color-neutral-200);margin-top:6px;border-radius:1px"><div style="height:100%;width:10%;background:var(--color-accent);border-radius:1px"></div></div></div></div></div>
+<div style="background:var(--color-surface);border-radius:2px;padding:20px 22px">
+<div style="display:flex;align-items:center;justify-content:space-between"><h4 style="margin:0">Open to teams</h4><span class="tag tag-accent">On</span></div>
+<div style="font-size:13.5px;color:var(--color-neutral-700);margin:6px 0 12px">Shown on Team Up to people looking for:</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px"><span class="tag tag-neutral">Node.js</span><span class="tag tag-neutral">PostgreSQL</span><span class="tag tag-neutral">React</span><span class="tag tag-neutral">C++</span><span class="tag tag-outline">+ add skill</span></div></div>
+<div style="background:var(--color-surface);border-radius:2px;padding:20px 22px">
+<h4 style="margin:0 0 14px">Societies</h4>
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;gap:10px;align-items:center"><span style="width:34px;height:34px;flex:none;border-radius:50%;background:var(--color-accent-100);color:var(--color-accent-800);display:flex;align-items:center;justify-content:center"><i class="ph-duotone ph-code" style="font-size:17px"></i></span><div style="line-height:1.3"><div style="font-weight:600;font-size:14.5px;display:flex;align-items:center;gap:4px">GDSC DTU <i class="ph-duotone ph-seal-check" style="color:var(--color-accent)"></i></div><div style="font-size:12.5px;color:var(--color-neutral-700)">Core member</div></div></div>
+<div style="display:flex;gap:10px;align-items:center"><span style="width:34px;height:34px;flex:none;border-radius:50%;background:var(--color-accent-2-100);color:var(--color-accent-2-800);display:flex;align-items:center;justify-content:center"><i class="ph-duotone ph-music-notes" style="font-size:17px"></i></span><div style="line-height:1.3"><div style="font-weight:600;font-size:14.5px;display:flex;align-items:center;gap:4px">Music Society <i class="ph-duotone ph-seal-check" style="color:var(--color-accent)"></i></div><div style="font-size:12.5px;color:var(--color-neutral-700)">Member</div></div></div>
+</div></div>
+<div style="background:var(--color-surface);border-radius:2px;padding:20px 22px">
+<h4 style="margin:0 0 12px">Badges</h4>
+<div style="display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;text-align:center">
+<div style="width:72px"><i class="ph-duotone ph-medal" style="font-size:30px;color:var(--color-accent-2)"></i><div>Top helper Sep</div></div>
+<div style="width:72px"><i class="ph-duotone ph-books" style="font-size:30px;color:var(--color-accent)"></i><div>Librarian</div></div>
+<div style="width:72px"><i class="ph-duotone ph-fire" style="font-size:30px;color:var(--color-accent-2)"></i><div>30-day streak</div></div>
+</div></div>
+</div>
+</div>
+</sc-if>
+</div>
+
+<sc-if value="{{ lounge }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed;top:0;right:0;bottom:0;width:360px;background:var(--color-bg);box-shadow:var(--shadow-lg);display:flex;flex-direction:column;font-family:var(--font-body);color:var(--color-text);z-index:10">
+<div style="padding:22px 22px 14px">
+<div style="display:flex;align-items:center;gap:10px"><h4 style="margin:0">Lounge</h4><span style="display:flex;align-items:center;gap:5px;font-size:13px;color:var(--color-neutral-700)"><span style="width:7px;height:7px;border-radius:50%;background:var(--color-accent)"></span>412 here</span><button class="btn btn-icon" onClick="{{ toggleLounge }}" style="margin-left:auto"><i class="ph-duotone ph-x" style="font-size:20px"></i></button></div>
+<div style="display:flex;gap:14px;margin-top:10px;font:600 14px var(--font-heading)"><span style="color:var(--color-accent-700)">#global</span><span style="color:var(--color-neutral-700)">#coe-28</span><span style="color:var(--color-neutral-700)">#hostel</span><span style="color:var(--color-neutral-700)">#memes</span></div>
+</div>
+<div style="flex:1;overflow:auto;padding:8px 22px;display:flex;flex-direction:column;gap:16px;font-size:15px;line-height:1.45">
+<div><div style="font-size:13px"><b>dhruv.ece</b> <span style="color:var(--color-neutral-700)">4:12</span></div>koi canteen pe hai? chai pe chalo</div>
+<div><div style="font-size:13px"><b>riya_codes</b> <span style="color:var(--color-neutral-700)">4:13</span></div>CN quiz postponed, confirmed by CR</div>
+<div><div style="font-size:13px"><b>signals_victim</b> <span style="color:var(--color-neutral-700)">4:14</span></div>any good resource for Fourier transforms that isn't a 3-hour lecture?<div style="margin-top:8px;padding:10px 12px;background:var(--color-surface);border-radius:2px;font-size:13.5px;display:flex;align-items:center;gap:8px"><i class="ph-duotone ph-arrow-bend-down-right" style="color:var(--color-accent);font-size:18px"></i>Became a thread in Academics · 14 replies</div></div>
+<div><div style="font-size:13px"><b>Music Society</b> <i class="ph-duotone ph-seal-check" style="color:var(--color-accent)"></i> <span style="color:var(--color-neutral-700)">4:16</span></div>OAT jamming at 7, open mic slots in replies</div>
+<div><div style="font-size:13px"><b>hostel_h6</b> <span style="color:var(--color-neutral-700)">4:18</span></div>H-6 wifi still down. at this point it's a lifestyle</div>
+</div>
+<div style="padding:14px 18px 20px"><div style="display:flex;align-items:center;min-height:46px;padding:0 6px 0 14px;background:var(--color-surface);border-radius:2px;color:var(--color-neutral-700);font-size:15px">Message #global<span style="margin-left:auto;width:36px;height:36px;border-radius:2px;background:var(--color-accent);color:var(--color-bg);display:flex;align-items:center;justify-content:center"><i class="ph-duotone ph-paper-plane-tilt" style="font-size:18px"></i></span></div></div>
+</div>
+</sc-if>
+<sc-if value="{{ loungeClosed }}" hint-placeholder-val="{{ true }}">
+<button class="btn btn-primary elev-md" onClick="{{ toggleLounge }}" style="position:fixed;right:28px;bottom:28px;height:48px;padding:0 18px;z-index:9"><i class="ph-duotone ph-chats-circle" style="font-size:20px"></i>Lounge · 412 online</button>
+</sc-if>
+<sc-if value="{{ searchOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeSearch }}" style="position:fixed;inset:0;background:color-mix(in srgb,var(--color-neutral-900) 45%,transparent);z-index:30;display:flex;justify-content:center;align-items:flex-start;padding-top:80px;font-family:var(--font-body);color:var(--color-text)">
+<div onClick="{{ stop }}" style="width:min(960px,calc(100% - 48px));height:540px;background:var(--color-bg);box-shadow:var(--shadow-lg);border-radius:4px;display:flex;flex-direction:column;overflow:hidden">
+<div style="display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--color-divider)">
+<span style="font:600 26px/1 var(--font-heading);color:var(--color-accent-2)">›</span>
+<input ref="{{ inputRef }}" value="{{ q }}" onChange="{{ onQ }}" onKeyDown="{{ onKey }}" placeholder="Fuzzy search threads, notes, people, places…  try “dsa pyq”, “@riya”, “#placements”" style="flex:1;border:none;background:transparent;outline:none;font:400 20px var(--font-body);color:var(--color-text)"></input>
+<span style="font-size:13px;color:var(--color-neutral-700);font-variant-numeric:tabular-nums">{{ count }}/{{ total }}</span>
+<span style="font-size:12px;padding:2px 7px;border:1px solid var(--color-divider);border-radius:2px;color:var(--color-neutral-700)">esc</span>
+</div>
+<div style="display:flex;gap:6px;padding:10px 20px;border-bottom:1px solid var(--color-divider);font-size:13px">
+<sc-for list="{{ scopes }}" as="sc" hint-placeholder-count="7"><span onClick="{{ sc.pick }}" style="{{ sc.style }}">{{ sc.label }}</span></sc-for>
+<span style="margin-left:auto;color:var(--color-neutral-700);align-self:center">tab to cycle</span>
+</div>
+<div style="flex:1;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);min-height:0">
+<div style="overflow:auto;padding:8px 0;border-right:1px solid var(--color-divider)">
+<sc-for list="{{ results }}" as="r" hint-placeholder-count="8">
+<div onClick="{{ r.open }}" onMouseEnter="{{ r.hover }}" style="{{ r.rowStyle }}">
+<span style="{{ r.markStyle }}"></span>
+<i class="ph-duotone {{ r.icon }}" style="font-size:18px;color:var(--color-neutral-700);flex:none"></i>
+<span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15.5px"><sc-for list="{{ r.segs }}" as="g"><span style="{{ g.style }}">{{ g.t }}</span></sc-for></span>
+<span style="font-size:11.5px;color:var(--color-neutral-700);flex:none">{{ r.kind }}</span>
+</div>
+</sc-for>
+<sc-if value="{{ noResults }}" hint-placeholder-val="{{ false }}"><div style="padding:30px 22px;font-size:15px;color:var(--color-neutral-700)">Nothing matches. <a onClick="{{ go.post }}" style="font-weight:600">Ask it as a new thread →</a></div></sc-if>
+</div>
+<div style="padding:22px 24px;overflow:auto">
+<sc-if value="{{ hasPreview }}" hint-placeholder-val="{{ false }}">
+<div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-700);font-weight:600">{{ pv.kind }}</div>
+<div style="font:600 24px/1.2 var(--font-heading);margin:8px 0 6px">{{ pv.title }}</div>
+<div style="font-size:13.5px;color:var(--color-neutral-700)">{{ pv.sub }}</div>
+<p style="font-size:15.5px;line-height:1.6;color:var(--color-neutral-800);margin:16px 0 0">{{ pv.body }}</p>
+<div style="margin-top:18px;font-size:13.5px;font-weight:600;color:var(--color-accent-700)">↵ Open {{ pv.kindLower }}</div>
+</sc-if>
+</div>
+</div>
+<div style="display:flex;gap:20px;padding:10px 20px;border-top:1px solid var(--color-divider);font-size:12.5px;color:var(--color-neutral-700);background:var(--color-surface)">
+<span><b>↑↓</b> move</span><span><b>↵</b> open</span><span><b>tab</b> scope</span><span><b>@</b> people</span><span><b>#</b> boards</span><span><b>lib:</b> library</span><span style="margin-left:auto">Matches are ranked by closeness, like fzf</span>
+</div>
+</div></div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { screen: localStorage.getItem('dtour_screen') || 'home', lounge: false, searchOpen: false, q: '', sel: 0, scope: 'All', postType: 'thread', title: '' };
+  inputRef = React.createRef();
+  index = [
+    { kind: 'Thread', icon: 'ph-chat-circle', title: 'DSA end-sem: which units actually matter? Six years of PYQs', sub: 'Academics › COE sem 3 · 284 votes · 63 replies', body: 'Trees and graphs are roughly 45% of the marks every year. PYQ sheet attached, accepted answer from GDSC DTU.', go: 'thread' },
+    { kind: 'Thread', icon: 'ph-chat-circle', title: 'Who keeps taking cycles from the H-4 stand?', sub: 'Campus Buzz · 201 votes · 118 replies', body: 'Third cycle gone this month. Warden says CCTV is “under process”.', go: 'thread' },
+    { kind: 'Thread', icon: 'ph-chat-circle', title: 'Interview experience: SDE intern, three rounds', sub: 'Placements · 156 votes · 41 replies', body: 'OA, one DSA round, one system-design-lite round. Questions and prep timeline inside.', go: 'thread' },
+    { kind: 'Thread', icon: 'ph-chat-circle', title: 'Odd-sem datesheet (tentative) is out', sub: 'Exams & Results · 172 votes', body: 'Unofficial copy from the CRs. End-sems start 5 Nov.', go: 'thread' },
+    { kind: 'Thread', icon: 'ph-chat-circle', title: 'Best prof for Engineering Maths III?', sub: 'Academics · 64 votes · 52 replies', body: 'Section-wise prof reviews from the last three batches.', go: 'thread' },
+    { kind: 'Thread', icon: 'ph-chat-circle', title: 'Best Fourier transform resources that are not 3-hour lectures', sub: 'Academics › EE · 14 replies', body: 'Started in the Lounge. 3Blue1Brown plus two handwritten notes from seniors.', go: 'thread' },
+    { kind: 'Thread', icon: 'ph-chat-circle', title: 'Is VLSI worth it in 2027?', sub: 'Roadmaps & New Fields · 97 votes', body: 'An ECE senior on chip-design jobs in India and what to learn first.', go: 'thread' },
+    { kind: 'Article', icon: 'ph-article', title: 'How to get a 9+ CGPA at DTU', sub: 'Wiki · 14 editors · checked Oct 2026', body: 'Relative grading, internals, PYQ habits and the week before end-sems.', go: 'article' },
+    { kind: 'Article', icon: 'ph-article', title: 'Placement prep: the 6-month plan', sub: 'Wiki · 9 editors', body: 'Month-by-month DSA, projects and mock interviews.', go: 'article' },
+    { kind: 'Article', icon: 'ph-article', title: 'Web dev roadmap for second years', sub: 'Wiki · 6 editors', body: 'HTML to deployed full-stack project in one semester.', go: 'article' },
+    { kind: 'Library', icon: 'ph-file-pdf', title: 'DSA PYQ papers 2020–26 (CO201)', sub: 'Library › COE › Sem 3 · 1,840 downloads', body: 'Every end-sem paper since 2020, unit-tagged.', go: 'library' },
+    { kind: 'Library', icon: 'ph-file-text', title: 'K-maps and flip-flops, handwritten notes (CO205)', sub: 'Library › COE › Sem 3 · 920 downloads', body: 'Digital Electronics unit 2–3, scanned.', go: 'library' },
+    { kind: 'Library', icon: 'ph-file-text', title: 'OOP lab file, all 10 programs (CO207)', sub: 'Library › COE › Sem 3', body: 'C++ lab programs with outputs.', go: 'library' },
+    { kind: 'Board', icon: 'ph-hash', title: '#placements — Placements & Internships', sub: 'Career · 1,877 threads', body: 'Interview experiences, OA prep, referrals.', go: 'boards' },
+    { kind: 'Board', icon: 'ph-hash', title: '#campus-buzz — Campus Buzz', sub: 'Campus · 2,418 threads', body: 'Gossip, announcements, lost & found.', go: 'boards' },
+    { kind: 'Board', icon: 'ph-hash', title: '#academics — Academics', sub: 'Padhai · 5,102 threads', body: 'One sub-board per branch and semester.', go: 'boards' },
+    { kind: 'Person', icon: 'ph-user', title: '@riya_codes', sub: 'COE \'27 · 2,140 karma', body: 'Shares lab files and the CN quiz updates.', go: 'thread' },
+    { kind: 'Person', icon: 'ph-user', title: '@segfault_sneha', sub: 'IT \'27 · 3,210 karma', body: 'Top contributor in Academics this month.', go: 'thread' },
+    { kind: 'Person', icon: 'ph-user', title: '@dhruv.ece', sub: 'ECE \'27 · 980 karma', body: 'ECE sem 5 doubts and chai runs.', go: 'thread' },
+    { kind: 'Society', icon: 'ph-flag-banner', title: 'GDSC DTU', sub: 'Verified society · Workshops', body: 'Intro to Rust, Monday 5 pm, SPS-12.', go: 'societies' },
+    { kind: 'Society', icon: 'ph-flag-banner', title: 'Music Society', sub: 'Verified society · Events', body: 'OAT jamming night tonight at 7.', go: 'societies' },
+    { kind: 'Society', icon: 'ph-flag-banner', title: 'Dramatics Society', sub: 'Verified society · Recruiting', body: 'Auditions close Sunday.', go: 'societies' },
+    { kind: 'Team', icon: 'ph-users-three', title: 'SIH: crop-disease ML tool, needs frontend + designer', sub: 'Team Up · 3 days left', body: 'ML and backend filled. Shortlist round in 3 weeks.', go: 'teams' },
+    { kind: 'Team', icon: 'ph-users-three', title: 'Invictus CTF: segfault_squad needs reverse eng.', sub: 'Team Up · 1 week left', body: 'Web and forensics covered.', go: 'teams' },
+    { kind: 'Place', icon: 'ph-map-pin', title: 'Sec-11 momo lane, Rohini', sub: 'Kahan chalein? · 5.8 km · ₹', body: '212 student recommendations. Best after 8 pm.', go: 'kahan' },
+    { kind: 'Place', icon: 'ph-map-pin', title: 'Cheese Maggi, main canteen', sub: 'Kahan chalein? · ₹60', body: 'The most-hearted canteen order on campus.', go: 'kahan' },
+    { kind: 'Place', icon: 'ph-map-pin', title: 'Japanese Park, Rohini', sub: 'Kahan chalein? · 6.2 km · free', body: 'Sunsets and long walks.', go: 'kahan' }
+  ];
+  scopeMap = { All: null, Threads: 'Thread', Articles: 'Article', Library: 'Library', People: 'Person', Boards: 'Board', Societies: 'Society', Places: 'Place' };
+  componentDidMount() {
+    this.onGlobalKey = (e) => {
+      const tag = (e.target.tagName || '').toLowerCase();
+      if ((e.key === '/' && tag !== 'input' && tag !== 'textarea') || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k')) { e.preventDefault(); this.openSearch(); }
+    };
+    window.addEventListener('keydown', this.onGlobalKey);
+  }
+  componentWillUnmount() { window.removeEventListener('keydown', this.onGlobalKey); }
+  componentDidUpdate(pp, ps) { if (this.state.searchOpen && !ps.searchOpen) setTimeout(() => this.inputRef.current && this.inputRef.current.focus(), 0); }
+  openSearch = () => this.setState({ searchOpen: true, q: '', sel: 0, scope: 'All' });
+  closeSearch = () => this.setState({ searchOpen: false });
+  go(k) { localStorage.setItem('dtour_screen', k); this.setState({ screen: k, searchOpen: false, lounge: false }); window.scrollTo(0, 0); }
+  fuzzy(q, text) {
+    if (!q) return { score: 0, hits: [] };
+    const t = text.toLowerCase(); let qi = 0, score = 0, last = -2; const hits = [];
+    for (let i = 0; i < t.length && qi < q.length; i++) {
+      if (q[qi] === ' ') { qi++; i--; continue; }
+      if (t[i] === q[qi]) { hits.push(i); score += (i === last + 1 ? 8 : 1) + (i === 0 || /[\s\-—:#@(]/.test(t[i - 1]) ? 6 : 0); last = i; qi++; }
+    }
+    while (qi < q.length && q[qi] === ' ') qi++;
+    if (qi < q.length) return null;
+    return { score: score - text.length * 0.02, hits };
+  }
+  segs(text, hits) {
+    const set = new Set(hits), out = []; let cur = null;
+    for (let i = 0; i < text.length; i++) {
+      const h = set.has(i);
+      if (!cur || cur.h !== h) { cur = { h, t: '' }; out.push(cur); }
+      cur.t += text[i];
+    }
+    return out.map(s => ({ t: s.t, style: s.h ? { color: 'var(--color-accent-2-700)', fontWeight: 700 } : {} }));
+  }
+  computeResults() {
+    let raw = this.state.q.trim().toLowerCase(); let scopeKind = this.scopeMap[this.state.scope];
+    if (raw.startsWith('@')) { scopeKind = 'Person'; raw = raw.slice(1); }
+    else if (raw.startsWith('#')) { scopeKind = 'Board'; raw = raw.slice(1); }
+    else if (raw.startsWith('lib:')) { scopeKind = 'Library'; raw = raw.slice(4).trim(); }
+    let list = this.index.filter(it => !scopeKind || it.kind === scopeKind)
+      .map(it => ({ it, m: this.fuzzy(raw, it.title) })).filter(x => x.m);
+    if (raw) list.sort((a, b) => b.m.score - a.m.score);
+    return list.slice(0, 40);
+  }
+  renderVals() {
+    const s = this.state.screen;
+    const keys = ['home', 'boards', 'thread', 'article', 'library', 'societies', 'teams', 'kahan', 'post', 'profile'];
+    const go = {}, is = {}, cur = {};
+    keys.forEach(k => { go[k] = () => this.go(k); is[k] = s === k; cur[k] = (s === k || (k === 'boards' && s === 'thread')) ? 'page' : undefined; });
+    const res = this.computeResults();
+    const sel = Math.min(this.state.sel, Math.max(res.length - 1, 0));
+    const results = res.map((x, i) => ({
+      kind: x.it.kind, icon: x.it.icon, segs: this.segs(x.it.title, x.m.hits),
+      open: () => this.go(x.it.go), hover: () => this.setState({ sel: i }),
+      rowStyle: { display: 'flex', alignItems: 'center', gap: 12, padding: '9px 20px 9px 0', cursor: 'pointer', background: i === sel ? 'var(--color-accent-100)' : 'transparent' },
+      markStyle: { width: 4, alignSelf: 'stretch', marginRight: 12, background: i === sel ? 'var(--color-accent)' : 'transparent' }
+    }));
+    const p = res[sel] && res[sel].it;
+    const scopes = Object.keys(this.scopeMap).map(label => ({ label, pick: () => this.setState({ scope: label, sel: 0 }),
+      style: { padding: '4px 10px', borderRadius: 2, cursor: 'pointer', fontWeight: 600, background: this.state.scope === label ? 'var(--color-text)' : 'transparent', color: this.state.scope === label ? 'var(--color-bg)' : 'var(--color-neutral-800)' } }));
+    const onKey = (e) => {
+      if (e.key === 'ArrowDown' || (e.ctrlKey && e.key === 'j')) { e.preventDefault(); this.setState({ sel: Math.min(sel + 1, res.length - 1) }); }
+      else if (e.key === 'ArrowUp' || (e.ctrlKey && e.key === 'k')) { e.preventDefault(); this.setState({ sel: Math.max(sel - 1, 0) }); }
+      else if (e.key === 'Enter' && p) { this.go(p.go); }
+      else if (e.key === 'Escape') { this.closeSearch(); }
+      else if (e.key === 'Tab') { e.preventDefault(); const ks = Object.keys(this.scopeMap); this.setState({ scope: ks[(ks.indexOf(this.state.scope) + (e.shiftKey ? ks.length - 1 : 1)) % ks.length], sel: 0 }); }
+    };
+    const types = [
+      ['thread', 'Thread', 'ph-chat-circle', 'Start a discussion'], ['question', 'Question', 'ph-question', 'Get an accepted answer'],
+      ['article', 'Wiki article', 'ph-article', 'Shared, editable guide'], ['team', 'Team', 'ph-users-three', 'Find teammates'],
+      ['poll', 'Poll', 'ph-chart-bar-horizontal', 'Let campus vote'], ['event', 'Society post', 'ph-megaphone', 'Events, recruiting, talks']
+    ];
+    const postTypes = types.map(([id, label, icon, hint]) => ({ label, icon, hint, pick: () => this.setState({ postType: id }),
+      style: { cursor: 'pointer', padding: '14px 14px 12px', borderRadius: 2, background: this.state.postType === id ? 'var(--color-accent-100)' : 'var(--color-surface)', color: this.state.postType === id ? 'var(--color-accent-900)' : 'var(--color-text)', boxShadow: this.state.postType === id ? 'inset 0 0 0 2px var(--color-accent)' : 'none' } }));
+    const pt = {}; types.forEach(([id]) => pt[id] = this.state.postType === id);
+    const words = this.state.title.toLowerCase().split(/[^a-z0-9]+/).filter(w => w.length > 2);
+    const similar = words.length ? this.index.filter(it => it.kind === 'Thread' || it.kind === 'Article')
+      .map(it => ({ it, n: words.filter(w => it.title.toLowerCase().includes(w)).length })).filter(x => x.n).sort((a, b) => b.n - a.n).slice(0, 3)
+      .map(x => ({ title: x.it.title, sub: x.it.sub, open: () => this.go(x.it.go) })) : [];
+    const tl = this.state.title.length;
+    return {
+      go, is, cur,
+      lounge: this.state.lounge, loungeClosed: !this.state.lounge,
+      toggleLounge: () => this.setState(st => ({ lounge: !st.lounge })),
+      openSearch: this.openSearch, closeSearch: this.closeSearch, stop: (e) => e.stopPropagation(),
+      searchOpen: this.state.searchOpen, q: this.state.q, inputRef: this.inputRef,
+      onQ: (e) => this.setState({ q: e.target.value, sel: 0 }), onKey,
+      results, count: res.length, total: this.index.length, noResults: res.length === 0, scopes,
+      hasPreview: !!p, pv: p ? { kind: p.kind, kindLower: p.kind.toLowerCase(), title: p.title, sub: p.sub, body: p.body } : {},
+      postTypes, pt, title: this.state.title, onTitle: (e) => this.setState({ title: e.target.value.slice(0, 140) }),
+      titleCount: tl, titleHint: tl === 0 ? 'Good titles get 3× more replies' : (tl < 20 ? 'A bit more detail helps' : 'Looks clear'),
+      similar, hasSimilar: similar.length > 0, noSimilar: similar.length === 0
+    };
+  }
+}
+</script>
+</body>
+</html>
