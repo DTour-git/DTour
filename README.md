@@ -38,7 +38,7 @@ Environment files are gitignored. Copy the examples and fill them in from the Su
 - **Wiki moderation.** New guides (`status = 'pending'`) and edits (`status = 'suggested'`) wait in the moderation queue (`/mod` on the website) until a moderator approves them. Authors are notified either way. The `ai_verdict` column is reserved for a future AI pre-check.
 - **Making someone a moderator:** run `update public.profiles set role = 'moderator' where handle = '<handle>';` (or `'admin'`). Members can't change their own role.
 - **Notifications** (the bell): @mentions in the Lounge, threads and replies; replies to your threads; replies to your comments; upvotes (grouped per post); accepted answers; team join requests; wiki review results. They arrive live over Supabase Realtime.
-- **Reply preference:** the composer checkbox controls reply alerts per thread. This uses `notify_on_reply` from migration `20261017000006_reply_preferences.sql`.
+- **Reply preference:** the composer checkbox controls reply alerts per thread. This uses `notify_on_reply` from migration `20261017000010_reply_preferences.sql`.
 - **Drafts:** both composers save and reopen drafts from your profile. Publishing removes the saved draft.
 - **Event reminders:** society events with a start date can notify students who RSVP about 30 minutes before the event. Migration `20261017000009_event_reminders.sql` provides the idempotent reminder job.
 
