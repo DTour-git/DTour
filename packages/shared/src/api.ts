@@ -34,19 +34,19 @@ export interface ThreadCard {
   score: number; reply_count: number; created_at: string; tags: string[];
   attachment: Attachment | null; image_label: string | null; image_path: string | null;
   accepted_reply_id: number | null; board: BoardLite; author: PersonLite; society: SocietyLite | null;
-  poll_pct?: number | null;
+  edited_at: string | null; poll_pct?: number | null;
 }
 
 export interface ReplyNode {
   id: number; thread_id: number; parent_id: number | null; body: string; score: number; created_at: string;
-  author: PersonLite; society: SocietyLite | null; children: ReplyNode[]; myVote: number;
+  edited_at: string | null; deleted_at: string | null; author: PersonLite; society: SocietyLite | null; children: ReplyNode[]; myVote: number;
 }
 
 const PERSON = 'id,handle,display_name,branch_code,grad_year,tint,karma';
 const SOCIETY = 'id,slug,name,short_name,icon,tint,verified';
 const BOARD = 'id,slug,name,short_name,category_id,verified_only,parent_id';
 export const THREAD_SELECT =
-  `id,title,body,standfirst,kind,score,reply_count,created_at,tags,attachment,image_label,image_path,accepted_reply_id,` +
+  `id,title,body,standfirst,kind,score,reply_count,created_at,tags,attachment,image_label,image_path,accepted_reply_id,edited_at,` +
   `board:boards!inner(${BOARD}),author:profiles!threads_author_id_fkey(${PERSON}),society:societies(${SOCIETY})`;
 
 type Ok<R> = R extends { data: infer D; error: null } ? D : never;
@@ -291,7 +291,7 @@ export async function getThread(sb: DB, id: number, userId: string | null) {
   const thread = must(await sb.from('threads').select(THREAD_SELECT).eq('id', id).maybeSingle()) as unknown as ThreadCard | null;
   if (!thread) return null;
   const [replies, myVote, saved, replyVotes, path, board, joined, poll, myPoll, related, wiki, lounge] = await Promise.all([
-    sb.from('replies').select(`id,thread_id,parent_id,body,score,created_at,author:profiles!replies_author_id_fkey(${PERSON}),society:societies(${SOCIETY})`).eq('thread_id', id).order('created_at'),
+    sb.from('replies').select(`id,thread_id,parent_id,body,score,created_at,edited_at,deleted_at,author:profiles!replies_author_id_fkey(${PERSON}),society:societies(${SOCIETY})`).eq('thread_id', id).order('created_at'),
     userId ? sb.from('thread_votes').select('value').eq('thread_id', id).eq('user_id', userId).maybeSingle() : null,
     userId ? sb.from('saves').select('thread_id').eq('thread_id', id).eq('user_id', userId).maybeSingle() : null,
     userId ? sb.from('reply_votes').select('reply_id,value').eq('user_id', userId) : null,
@@ -359,6 +359,84 @@ export async function postReply(sb: DB, input: { threadId: number; userId: strin
     thread_id: input.threadId, author_id: input.userId, body: input.body.trim(),
     parent_id: input.parentId ?? null, society_id: input.societyId ?? null,
   }).select('id').single());
+}
+
+// ── Editing and deleting your own posts ───────────────────────────────────
+export async function editThread(sb: DB, id: number, patch: { title: string; body: string }) {
+  must(await sb.from('threads').update({ title: patch.title.trim(), body: patch.body.trim() }).eq('id', id).select('id').single());
+}
+export async function deleteThread(sb: DB, id: number) {
+  must(await sb.from('threads').delete().eq('id', id));
+}
+export async function editReply(sb: DB, id: number, body: string) {
+  must(await sb.from('replies').update({ body: body.trim() }).eq('id', id).select('id').single());
+}
+/** Removes the reply, or blanks it to "[deleted]" when others replied under it. */
+export async function deleteReply(sb: DB, id: number) {
+  must(await sb.rpc('delete_reply', { p_reply: id }));
+}
+
+// ── Reports ───────────────────────────────────────────────────────────────
+export type ReportReason = 'spam' | 'harassment' | 'misinformation' | 'inappropriate' | 'other';
+export const REPORT_REASONS: [ReportReason, string][] = [
+  ['spam', 'Spam or ads'], ['harassment', 'Harassment or hate'], ['misinformation', 'False or misleading'],
+  ['inappropriate', 'Inappropriate content'], ['other', 'Something else'],
+];
+export type ReportTarget = { threadId: number } | { replyId: number } | { loungeMessageId: number };
+
+/** Returns false when you had already reported this. */
+export async function reportContent(sb: DB, i: { userId: string; target: ReportTarget; reason: ReportReason; details?: string }) {
+  const t = i.target;
+  const { error } = await sb.from('reports').insert({
+    reporter_id: i.userId, reason: i.reason, details: i.details?.trim() || null,
+    thread_id: 'threadId' in t ? t.threadId : null,
+    reply_id: 'replyId' in t ? t.replyId : null,
+    lounge_message_id: 'loungeMessageId' in t ? t.loungeMessageId : null,
+  });
+  if (error?.code === '23505') return false;
+  if (error) throw new Error(error.message);
+  return true;
+}
+
+export interface OpenReport {
+  key: string; count: number; reasons: string[]; details: string[]; first_at: string; ids: number[];
+  kind: 'thread' | 'reply' | 'lounge'; title: string; body: string; route: string; author: PersonLite | null;
+}
+export async function getOpenReports(sb: DB): Promise<OpenReport[]> {
+  const rows = must(await sb.from('reports').select(
+    `id,reason,details,created_at,thread_id,reply_id,lounge_message_id,` +
+    `thread:threads(id,title,body,author:profiles!threads_author_id_fkey(${PERSON})),` +
+    `reply:replies(id,body,thread_id,author:profiles!replies_author_id_fkey(${PERSON})),` +
+    `message:lounge_messages(id,body,room_slug,author:profiles!lounge_messages_author_id_fkey(${PERSON}))`,
+  ).eq('status', 'open').order('created_at')) as unknown as {
+    id: number; reason: string; details: string | null; created_at: string;
+    thread_id: number | null; reply_id: number | null; lounge_message_id: number | null;
+    thread: { id: number; title: string; body: string; author: PersonLite } | null;
+    reply: { id: number; body: string; thread_id: number; author: PersonLite } | null;
+    message: { id: number; body: string; room_slug: string; author: PersonLite } | null;
+  }[];
+  const groups = new Map<string, OpenReport>();
+  for (const r of rows) {
+    const key = r.thread_id ? `t${r.thread_id}` : r.reply_id ? `r${r.reply_id}` : `m${r.lounge_message_id}`;
+    let g = groups.get(key);
+    if (!g) {
+      g = r.thread
+        ? { kind: 'thread', title: r.thread.title, body: r.thread.body, route: `/t/${r.thread.id}`, author: r.thread.author } as OpenReport
+        : r.reply
+          ? { kind: 'reply', title: 'Reply', body: r.reply.body, route: `/t/${r.reply.thread_id}`, author: r.reply.author } as OpenReport
+          : { kind: 'lounge', title: `Lounge · #${r.message?.room_slug ?? ''}`, body: r.message?.body ?? '', route: '/lounge', author: r.message?.author ?? null } as OpenReport;
+      Object.assign(g, { key, count: 0, reasons: [], details: [], first_at: r.created_at, ids: [] });
+      groups.set(key, g);
+    }
+    g.count++; g.ids.push(r.id);
+    if (!g.reasons.includes(r.reason)) g.reasons.push(r.reason);
+    if (r.details) g.details.push(r.details);
+  }
+  return [...groups.values()];
+}
+/** Dismiss the reports, or remove the reported content. */
+export async function resolveReport(sb: DB, reportId: number, remove: boolean) {
+  must(await sb.rpc('resolve_report', { p_report: reportId, p_remove: remove }));
 }
 export async function votePoll(sb: DB, threadId: number, optionId: number, userId: string) {
   await sb.from('poll_votes').delete().eq('thread_id', threadId).eq('user_id', userId);
@@ -683,20 +761,35 @@ export interface TeamCard {
   team_roles: { id: number; name: string; filled: boolean; sort: number }[];
   team_members: { user: PersonLite }[];
 }
+export interface TeamRequest { team_id: number; created_at: string; user: PersonLite & { skills: string[] } }
 
 export async function getTeams(sb: DB, userId: string | null) {
-  const [teams, mine, deadlines, looking] = await Promise.all([
+  const [teams, mine, deadlines, looking, incoming] = await Promise.all([
     sb.from('teams').select(`*,team_roles(id,name,filled,sort),team_members(user:profiles(${PERSON}))`).order('created_at', { ascending: false }),
-    userId ? sb.from('team_requests').select('team_id').eq('user_id', userId) : null,
+    userId ? sb.from('team_requests').select('team_id,status').eq('user_id', userId) : null,
     sb.from('deadlines').select('*').gte('on_date', istDate()).order('on_date').limit(5),
     sb.from('profiles').select(`${PERSON},skills,semester`).eq('open_to_teams', true).neq('id', userId ?? '00000000-0000-0000-0000-000000000000').order('created_at', { ascending: false }).limit(6),
+    userId
+      ? sb.from('team_requests').select(`team_id,created_at,user:profiles!team_requests_user_id_fkey(${PERSON},skills),team:teams!inner(owner_id)`)
+        .eq('team.owner_id', userId).eq('status', 'pending').order('created_at')
+      : null,
   ]);
+  const requests = new Map<number, TeamRequest[]>();
+  for (const r of (incoming ? must(incoming) : []) as unknown as TeamRequest[]) {
+    requests.set(r.team_id, [...(requests.get(r.team_id) ?? []), { team_id: r.team_id, created_at: r.created_at, user: r.user }]);
+  }
+  const myRows = mine ? must(mine) : [];
   const list = (must(teams) as unknown as TeamCard[]).map((t) => ({ ...t, team_roles: [...t.team_roles].sort((a, b) => a.sort - b.sort) }));
   const counts = list.reduce<Record<string, number>>((c, t) => ({ ...c, [t.category]: (c[t.category] ?? 0) + 1 }), {});
   return {
     teams: list,
     counts,
-    myRequests: new Set((mine ? must(mine) : []).map((r) => r.team_id)),
+    /** Teams you have a pending request with. */
+    myRequests: new Set(myRows.filter((r) => r.status === 'pending').map((r) => r.team_id)),
+    /** Every request you've sent, by team: pending, accepted or declined. */
+    myRequestStatus: new Map(myRows.map((r) => [r.team_id, r.status as 'pending' | 'accepted' | 'declined'])),
+    /** Pending requests to teams you own. */
+    requests,
     deadlines: must(deadlines),
     looking: must(looking) as unknown as (PersonLite & { skills: string[] })[],
   };
@@ -709,6 +802,10 @@ export function matchesSkills(team: TeamCard, skills: string[]) {
 
 export async function toggleTeamRequest(sb: DB, teamId: number) {
   return must(await sb.rpc('toggle_team_request', { p_team: teamId }));
+}
+/** Team owners accept (optionally filling an open role) or decline a request. */
+export async function reviewTeamRequest(sb: DB, i: { teamId: number; userId: string; accept: boolean; roleId?: number | null }) {
+  must(await sb.rpc('review_team_request', { p_team: i.teamId, p_user: i.userId, p_accept: i.accept, p_role: i.roleId ?? undefined }));
 }
 
 // ── Kahan chalein? ────────────────────────────────────────────────────────
@@ -774,11 +871,11 @@ export async function getDrafts(sb: DB) {
 // ── Lounge ────────────────────────────────────────────────────────────────
 export interface LoungeMessage {
   id: number; room_slug: string; body: string; created_at: string; promoted_thread_id: number | null;
-  author: PersonLite; society: SocietyLite | null;
+  edited_at?: string | null; author: PersonLite; society: SocietyLite | null;
   promoted?: { id: number; reply_count: number; board: { name: string } } | null;
   pending?: boolean;
 }
-export const LOUNGE_SELECT = `id,room_slug,body,created_at,promoted_thread_id,author:profiles!lounge_messages_author_id_fkey(${PERSON}),society:societies(${SOCIETY}),promoted:threads!lounge_messages_promoted_thread_id_fkey(id,reply_count,board:boards(name))`;
+export const LOUNGE_SELECT = `id,room_slug,body,created_at,edited_at,promoted_thread_id,author:profiles!lounge_messages_author_id_fkey(${PERSON}),society:societies(${SOCIETY}),promoted:threads!lounge_messages_promoted_thread_id_fkey(id,reply_count,board:boards(name))`;
 
 export async function getLoungeRooms(sb: DB) {
   return must(await sb.from('lounge_rooms').select('*').order('sort'));
@@ -792,6 +889,12 @@ export async function getLoungeMessage(sb: DB, id: number) {
 }
 export async function sendLoungeMessage(sb: DB, room: string, userId: string, body: string) {
   return must(await sb.from('lounge_messages').insert({ room_slug: room, author_id: userId, body: body.trim() }).select('id').single()).id;
+}
+export async function editLoungeMessage(sb: DB, id: number, body: string) {
+  must(await sb.from('lounge_messages').update({ body: body.trim() }).eq('id', id).select('id').single());
+}
+export async function deleteLoungeMessage(sb: DB, id: number) {
+  must(await sb.from('lounge_messages').delete().eq('id', id));
 }
 export async function unreadCounts(sb: DB, since: Record<string, string>) {
   const out: Record<string, number> = {};

@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { chatTime, colors, fonts, getLoungeMessage, getLoungeMessages, getLoungeRooms, sendLoungeMessage, unreadCounts, type LoungeMessage } from '@dtour/shared';
+import { chatTime, colors, deleteLoungeMessage, editLoungeMessage, fonts, getLoungeMessage, getLoungeMessages, getLoungeRooms, sendLoungeMessage, unreadCounts, type LoungeMessage, type ReportTarget } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
 import { useMe, useRequireMe } from '@/lib/auth';
 import { useData } from '@/lib/useData';
@@ -10,6 +10,7 @@ import { usePresence } from '@/lib/presence';
 import { T } from '@/components/T';
 import { Icon } from '@/components/Icon';
 import { Avatar, FlairTag, IconBtn, Screen, Seal, Tag } from '@/components/ui';
+import { ActionSheet, EditSheet, ReportSheet, type SheetAction } from '@/components/Sheets';
 
 const SEEN_KEY = 'dtour_lounge_seen';
 
@@ -25,6 +26,9 @@ export default function Lounge() {
   const [msgs, setMsgs] = useState<LoungeMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [unread, setUnread] = useState<Record<string, number>>({});
+  const [menu, setMenu] = useState<SheetAction[] | null>(null);
+  const [editing, setEditing] = useState<LoungeMessage | null>(null);
+  const [report, setReport] = useState<ReportTarget | null>(null);
   const list = useRef<FlatList<LoungeMessage>>(null);
   const current = rooms?.find((r) => r.slug === room);
 
@@ -36,7 +40,16 @@ export default function Lounge() {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'lounge_messages', filter: `room_slug=eq.${room}` }, async (p) => {
         const full = await getLoungeMessage(supabase, (p.new as { id: number }).id);
         setMsgs((cur) => cur.some((m) => m.id === full.id) ? cur : [...cur.filter((m) => !(m.pending && m.body === full.body && m.author.id === full.author.id)), full]);
-      }).subscribe();
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'lounge_messages', filter: `room_slug=eq.${room}` }, (p) => {
+        const row = p.new as { id: number; body: string; edited_at: string | null };
+        setMsgs((cur) => cur.map((m) => m.id === row.id ? { ...m, body: row.body, edited_at: row.edited_at } : m));
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'lounge_messages', filter: `room_slug=eq.${room}` }, (p) => {
+        const id = (p.old as { id?: number }).id;
+        setMsgs((cur) => cur.filter((m) => m.id !== id));
+      })
+      .subscribe();
     return () => { alive = false; supabase.removeChannel(ch); };
   }, [room]);
 
@@ -62,8 +75,37 @@ export default function Lounge() {
     try { await sendLoungeMessage(supabase, room, me.id, body); } catch { setMsgs((m) => m.filter((x) => x.id !== temp.id)); setDraft(body); }
   };
 
+  const openMenu = (m: LoungeMessage) => {
+    if (m.pending || m.id < 0) return;
+    if (m.author.id === viewer?.id) {
+      setMenu([
+        { label: 'Edit message', icon: 'pencil-simple-line', onPress: () => setEditing(m) },
+        { label: 'Delete message', icon: 'trash', danger: true, onPress: () => Alert.alert('Delete this message?', undefined, [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Delete', style: 'destructive', onPress: async () => {
+            const before = msgs;
+            setMsgs((cur) => cur.filter((x) => x.id !== m.id));
+            try { await deleteLoungeMessage(supabase, m.id); } catch (e) { setMsgs(before); Alert.alert('Could not delete', (e as Error).message); }
+          } },
+        ]) },
+      ]);
+    } else {
+      setMenu([{ label: 'Report message', icon: 'flag', danger: true, onPress: () => requireMe() && setReport({ loungeMessageId: m.id }) }]);
+    }
+  };
+  const saveEdit = async ({ body }: { body: string }) => {
+    if (!editing) return;
+    try {
+      await editLoungeMessage(supabase, editing.id, body);
+      setMsgs((cur) => cur.map((x) => x.id === editing.id ? { ...x, body: body.trim(), edited_at: new Date().toISOString() } : x));
+    } catch (e) { Alert.alert('Could not save', (e as Error).message); throw e; }
+  };
+
   return (
     <Screen>
+      <ActionSheet visible={!!menu} actions={menu ?? []} onClose={() => setMenu(null)} />
+      {editing && <EditSheet visible heading="Edit message" body={editing.body} maxLength={1000} onSave={saveEdit} onClose={() => setEditing(null)} />}
+      <ReportSheet target={report} onClose={() => setReport(null)} onDone={(msg) => Alert.alert(msg)} />
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 20, paddingRight: 8 }}>
         <T size={28} w={600}>Lounge</T>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
@@ -93,13 +135,13 @@ export default function Lounge() {
           contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 16, gap: 16 }}
           onContentSizeChange={() => list.current?.scrollToEnd({ animated: false })}
           renderItem={({ item: m }) => (
-            <View style={{ flexDirection: 'row', gap: 10, opacity: m.pending ? 0.6 : 1 }}>
+            <Pressable onLongPress={() => openMenu(m)} delayLongPress={350} accessibilityHint="Long-press for more actions" style={{ flexDirection: 'row', gap: 10, opacity: m.pending ? 0.6 : 1 }}>
               <Avatar person={m.author} society={null} size={32} label={m.society ? m.society.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase() : undefined} />
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
                   <T size={12.5} w={600}>{m.society?.name ?? m.author.handle}</T>
                   {m.society?.verified ? <Seal /> : <FlairTag person={m.author} />}
-                  <T size={12.5} color={colors.neutral700}>{chatTime(m.created_at)}</T>
+                  <T size={12.5} color={colors.neutral700}>{chatTime(m.created_at)}{m.edited_at ? ' · edited' : ''}</T>
                 </View>
                 <T size={15} lh={1.45}>{m.body}</T>
                 {m.promoted && (
@@ -110,7 +152,7 @@ export default function Lounge() {
                   </Pressable>
                 )}
               </View>
-            </View>
+            </Pressable>
           )}
         />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 8 }}>

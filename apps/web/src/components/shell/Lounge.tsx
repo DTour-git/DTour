@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { chatTime, getLoungeMessage, getLoungeMessages, sendLoungeMessage, type LoungeMessage } from '@dtour/shared';
+import { chatTime, deleteLoungeMessage, editLoungeMessage, getLoungeMessage, getLoungeMessages, sendLoungeMessage, type LoungeMessage } from '@dtour/shared';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Icon } from '../Icon';
 import { Seal } from '../ui';
 import { OnlineCount, useShell } from './Shell';
+import { ReportDialog, linkBtn } from '../Manage';
 
 export interface Room { slug: string; label: string; short_label: string | null }
 
@@ -27,6 +28,8 @@ function Drawer({ rooms, onClose }: { rooms: Room[]; onClose: () => void }) {
   const [room, setRoom] = useState(loungeRoom ?? rooms[0]?.slug ?? 'global');
   const [msgs, setMsgs] = useState<LoungeMessage[]>([]);
   const [draft, setDraft] = useState('');
+  const [editing, setEditing] = useState<{ id: number; body: string } | null>(null);
+  const [reporting, setReporting] = useState<number | null>(null);
   const list = useRef<HTMLDivElement>(null);
   const current = rooms.find((r) => r.slug === room);
 
@@ -39,6 +42,14 @@ function Drawer({ rooms, onClose }: { rooms: Room[]; onClose: () => void }) {
         const id = (payload.new as { id: number }).id;
         const full = await getLoungeMessage(sb, id);
         setMsgs((cur) => cur.some((m) => m.id === id) ? cur : [...cur.filter((m) => !(m.pending && m.body === full.body && m.author.id === full.author.id)), full]);
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'lounge_messages', filter: `room_slug=eq.${room}` }, (payload) => {
+        const row = payload.new as { id: number; body: string; edited_at: string | null };
+        setMsgs((cur) => cur.map((m) => m.id === row.id ? { ...m, body: row.body, edited_at: row.edited_at } : m));
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'lounge_messages', filter: `room_slug=eq.${room}` }, (payload) => {
+        const id = (payload.old as { id?: number }).id;
+        setMsgs((cur) => cur.filter((m) => m.id !== id));
       })
       .subscribe();
     return () => { alive = false; sb.removeChannel(ch); };
@@ -69,6 +80,20 @@ function Drawer({ rooms, onClose }: { rooms: Room[]; onClose: () => void }) {
     catch { setMsgs((m) => m.filter((x) => x.id !== temp.id)); setDraft(body); toast('Message not sent — try again.'); }
   };
 
+  const saveEdit = async () => {
+    if (!editing?.body.trim()) return;
+    const { id, body } = editing;
+    setEditing(null);
+    setMsgs((cur) => cur.map((m) => m.id === id ? { ...m, body: body.trim(), edited_at: new Date().toISOString() } : m));
+    try { await editLoungeMessage(supabaseBrowser(), id, body); } catch (e) { toast((e as Error).message); }
+  };
+  const remove = async (id: number) => {
+    if (!confirm('Delete this message?')) return;
+    const before = msgs;
+    setMsgs((cur) => cur.filter((m) => m.id !== id));
+    try { await deleteLoungeMessage(supabaseBrowser(), id); } catch (e) { setMsgs(before); toast((e as Error).message); }
+  };
+
   return (
     <aside className="drawer" aria-label="Lounge">
       <div style={{ padding: '22px 22px 14px' }}>
@@ -90,14 +115,33 @@ function Drawer({ rooms, onClose }: { rooms: Room[]; onClose: () => void }) {
       </div>
       <div ref={list} style={{ flex: 1, overflow: 'auto', padding: '8px 22px', display: 'flex', flexDirection: 'column', gap: 16, fontSize: 15, lineHeight: 1.45 }}>
         {msgs.map((m) => (
-          <div key={m.id} style={{ opacity: m.pending ? 0.6 : 1 }}>
-            <div style={{ fontSize: 13 }}>
+          <div key={m.id} className="lounge-msg" style={{ opacity: m.pending ? 0.6 : 1 }}>
+            <div style={{ fontSize: 13, display: 'flex', alignItems: 'baseline', gap: 4 }}>
+              <span>
               {m.society
                 ? <><b>{m.society.name}</b> {m.society.verified && <Seal size={14} />}</>
                 : <Link href={`/u/${m.author.handle}`} className="title-link"><b>{m.author.handle}</b></Link>}{' '}
-              <span style={{ color: 'var(--color-neutral-700)' }}>{chatTime(m.created_at)}</span>
+              <span style={{ color: 'var(--color-neutral-700)' }}>{chatTime(m.created_at)}{m.edited_at && ' · edited'}</span>
+              </span>
+              {!m.pending && m.id > 0 && (
+                <span className="lounge-msg-actions" style={{ marginLeft: 'auto', display: 'flex', gap: 10, color: 'var(--color-neutral-700)' }}>
+                  {me?.id === m.author.id
+                    ? <>
+                      <button style={linkBtn} onClick={() => setEditing({ id: m.id, body: m.body })}>Edit</button>
+                      <button style={linkBtn} onClick={() => remove(m.id)}>Delete</button>
+                    </>
+                    : <button style={linkBtn} aria-label="Report message" onClick={() => requireMe() && setReporting(m.id)}><Icon name="flag" size={14} /></button>}
+                </span>
+              )}
             </div>
-            {m.body}
+            {editing?.id === m.id ? (
+              <form onSubmit={(e) => { e.preventDefault(); saveEdit(); }} style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                <input autoFocus className="input" value={editing.body} maxLength={1000} aria-label="Edit message"
+                  onChange={(e) => setEditing({ id: m.id, body: e.target.value })} onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setEditing(null); } }}
+                  style={{ flex: 1, height: 36 }} />
+                <button type="submit" className="btn btn-primary" style={{ height: 36 }}>Save</button>
+              </form>
+            ) : m.body}
             {m.promoted && (
               <Link href={`/t/${m.promoted.id}`} style={{ marginTop: 8, padding: '10px 12px', background: 'var(--color-surface)', borderRadius: 2, fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-text)' }}>
                 <Icon name="arrow-bend-down-right" size={18} color="var(--color-accent)" />
@@ -106,6 +150,7 @@ function Drawer({ rooms, onClose }: { rooms: Room[]; onClose: () => void }) {
             )}
           </div>
         ))}
+        {reporting && <ReportDialog target={{ loungeMessageId: reporting }} onClose={() => setReporting(null)} />}
         {!msgs.length && <div style={{ color: 'var(--color-neutral-700)', fontStyle: 'italic' }}>Quiet in here. Say hi.</div>}
       </div>
       <div style={{ padding: '14px 18px 20px' }}>

@@ -4,6 +4,7 @@ import { currentUser } from '@/lib/supabase-server';
 import { Icon } from '@/components/Icon';
 import { Avatar, Tag } from '@/components/ui';
 import { AskToJoin } from '@/components/Toggles';
+import { TeamRequests } from '@/components/Manage';
 
 export const metadata = { title: 'Team Up' };
 const CATS: [string, string, string][] = [['hackathon', 'Hackathons', 't-accent'], ['project', 'Projects', 't-accent'], ['competition', 'Competitions', 't-accent2'], ['research', 'Research', 't-neutral']];
@@ -71,8 +72,15 @@ export default async function TeamsPage({ searchParams }: { searchParams: Promis
                   </div>
                   {t.owner_id === me?.userId
                     ? <span style={{ marginLeft: 'auto', fontSize: 13, color: 'var(--color-neutral-700)' }}>Your team</span>
-                    : <AskToJoin teamId={t.id} requested={d.myRequests.has(t.id)} primary={i === 0} />}
+                    : d.myRequestStatus.get(t.id) === 'accepted'
+                      ? <span style={{ marginLeft: 'auto', fontSize: 14, fontWeight: 600, color: 'var(--color-accent-700)', display: 'flex', alignItems: 'center', gap: 5 }}><Icon name="check-circle" size={17} />You&apos;re in</span>
+                      : d.myRequestStatus.get(t.id) === 'declined'
+                        ? <span style={{ marginLeft: 'auto', fontSize: 13, color: 'var(--color-neutral-700)' }}>Request not accepted</span>
+                        : <AskToJoin teamId={t.id} requested={d.myRequests.has(t.id)} primary={i === 0} />}
                 </div>
+                {t.owner_id === me?.userId && (
+                  <TeamRequests teamId={t.id} requests={d.requests.get(t.id) ?? []} openRoles={t.team_roles.filter((r) => !r.filled).map((r) => ({ id: r.id, name: r.name }))} />
+                )}
               </div>
             );
           })}

@@ -37,6 +37,9 @@ Environment files are gitignored. Copy the examples and fill them in from the Su
 
 - **Reading is public.** Anyone can browse. Posting, replying, voting, RSVPs, the Lounge composer, uploads and downloads need a DTU account. This is enforced by RLS (anon gets read-only access to content tables) and by sign-in prompts in both apps.
 - **Wiki moderation.** New guides (`status = 'pending'`) and edits (`status = 'suggested'`) wait in the moderation queue (`/mod` on the website) until a moderator approves them. Authors are notified either way. The `ai_verdict` column is reserved for a future AI pre-check.
+- **Reports.** Anyone signed in can report a thread, reply or Lounge message. Open reports appear at the top of `/mod`, where a moderator keeps the post or removes it (`20261017000011_manage_content.sql`).
+- **Editing and deleting.** Authors can edit or delete their own threads, replies and Lounge messages; edited posts show "edited". A reply with answers under it is blanked to "[deleted]" so the conversation survives.
+- **Team requests.** Team owners accept or decline join requests on Team Up, optionally filling an open role. The student is notified either way.
 - **Making someone a moderator:** run `update public.profiles set role = 'moderator' where handle = '<handle>';` (or `'admin'`). Members can't change their own role.
 - **Notifications** (the bell): @mentions in the Lounge, threads and replies; replies to your threads; replies to your comments; upvotes (grouped per post); accepted answers; team join requests; wiki review results. They arrive live over Supabase Realtime.
 - **Reply preference:** the composer checkbox controls reply alerts per thread. This uses `notify_on_reply` from migration `20261017000010_reply_preferences.sql`.

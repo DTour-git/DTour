@@ -6,6 +6,7 @@ import { Icon } from '@/components/Icon';
 import { Avatar, FlairTag, H6, Seal, Tag } from '@/components/ui';
 import { Markdown } from '@/components/Markdown';
 import { OnlineCount, PresenceBoard } from '@/components/shell/Shell';
+import { ThreadManage } from '@/components/Manage';
 import { DownloadLink, JoinBoard, PollBox, ReplyComposer, ReplyItem, VoteRail } from '@/components/thread/ThreadActions';
 
 const SORTS = [['best', 'Best'], ['newest', 'Newest'], ['oldest', 'Oldest']] as const;
@@ -55,7 +56,7 @@ export default async function ThreadPage({ params, searchParams }: {
               {t.society?.verified && <Seal />}
               <FlairTag person={t.author} />
               <span>{n(t.author.karma)} karma</span>
-              <span>· {agoLong(t.created_at)}</span>
+              <span>· {agoLong(t.created_at)}{t.edited_at && ' · edited'}</span>
             </div>
             {t.standfirst && t.kind === 'news' && <p style={{ font: 'italic 400 19px/1.45 var(--font-body)', color: 'var(--color-neutral-800)', margin: '20px 0 0', maxWidth: 680 }}>{t.standfirst}</p>}
             <div style={{ marginTop: 22, maxWidth: 680 }}><Markdown source={t.body} /></div>
@@ -74,6 +75,7 @@ export default async function ThreadPage({ params, searchParams }: {
                 {t.attachment.library_item_id && <DownloadLink itemId={t.attachment.library_item_id} style={{ marginLeft: 'auto' }}><Icon name="download-simple" size={22} color="var(--color-accent)" /></DownloadLink>}
               </div>
             )}
+            <ThreadManage thread={{ id: t.id, title: t.title, body: t.body, authorId: t.author.id }} boardSlug={slug} />
             {d.fromLounge && <div style={{ marginTop: 14, fontSize: 13.5, color: 'var(--color-neutral-700)', display: 'flex', gap: 6, alignItems: 'center' }}><Icon name="arrow-bend-down-right" size={16} color="var(--color-accent)" />Started in the Lounge</div>}
           </div>
         </div>

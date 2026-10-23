@@ -41,6 +41,8 @@ import { FileCodeIcon } from 'phosphor-react-native/src/icons/FileCode';
 import { FilePdfIcon } from 'phosphor-react-native/src/icons/FilePdf';
 import { FileTextIcon } from 'phosphor-react-native/src/icons/FileText';
 import { FireIcon } from 'phosphor-react-native/src/icons/Fire';
+import { FlagIcon } from 'phosphor-react-native/src/icons/Flag';
+import { TrashIcon } from 'phosphor-react-native/src/icons/Trash';
 import { FlagBannerIcon } from 'phosphor-react-native/src/icons/FlagBanner';
 import { FunctionIcon } from 'phosphor-react-native/src/icons/Function';
 import { FunnelIcon } from 'phosphor-react-native/src/icons/Funnel';
@@ -141,6 +143,8 @@ const MAP: Record<string, ComponentType<P>> = {
   'file-text': FileTextIcon,
   'fire': FireIcon,
   'flag-banner': FlagBannerIcon,
+  'flag': FlagIcon,
+  'trash': TrashIcon,
   'function': FunctionIcon,
   'funnel': FunnelIcon,
   'gear-six': GearSixIcon,
