@@ -1,0 +1,43 @@
+name: CI
+
+# Compile checks for every pull request and every push to main.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # The build only needs these to exist; it never talks to Supabase.
+      NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
+      EXPO_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      - name: Typecheck (shared, web, mobile)
+        run: npm run typecheck --workspaces --if-present
+
+      - name: Lint web
+        run: npx eslint .
+        working-directory: apps/web
+      - name: Lint mobile
+        run: npx expo lint
+        working-directory: apps/mobile
+
+      - name: Build web
+        run: npx next build
+        working-directory: apps/web
