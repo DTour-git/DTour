@@ -1,0 +1,18 @@
+# Who must review changes to sensitive areas.
+# Note: GitHub only enforces this on private repos on a paid plan (or if the repo is public).
+# Until then it still documents who to ask.
+
+# Database: schema, RLS, triggers, auth hook
+/supabase/                         @KrishBnsl
+
+# Auth flows
+/apps/web/src/app/auth/            @KrishBnsl
+/apps/web/src/proxy.ts             @KrishBnsl
+/apps/web/src/lib/supabase*        @KrishBnsl
+/apps/mobile/src/lib/supabase*     @KrishBnsl
+
+# CI, repo rules, agent guardrails, dev scripts
+/.github/                          @KrishBnsl
+/.claude/                          @KrishBnsl
+/scripts/                          @KrishBnsl
+/AGENTS.md                         @KrishBnsl

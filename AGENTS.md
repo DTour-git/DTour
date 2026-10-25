@@ -35,13 +35,34 @@ npm ci                     # install everything (use `npx expo install <pkg>` in
 npm run web                # website at http://localhost:3000
 npm run mobile             # Expo dev server for Expo Go (scan QR; press w for web)
 npm run start:dev -w @dtour/mobile   # for a development build (needed for phone push)
-npm run typecheck          # tsc for shared, web and mobile
-(cd apps/web && npx eslint .)        # lint web
-(cd apps/mobile && npx expo lint)    # lint mobile
-(cd apps/web && npx next build)      # production build of the website
+npm run web:dev-db         # website, but pointed at the DEV Supabase project (safe to write test data)
+npm run mobile:dev-db      # same for the mobile app
+
+npm run check              # typecheck + lint (web, mobile) + unit tests + web build — run before every PR
+npm run check:all          # check + database tests + browser tests (needs .env.dev)
+npm test                   # unit tests only (Vitest), `npm run test:watch` while working
+npm run test:db            # pgTAP tests in supabase/tests/database against the dev DB
+npm run test:e2e           # Playwright tests in apps/web/e2e against the dev DB (builds and serves on :3100)
+npm run db:dev:reset       # wipe and rebuild the DEV database: migrations + seed + test accounts
+npm run dev:login -- e2e.student     # print a one-click sign-in link for a dev test account
+npm run format             # Prettier on files your branch changed (never the whole repo)
 ```
 
-**Before you call a change done**, run typecheck, both lints, and the web build. If you changed mobile code, also confirm it bundles: `cd apps/mobile && npx expo export --platform android --output-dir /tmp/x`. CI (`.github/workflows/ci.yml`) runs typecheck, lints and the web build on every PR and every push to `main`.
+**Before you call a change done**, run `npm run check`. If you changed SQL, also run `npm run test:db`; if you changed a web flow, also run `npm run test:e2e`. If you changed mobile code, also confirm it bundles: `cd apps/mobile && npx expo export --platform android --output-dir /tmp/x`.
+
+CI (`.github/workflows/ci.yml`) runs two jobs on every PR and every push to `main`: **check** (typecheck, lints, unit tests, web build) and **dev-db** (database + browser tests against the dev project, using the `DEV_*` repository secrets; one run at a time).
+
+## Tests
+
+| Kind | Where | Add one when… |
+|---|---|---|
+| Unit (Vitest) | `packages/shared/src/*.test.ts`, `apps/mobile/src/lib/*.test.ts` | you change pure logic: search ranking, formatting, markdown, sorting, route mapping |
+| Database (pgTAP) | `supabase/tests/database/NN_*.test.sql` | you add or change RLS, a trigger, an RPC or the auth hook |
+| Browser (Playwright) | `apps/web/e2e/*.spec.ts` | you add or change a user flow on the website |
+
+- DB tests run inside `begin … rollback`, so they leave nothing behind. Use the helpers in `00_helpers.sql`: `pg_temp.try_as(role, uid, sql)` returns `'ok'` or the error code, `pg_temp.count_as(role, uid, sql)` counts rows visible to that user.
+- E2E tests that write must use a unique marker and clean up in `afterAll` (see `member.spec.ts`).
+- **Test accounts** (dev only, from `supabase/dev/fixtures.sql`): `e2e.student@dtour.invalid` (member) and `e2e.moderator@dtour.invalid` (moderator). Sign in as them with `npm run dev:login -- <handle>`; there is no password.
 
 ## Environment and secrets
 
@@ -49,7 +70,10 @@ npm run typecheck          # tsc for shared, web and mobile
 - `apps/mobile/.env` sets `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
 - Copy each from the `.env.example` next to it. These files are gitignored. **Never commit them.**
 - Apps only ever get the **publishable** key. The **secret** (service-role) key, database passwords and OAuth client secrets never go in the repo, in app env files, or in client code.
-- The live backend is the team Supabase project **`megohwzcghnbfdzsaypz`**. The old project `pvtgvraqbgncrexnkoof` is retired; don't use it.
+- **Two Supabase projects:**
+  - **Production: `megohwzcghnbfdzsaypz`.** The real site. The CLI link (`supabase/.temp`) points here. Never write test data to it.
+  - **Dev: `cqdqfmejbwvumbbclkfk`** (`dtour-dev`). Same migrations, demo seed and two test accounts. Use it for tests, experiments and agent work. Its keys go in a root `.env.dev` (copy `.env.dev.example`; ask a maintainer for the values). Every dev script refuses to run if a value in `.env.dev` points at production.
+- The old project `pvtgvraqbgncrexnkoof` is retired; don't use it.
 
 ## Architecture rules
 
@@ -80,7 +104,8 @@ These are product decisions. Don't change them without asking.
 
 - **Never edit a migration that is already applied.** Add a new file in `supabase/migrations/` with the next version number (`20261017000014_…`, then `…15_…`). Versions must be unique across all branches, so check other open branches before picking one.
 - **Each migration must include its RLS policies and grants.** Grant `select` to `anon` only for public content. Don't forget `revoke … from anon, authenticated` for internal `security definer` helpers.
-- **Applying migrations.** Run `supabase db push` from a checkout that has **every** applied migration file. If the remote has versions your branch lacks, merge first.
+- **Try migrations on dev first:** `npm run db:dev:reset` rebuilds the dev DB from all migration files, then `npm run test:db`.
+- **Applying to production** happens after the PR is merged, done by a maintainer: `supabase db push` from an up-to-date `main` that has **every** applied migration file.
 - **Never run `supabase db reset --linked`** or anything else that wipes the live project.
 - **After a schema change, regenerate the shared types:**
   `supabase gen types typescript --project-id megohwzcghnbfdzsaypz --schema public > packages/shared/src/database.types.ts`
@@ -111,10 +136,25 @@ These are product decisions. Don't change them without asking.
 - **Branches and PRs.** Work on a branch and open a PR into `main`. Don't push straight to `main`. Keep PRs focused, and say in the description what you checked and what you didn't.
 - **Commits.** Use imperative subjects ("Add …", "Fix …") and explain the *why* in the body when it isn't obvious.
 - **If a PR touches the database:** list the new migrations, say whether they're already applied to `megohwzcghnbfdzsaypz`, and give any manual steps (dashboard settings, function deploys, cron jobs).
+- **Templates.** PRs use `.github/pull_request_template.md`; fill in every section. New work starts as an issue from the **Task** template, whose acceptance criteria define "done".
+- **Formatting.** Prettier (`.prettierrc.json`). `npm run format` only touches files your branch changed, so it never causes conflicts. Don't reformat unrelated files.
+
+## Guardrails for Claude Code
+
+`.claude/settings.json` is shared by the team:
+
+- **Allowed without asking:** checks, tests, lint, format, read-only git and `gh pr` commands.
+- **Always asks:** `git push`, `npm run db:dev:reset`, `supabase migration …`, `gh pr merge`.
+- **Blocked:** `supabase db push`, `supabase db reset` without `--db-url`, `supabase link`, force pushes, pushing to `main`, `git reset --hard`, destructive commands that mention the production ref, and reading real `.env` files.
+- **Hooks** (`.claude/hooks/`):
+  - `guard-migrations.mjs` blocks edits to any migration already on `origin/main`.
+  - `guard-bash.mjs` catches the blocked commands even inside longer command lines.
+  - `typecheck-on-stop.mjs` runs `npm run typecheck` when Claude finishes with changed `.ts`/`.tsx` files, and sends any errors back so they get fixed.
+- Personal overrides go in `.claude/settings.local.json` (gitignored).
 
 ## Still open (as of Oct 2026)
 
 - **Email codes** need a custom SMTP provider. Supabase's default mailer only delivers to project members, and the free tier blocks the template edit that puts the 6-digit `{{ .Token }}` in the email. The template is ready in `supabase/templates/otp.html`.
 - **Google sign-in** needs the OAuth client configured in Supabase Auth for the team project.
 - **Phone push** isn't live yet: the `push` function isn't deployed, and there's no webhook or EAS credentials yet.
-- **No test suites yet.** CI covers compiling, linting and the web build only.
+- **Branch protection** on `main` isn't possible on the GitHub Free plan for a private repo. Until the org upgrades (or the repo goes public), "PRs only" and CODEOWNERS reviews are a team rule, not enforced by GitHub.

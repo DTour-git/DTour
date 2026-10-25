@@ -1,0 +1,44 @@
+name: Bug report
+description: Something is broken or behaves wrongly.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: Include the exact error text if there is one.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should have happened
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where
+      multiple: true
+      options: [Web (desktop), Web (phone browser), Mobile — Android, Mobile — iOS, Database / backend]
+    validations:
+      required: true
+  - type: dropdown
+    id: account
+    attributes:
+      label: Signed in?
+      options: [Signed out, Member, Moderator, Not sure]
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots, logs, links

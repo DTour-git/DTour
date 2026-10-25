@@ -1,15 +1,37 @@
 {
   "name": "dtour",
   "private": true,
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "web": "npm run dev -w @dtour/web",
     "mobile": "npm run start -w @dtour/mobile",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "web:dev-db": "node scripts/with-dev-db.mjs npm run dev -w @dtour/web",
+    "mobile:dev-db": "node scripts/with-dev-db.mjs npm run start -w @dtour/mobile",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint -w @dtour/web && npm run lint -w @dtour/mobile",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:db": "node scripts/test-db.mjs",
+    "test:e2e": "npm run test:e2e -w @dtour/web",
+    "build:web": "npm run build -w @dtour/web",
+    "check": "npm run typecheck && npm run lint && npm test && npm run build:web",
+    "check:all": "npm run check && npm run test:db && npm run test:e2e",
+    "db:dev:reset": "node scripts/db-dev-reset.mjs",
+    "dev:login": "node scripts/dev-login.mjs",
+    "format": "node scripts/format-changed.mjs",
+    "format:check": "node scripts/format-changed.mjs --check",
+    "format:all": "prettier --write ."
   },
   "overrides": {
     "@expo/cli": {
       "zod": "^4.6.7"
     }
+  },
+  "devDependencies": {
+    "prettier": "^3.9.10",
+    "vitest": "^3.2.7"
   }
 }

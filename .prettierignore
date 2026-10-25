@@ -1,0 +1,15 @@
+node_modules/
+.next/
+.expo/
+dist/
+build/
+coverage/
+test-results/
+playwright-report/
+package-lock.json
+
+# Generated or hand-tuned
+packages/shared/src/database.types.ts
+supabase/
+design_handoff_dtour/
+*.md
