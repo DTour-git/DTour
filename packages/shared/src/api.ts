@@ -90,6 +90,25 @@ export async function handleAvailable(sb: DB, handle: string, myId: string) {
   return !data || data.id === myId;
 }
 
+// Same rule as the profiles.handle check constraint.
+export const HANDLE_RE = /^[a-z0-9][a-z0-9._]{2,23}$/;
+export function normalizeHandle(raw: string) { return raw.trim().replace(/^@/, '').toLowerCase(); }
+/** Returns a message explaining what's wrong with the handle, or null if it's valid. */
+export function handleProblem(raw: string): string | null {
+  return HANDLE_RE.test(normalizeHandle(raw)) ? null : 'Handles are 3–24 characters: lowercase letters, numbers, dots and underscores, starting with a letter or number.';
+}
+/** Checks and saves a new handle. Returns the saved handle. */
+export async function changeHandle(sb: DB, userId: string, raw: string) {
+  const h = normalizeHandle(raw);
+  const problem = handleProblem(h);
+  if (problem) throw new Error(problem);
+  if (!(await handleAvailable(sb, h, userId))) throw new Error(`@${h} is taken. Try another.`);
+  const { error } = await sb.from('profiles').update({ handle: h }).eq('id', userId);
+  if (error?.code === '23505') throw new Error(`@${h} is taken. Try another.`);
+  if (error) throw new Error(error.message);
+  return h;
+}
+
 export async function getBranches(sb: DB) {
   return must(await sb.from('branches').select('*').order('sort'));
 }

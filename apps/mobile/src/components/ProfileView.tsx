@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, TextInput, View, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
-import { agoLong, colors, fonts, getDrafts, getProfile, getSaved, n, updateProfile, yearLabel, flair } from '@dtour/shared';
+import { agoLong, changeHandle, colors, fonts, getDrafts, getProfile, getSaved, n, normalizeHandle, updateProfile, yearLabel, flair } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
 import { useData } from '@/lib/useData';
@@ -114,32 +114,52 @@ export function ProfileView({ handle, isTab }: { handle: string; isTab?: boolean
           </Pressable>
         ))}
       </ScrollView>
-      {editing && <EditProfile profile={p} onClose={() => { setEditing(false); reload(); refreshProfile(); }} />}
+      {editing && <EditProfile profile={p} onClose={async (newHandle) => {
+        setEditing(false);
+        await refreshProfile();
+        if (newHandle && !isTab) router.replace(`/u/${newHandle}`); else reload();
+      }} />}
     </Screen>
   );
 }
 
-function EditProfile({ profile, onClose }: { profile: { id: string; bio: string | null; hostel: string | null; skills: string[]; semester: number | null }; onClose: () => void }) {
+function EditProfile({ profile, onClose }: { profile: { id: string; handle: string; bio: string | null; hostel: string | null; skills: string[]; semester: number | null }; onClose: (newHandle?: string) => void }) {
+  const [handle, setHandle] = useState(profile.handle);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const [bio, setBio] = useState(profile.bio ?? '');
   const [hostel, setHostel] = useState(profile.hostel ?? '');
   const [skills, setSkills] = useState(profile.skills.join(', '));
   const [sem, setSem] = useState(String(profile.semester ?? ''));
+  const next = normalizeHandle(handle);
+  const changed = next !== profile.handle;
   const save = async () => {
-    await updateProfile(supabase, profile.id, { bio: bio || null, hostel: hostel || null, skills: skills.split(',').map((s) => s.trim()).filter(Boolean), semester: Number(sem) || null });
-    onClose();
+    setBusy(true); setError(null);
+    try {
+      if (changed) await changeHandle(supabase, profile.id, next);
+      await updateProfile(supabase, profile.id, { bio: bio || null, hostel: hostel || null, skills: skills.split(',').map((s) => s.trim()).filter(Boolean), semester: Number(sem) || null });
+      onClose(changed ? next : undefined);
+    } catch (e) { setError((e as Error).message); setBusy(false); }
   };
   const input = { height: 44, paddingHorizontal: 12, backgroundColor: colors.surface, borderRadius: 2, fontFamily: fonts.regular, fontSize: 15, color: colors.text } as const;
   return (
-    <Modal animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <Modal animationType="slide" presentationStyle="pageSheet" onRequestClose={() => onClose()}>
       <View style={{ flex: 1, backgroundColor: colors.bg, padding: 20, gap: 12 }}>
         <T size={23} w={600}>Edit profile</T>
+        <View style={[input, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+          <T size={16} w={600} color={colors.neutral600}>@</T>
+          <TextInput value={handle} onChangeText={(v) => setHandle(v.toLowerCase())} maxLength={24} autoCapitalize="none" autoCorrect={false} accessibilityLabel="Handle"
+            style={{ flex: 1, height: 44, fontFamily: fonts.regular, fontSize: 15, color: colors.text }} />
+        </View>
+        {changed ? <T size={12.5} color={colors.neutral700}>Old @mentions of @{profile.handle} won’t point to you anymore.</T> : null}
         <TextInput style={[input, { height: 80, paddingTop: 12 }]} multiline value={bio} onChangeText={setBio} placeholder="Bio" placeholderTextColor={colors.neutral700} />
         <TextInput style={input} value={hostel} onChangeText={setHostel} placeholder="Hostel" placeholderTextColor={colors.neutral700} />
         <TextInput style={input} value={skills} onChangeText={setSkills} placeholder="Skills, comma separated" placeholderTextColor={colors.neutral700} />
         <TextInput style={input} value={sem} onChangeText={setSem} keyboardType="number-pad" placeholder="Semester (1–8)" placeholderTextColor={colors.neutral700} />
+        {error ? <T size={13.5} color={colors.accent2_700}>{error}</T> : null}
         <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
-          <PrimaryBtn label="Cancel" secondary onPress={onClose} style={{ flex: 1 }} />
-          <PrimaryBtn label="Save" onPress={save} style={{ flex: 1 }} />
+          <PrimaryBtn label="Cancel" secondary onPress={() => onClose()} style={{ flex: 1 }} />
+          <PrimaryBtn label="Save" onPress={save} disabled={busy} style={{ flex: 1 }} />
         </View>
       </View>
     </Modal>

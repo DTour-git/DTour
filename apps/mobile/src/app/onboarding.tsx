@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { ScrollView, TextInput, View } from 'react-native';
-import { colors, flair, fonts, getBranches, handleAvailable, updateProfile } from '@dtour/shared';
+import { colors, flair, fonts, getBranches, handleAvailable, handleProblem, normalizeHandle, updateProfile } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth, useMe } from '@/lib/auth';
 import { useData } from '@/lib/useData';
 import { T } from '@/components/T';
 import { Avatar, LogoMark, Pill, PrimaryBtn, Screen, Tag } from '@/components/ui';
 
-const HANDLE = /^[a-z0-9][a-z0-9._]{2,23}$/;
 
 export default function Onboarding() {
   const me = useMe()!; // onboarding is only reachable while signed in
@@ -22,8 +21,9 @@ export default function Onboarding() {
   const year = new Date().getFullYear();
 
   const save = async () => {
-    const h = handle.trim().toLowerCase();
-    if (!HANDLE.test(h)) return setError('Handles are 3–24 characters: lowercase letters, numbers, dots and underscores.');
+    const h = normalizeHandle(handle);
+    const problem = handleProblem(h);
+    if (problem) return setError(problem);
     setBusy(true); setError(null);
     try {
       if (!(await handleAvailable(supabase, h, me.id))) throw new Error(`@${h} is taken — try another.`);

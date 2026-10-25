@@ -2,11 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { flair, handleAvailable, updateProfile, type BranchRow, type ProfileRow } from '@dtour/shared';
+import { flair, handleAvailable, handleProblem, normalizeHandle, updateProfile, type BranchRow, type ProfileRow } from '@dtour/shared';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Avatar, LogoMark, Tag } from '@/components/ui';
 
-const HANDLE = /^[a-z0-9][a-z0-9._]{2,23}$/;
 
 export function OnboardingForm({ profile, email, branches }: { profile: ProfileRow; email: string | null; branches: BranchRow[] }) {
   const router = useRouter();
@@ -21,8 +20,9 @@ export function OnboardingForm({ profile, email, branches }: { profile: ProfileR
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const h = handle.trim().toLowerCase();
-    if (!HANDLE.test(h)) { setError('Handles are 3–24 characters: lowercase letters, numbers, dots and underscores.'); return; }
+    const h = normalizeHandle(handle);
+    const problem = handleProblem(h);
+    if (problem) { setError(problem); return; }
     setBusy(true); setError(null);
     const sb = supabaseBrowser();
     try {
@@ -44,7 +44,7 @@ export function OnboardingForm({ profile, email, branches }: { profile: ProfileR
         </div>
         <h1 style={{ fontSize: 40, margin: '26px 0 8px', letterSpacing: '-.025em' }}>Welcome to campus.</h1>
         <p style={{ font: 'italic 400 18px/1.45 var(--font-body)', color: 'var(--color-neutral-800)', margin: '0 0 26px' }}>
-          Pick a handle — it’s how DTour knows you. Your branch and batch show as a flair on everything you post.
+          Pick a handle — it’s how DTour knows you, and you can change it later from your profile. Your branch and batch show as a flair on everything you post.
         </p>
         {email && <div style={{ fontSize: 13, color: 'var(--color-neutral-700)', marginBottom: 20 }}>Signed in as {email}</div>}
 
