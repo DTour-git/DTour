@@ -5,6 +5,8 @@ node_modules/
 .env.*
 client_secret*
 !.env.example
+!.env.dev.example
+.claude/settings.local.json
 .next/
 out/
 dist/
@@ -17,3 +19,8 @@ android/
 supabase/.temp/
 supabase/.branches/
 npm-debug.log*
+
+# Test output
+test-results/
+playwright-report/
+blob-report/

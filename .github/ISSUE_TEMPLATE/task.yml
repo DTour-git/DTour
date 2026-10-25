@@ -1,0 +1,47 @@
+name: Task / feature
+description: Something to build or change. Written so a teammate or an AI agent can pick it up.
+labels: [task]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What should exist when this is done, and why it matters.
+      placeholder: Members can bookmark wiki articles and see them under Saved.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: A checklist that decides "done". Each item should be testable.
+      value: |
+        - [ ]
+        - [ ]
+        - [ ] Works for a signed-out visitor (read-only) and a signed-in member
+        - [ ] `npm run check` passes
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options: [Web, Mobile, Shared package, Database / Supabase, Auth, CI / tooling, Design]
+    validations:
+      required: true
+  - type: textarea
+    id: design
+    attributes:
+      label: Design reference
+      description: Screen or file in design_handoff_dtour/, a screenshot, or "no design yet — ask first".
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: Things this task should NOT touch.
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes / hints
+      description: Relevant files, tables, edge cases, open questions.
