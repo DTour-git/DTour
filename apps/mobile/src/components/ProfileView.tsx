@@ -57,6 +57,7 @@ export function ProfileView({ handle, isTab }: { handle: string; isTab?: boolean
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 20, paddingRight: 8 }}>
           <T size={17} w={600}>@{p.handle}</T>
           <View style={{ marginLeft: 'auto', flexDirection: 'row' }}>
+            {(me?.role === 'moderator' || me?.role === 'admin') && <IconBtn name="shield-check" label="Moderation queue" onPress={() => router.push(appRoute('/mod'))} />}
             <IconBtn name="pencil-simple-line" label="Edit profile" onPress={() => setEditing(true)} />
             <IconBtn name="gear-six" label="Settings" onPress={settings} />
           </View>

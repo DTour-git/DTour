@@ -302,19 +302,21 @@ export async function markBoardsSeen(sb: DB, userId: string) {
   await sb.from('profiles').update({ boards_seen_at: new Date().toISOString() }).eq('id', userId);
 }
 
-export async function getBoard(sb: DB, slug: string, tab: FeedTab = 'hot') {
+export const PAGE_SIZE = 40;
+export async function getBoard(sb: DB, slug: string, tab: FeedTab = 'hot', limit = PAGE_SIZE) {
   const board = must(await sb.from('boards').select('*').eq('slug', slug).maybeSingle());
   if (!board) return null;
   const all = must(await sb.from('boards').select('*'));
   const desc = (id: string): string[] => all.filter((b) => b.parent_id === id).flatMap((b) => [b.id, ...desc(b.id)]);
   const ids = [board.id, ...desc(board.id)];
   const [threads, category, path] = await Promise.all([
-    listThreads(sb, { tab, boardIds: ids, limit: 40 }),
+    listThreads(sb, { tab, boardIds: ids, limit: limit + 1 }),
     sb.from('board_categories').select('*').eq('id', board.category_id).single(),
     boardAncestors(sb, board.id, all),
   ]);
   return {
-    board, threads, category: must(category) as CategoryRow & { tone: Tone }, path,
+    board, threads: threads.slice(0, limit), hasMore: threads.length > limit,
+    category: must(category) as CategoryRow & { tone: Tone }, path,
     children: all.filter((b) => b.parent_id === board.id).sort((a, b) => a.sort - b.sort),
   };
 }
@@ -932,8 +934,11 @@ export const LOUNGE_SELECT = `id,room_slug,body,created_at,edited_at,promoted_th
 export async function getLoungeRooms(sb: DB) {
   return must(await sb.from('lounge_rooms').select('*').order('sort'));
 }
-export async function getLoungeMessages(sb: DB, room: string, limit = 60) {
-  const rows = must(await sb.from('lounge_messages').select(LOUNGE_SELECT).eq('room_slug', room).order('created_at', { ascending: false }).limit(limit));
+/** Latest messages in a room, oldest first. Pass `before` (a created_at) to page back in time. */
+export async function getLoungeMessages(sb: DB, room: string, limit = 60, before?: string) {
+  let q = sb.from('lounge_messages').select(LOUNGE_SELECT).eq('room_slug', room);
+  if (before) q = q.lt('created_at', before);
+  const rows = must(await q.order('created_at', { ascending: false }).limit(limit));
   return (rows as unknown as LoungeMessage[]).reverse();
 }
 export async function getLoungeMessage(sb: DB, id: number) {
@@ -944,6 +949,15 @@ export async function sendLoungeMessage(sb: DB, room: string, userId: string, bo
 }
 export async function editLoungeMessage(sb: DB, id: number, body: string) {
   must(await sb.from('lounge_messages').update({ body: body.trim() }).eq('id', id).select('id').single());
+}
+/** Turns your own Lounge message into a thread in a board. Returns the new thread's id. */
+export async function promoteLoungeMessage(sb: DB, messageId: number, boardId: string, title: string) {
+  return must(await sb.rpc('promote_lounge_message', { p_message: messageId, p_board: boardId, p_title: title.trim() })) as number;
+}
+/** A short default title from a message body. */
+export function titleFromMessage(body: string) {
+  const s = body.replace(/\s+/g, ' ').trim();
+  return s.length > 80 ? s.slice(0, 79).replace(/\s+\S*$/, '') + '…' : s;
 }
 export async function deleteLoungeMessage(sb: DB, id: number) {
   must(await sb.from('lounge_messages').delete().eq('id', id));

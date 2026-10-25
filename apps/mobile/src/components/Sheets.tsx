@@ -1,10 +1,10 @@
 // Bottom sheets for managing posts: an action menu, a text editor, and the
 // report form. Native Alert can't hold more than three buttons on Android.
 
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { REPORT_REASONS, colors, fonts, reportContent, type ReportReason, type ReportTarget } from '@dtour/shared';
+import { REPORT_REASONS, boardPicker, colors, fonts, promoteLoungeMessage, reportContent, titleFromMessage, type ReportReason, type ReportTarget } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
 import { useRequireMe } from '@/lib/auth';
 import { T } from './T';
@@ -104,6 +104,49 @@ export function ReportSheet({ target, onClose, onDone }: { target: ReportTarget 
       <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
         <PrimaryBtn label="Cancel" secondary onPress={close} style={{ flex: 1 }} />
         <PrimaryBtn label="Report" icon="flag" disabled={!reason || busy} onPress={submit} style={{ flex: 1 }} />
+      </View>
+    </Sheet>
+  );
+}
+
+/** Turn your own Lounge message into a thread: pick a board and a title. */
+/** Mount it only while open (`{msg && <PromoteSheet …/>}`) so each message starts fresh. */
+export function PromoteSheet({ message, onClose, onDone }: { message: { id: number; body: string }; onClose: () => void; onDone: (threadId: number) => void }) {
+  const [boards, setBoards] = useState<Awaited<ReturnType<typeof boardPicker>> | null>(null);
+  const [board, setBoard] = useState<string | null>(null);
+  const [title, setTitle] = useState(() => titleFromMessage(message.body));
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    boardPicker(supabase).then((b) => alive && setBoards(b.filter((x) => !x.verified_only).sort((x, y) => x.path.join('›').localeCompare(y.path.join('›'))))).catch(() => alive && setBoards([]));
+    return () => { alive = false; };
+  }, []);
+  const submit = async () => {
+    if (!board) return;
+    setBusy(true); setError(null);
+    try { const id = await promoteLoungeMessage(supabase, message.id, board, title); onClose(); onDone(id); }
+    catch (e) { setError((e as Error).message); } finally { setBusy(false); }
+  };
+  return (
+    <Sheet visible onClose={onClose} title="Turn into a thread">
+      <TextInput value={title} onChangeText={setTitle} maxLength={140} placeholder="Title" placeholderTextColor={colors.neutral700}
+        style={{ backgroundColor: colors.surface, borderRadius: 2, paddingHorizontal: 14, paddingVertical: 10, fontFamily: fonts.semibold, fontSize: 16, color: colors.text }} />
+      <T size={11} w={600} ls={0.12} caps color={colors.neutral700} style={{ marginTop: 14, marginBottom: 6 }}>Post in</T>
+      <ScrollView style={{ maxHeight: 240 }}>
+        {boards?.map((b) => (
+          <Pressable key={b.id} onPress={() => setBoard(b.id)} accessibilityRole="radio" accessibilityState={{ checked: board === b.id }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 }}>
+            <Icon name={board === b.id ? 'check-circle' : 'circle-dashed'} size={20} color={board === b.id ? colors.accent : colors.neutral700} weight={board === b.id ? 'fill' : 'duotone'} />
+            <T size={14.5} style={{ flex: 1 }}>{b.path.slice(1).join(' › ')}</T>
+          </Pressable>
+        ))}
+        {!boards && <T size={14} color={colors.neutral700}>Loading boards…</T>}
+      </ScrollView>
+      {error ? <T size={13.5} color={colors.accent2_700} style={{ marginTop: 8 }}>{error}</T> : null}
+      <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
+        <PrimaryBtn label="Cancel" secondary onPress={onClose} style={{ flex: 1 }} />
+        <PrimaryBtn label="Post thread" disabled={busy || !board || title.trim().length < 3} onPress={submit} style={{ flex: 1 }} />
       </View>
     </Sheet>
   );
