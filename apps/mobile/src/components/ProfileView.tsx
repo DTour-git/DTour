@@ -21,7 +21,7 @@ export function ProfileView({ handle, isTab }: { handle: string; isTab?: boolean
   const { profile: me, refreshProfile } = useAuth();
   const { data, refreshing, refresh, reload } = useData(async () => {
     const p = await getProfile(supabase, handle);
-    if (!p) {
+    if (!p && !isTab) {
       // A recently changed handle: open the new profile instead.
       const moved = await currentHandle(supabase, handle);
       if (moved) { router.replace(`/u/${moved}`); return null; }
@@ -124,7 +124,8 @@ export function ProfileView({ handle, isTab }: { handle: string; isTab?: boolean
       {editing && <EditProfile profile={p} onClose={async (newHandle) => {
         setEditing(false);
         await refreshProfile();
-        if (newHandle && !isTab) router.replace(`/u/${newHandle}`); else reload();
+        // On the You tab the new handle arrives with the refreshed profile and reloads by itself.
+        if (newHandle) { if (!isTab) router.replace(`/u/${newHandle}`); } else reload();
       }} />}
     </Screen>
   );

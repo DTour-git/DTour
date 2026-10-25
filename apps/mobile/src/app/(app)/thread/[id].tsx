@@ -129,7 +129,7 @@ export default function Thread() {
             </View>
           </View>
           <View style={{ flexDirection: 'row', gap: 16, marginTop: 18, marginBottom: 14 }}>
-            <T size={14} w={600}>{n(Math.max(t.reply_count, data.replyCount))} replies</T>
+            <T size={14} w={600}>{n(Math.max(t.reply_count, data.replyCount))} {Math.max(t.reply_count, data.replyCount) === 1 ? 'reply' : 'replies'}</T>
             {(['best', 'newest'] as const).map((s) => (
               <Pressable key={s} onPress={() => setSort(s)} hitSlop={10}>
                 <T size={14} w={sort === s ? 600 : 400} color={sort === s ? colors.accent700 : colors.neutral700}>{s === 'best' ? 'Best' : 'Newest'}</T>

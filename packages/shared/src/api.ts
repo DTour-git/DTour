@@ -481,6 +481,11 @@ export async function getOpenReports(sb: DB): Promise<OpenReport[]> {
   }
   return [...groups.values()];
 }
+/** How many reported posts are waiting (for the moderator badge). */
+export async function openReportCount(sb: DB) {
+  const { count } = await sb.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'open');
+  return count ?? 0;
+}
 /** Dismiss the reports, or remove the reported content. */
 export async function resolveReport(sb: DB, reportId: number, remove: boolean) {
   must(await sb.rpc('resolve_report', { p_report: reportId, p_remove: remove }));

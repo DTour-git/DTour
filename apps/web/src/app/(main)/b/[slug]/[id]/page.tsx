@@ -82,7 +82,7 @@ export default async function ThreadPage({ params, searchParams }: {
 
         <div className="replies-indent" style={{ marginLeft: 68 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 20, margin: '48px 0 22px', flexWrap: 'wrap' }}>
-            <h4 style={{ margin: 0 }}>{n(Math.max(t.reply_count, d.replyCount))} replies</h4>
+            <h4 style={{ margin: 0 }}>{n(Math.max(t.reply_count, d.replyCount))} {Math.max(t.reply_count, d.replyCount) === 1 ? 'reply' : 'replies'}</h4>
             {SORTS.map(([k, label]) => (
               <Link key={k} href={k === 'best' ? '?' : `?sort=${k}`} scroll={false}
                 style={k === sort ? { font: '600 14px var(--font-heading)', color: 'var(--color-accent-700)' } : { fontSize: 14, color: 'var(--color-neutral-700)' }}>{label}</Link>
