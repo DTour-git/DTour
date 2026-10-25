@@ -25,7 +25,7 @@ Environment files are gitignored. Copy the examples and fill them in from the Su
 
 ## Backend (Supabase)
 
-- **Project:** `dtour` (ref `pvtgvraqbgncrexnkoof`), region ap-south-1 (Mumbai).
+- **Project:** ref `megohwzcghnbfdzsaypz` (the team project). The original `pvtgvraqbgncrexnkoof` is no longer used.
 - **Schema:** `supabase/migrations`. Apply it with `supabase db push`.
 - **Demo content:** `supabase/seed.sql` holds all the copy from the prototypes. Every seeded row is flagged `is_demo`. To remove it before launch, run `select public.dtour_clear_demo();` in the SQL editor.
 - **Counters:** reply counts, scores, karma, downloads and RSVPs are kept current by triggers. Karma is +10 per upvote received and +25 for an accepted answer.
