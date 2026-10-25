@@ -15,7 +15,8 @@ SplashScreen.preventAutoHideAsync();
 function Root() {
   const { ready, session, profile } = useAuth();
   const [fontsLoaded] = useFonts({ SourceSerif4_400Regular, SourceSerif4_400Regular_Italic, SourceSerif4_600SemiBold });
-  const loaded = ready && fontsLoaded && (!session || profile !== null);
+  // `ready` means the saved session and its profile have been checked (see AuthProvider).
+  const loaded = ready && fontsLoaded;
 
   useEffect(() => { if (loaded) SplashScreen.hideAsync(); }, [loaded]);
   if (!loaded) return null;

@@ -3,13 +3,15 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { agoLong, reviewArticle, reviewRevision, type PendingArticle, type PendingRevision } from '@dtour/shared';
+import { REPORT_REASONS, agoLong, resolveReport, reviewArticle, reviewRevision, type OpenReport, type PendingArticle, type PendingRevision } from '@dtour/shared';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Markdown } from './Markdown';
 import { Tag } from './ui';
 import { useShell } from './shell/Shell';
 
-export function ModQueue({ articles, revisions }: { articles: PendingArticle[]; revisions: PendingRevision[] }) {
+const REASON = Object.fromEntries(REPORT_REASONS);
+
+export function ModQueue({ articles, revisions, reports }: { articles: PendingArticle[]; revisions: PendingRevision[]; reports: OpenReport[] }) {
   const router = useRouter();
   const { toast } = useShell();
   const [open, setOpen] = useState<string | null>(null);
@@ -28,6 +30,25 @@ export function ModQueue({ articles, revisions }: { articles: PendingArticle[]; 
 
   return (
     <div style={{ marginTop: 34, display: 'flex', flexDirection: 'column', gap: 40 }}>
+      <section>
+        <h3 style={{ marginBottom: 6 }}>Reported posts · {reports.length}</h3>
+        {reports.map((r) => (
+          <div key={r.key} className="row-rule" style={{ padding: '18px 0' }}>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
+              <Link href={r.route} style={{ font: '600 18px/1.3 var(--font-heading)' }}>{r.title}</Link>
+              <span style={{ fontSize: 13, color: 'var(--color-neutral-700)' }}>{r.author && <>by @{r.author.handle} · </>}{r.count} {r.count === 1 ? 'report' : 'reports'} · first {agoLong(r.first_at)}</span>
+            </div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>{r.reasons.map((x) => <Tag key={x} tone="accent2">{REASON[x] ?? x}</Tag>)}</div>
+            <div style={{ background: 'var(--color-surface)', padding: '10px 14px', borderRadius: 2, marginTop: 10, fontSize: 15, lineHeight: 1.5, whiteSpace: 'pre-wrap', maxHeight: 200, overflow: 'auto' }}>{r.body || <i>No text</i>}</div>
+            {r.details.map((d, i) => <div key={i} style={{ fontSize: 14, fontStyle: 'italic', color: 'var(--color-neutral-800)', marginTop: 6 }}>“{d}”</div>)}
+            <div style={{ display: 'flex', gap: 10, marginTop: 12, justifyContent: 'flex-end' }}>
+              <button className="btn btn-secondary" onClick={() => act(r.key, () => resolveReport(supabaseBrowser(), r.ids[0], false), 'Report dismissed.')}>Keep it up</button>
+              <button className="btn btn-primary" onClick={() => confirm('Remove this post for everyone?') && act(r.key, () => resolveReport(supabaseBrowser(), r.ids[0], true), 'Removed.')}>Remove {r.kind === 'lounge' ? 'message' : r.kind}</button>
+            </div>
+          </div>
+        ))}
+        {!reports.length && <div style={{ color: 'var(--color-neutral-700)', fontStyle: 'italic', padding: '12px 0' }}>No open reports.</div>}
+      </section>
       <section>
         <h3 style={{ marginBottom: 6 }}>New guides · {articles.length}</h3>
         {articles.map((a) => {

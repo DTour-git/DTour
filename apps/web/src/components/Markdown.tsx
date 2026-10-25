@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { parse, type Inline } from '@dtour/shared';
+import { parse, splitMentions, type Inline } from '@dtour/shared';
 
 function Inl({ parts }: { parts: Inline[] }) {
   return <>{parts.map((p, i) => {
@@ -11,6 +11,11 @@ function Inl({ parts }: { parts: Inline[] }) {
       default: return <span key={i}>{p.v}</span>;
     }
   })}</>;
+}
+
+/** Plain text with @mentions turned into profile links (replies, Lounge). */
+export function MentionText({ text }: { text: string }) {
+  return <Inl parts={splitMentions(text)} />;
 }
 
 /** Renders DTour markdown. `senior` quotes get the "From a senior" box. */

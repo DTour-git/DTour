@@ -36,8 +36,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const load = useCallback(async (s: Session | null) => {
     if (!s) { setProfile(null); return; }
-    const { data } = await supabase.from('profiles').select('*').eq('id', s.user.id).maybeSingle();
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', s.user.id).maybeSingle();
     setProfile(data);
+    // A saved sign-in whose account no longer exists (deleted, or the database was reset):
+    // drop it on this device so the app opens signed out instead of hanging.
+    if (!data && !error) await supabase.auth.signOut({ scope: 'local' });
   }, []);
 
   useEffect(() => {

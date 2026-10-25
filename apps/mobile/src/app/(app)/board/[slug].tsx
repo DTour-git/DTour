@@ -1,26 +1,27 @@
 import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ago, colors, getBoard, n, type FeedTab } from '@dtour/shared';
+import { PAGE_SIZE, ago, colors, getBoard, n, type FeedTab } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
 import { useData } from '@/lib/useData';
 import { usePresence } from '@/lib/presence';
 import { T } from '@/components/T';
 import { Icon } from '@/components/Icon';
-import { AppBar, FlairTag, IconBtn, Pill, PillRow, Screen, rowRule } from '@/components/ui';
+import { AppBar, FlairTag, IconBtn, Pill, PillRow, Screen, rowRule, PrimaryBtn } from '@/components/ui';
 
 export default function Board() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const router = useRouter();
   const { online } = usePresence();
   const [tab, setTab] = useState<FeedTab>('hot');
-  const { data, refreshing, refresh } = useData(() => getBoard(supabase, slug, tab), [slug, tab]);
+  const [limit, setLimit] = useState(PAGE_SIZE);
+  const { data, refreshing, refresh } = useData(() => getBoard(supabase, slug, tab, limit), [slug, tab, limit]);
   return (
     <Screen>
       <AppBar title={data?.board.short_name ?? data?.board.name ?? ''} subtitle={`${online.filter((u) => u.board === slug).length} online · ${n(data?.board.member_count ?? 0)} members`}
         right={<IconBtn name="pencil-simple-line" color={colors.accent} label="Post here" onPress={() => router.push({ pathname: '/new', params: { board: slug } })} />} />
       <PillRow>
-        {(['hot', 'new', 'top'] as const).map((k) => <Pill key={k} label={k === 'hot' ? 'Hot' : k === 'new' ? 'New' : 'Top this week'} active={tab === k} onPress={() => setTab(k)} />)}
+        {(['hot', 'new', 'top'] as const).map((k) => <Pill key={k} label={k === 'hot' ? 'Hot' : k === 'new' ? 'New' : 'Top this week'} active={tab === k} onPress={() => { setTab(k); setLimit(PAGE_SIZE); }} />)}
         {data?.children.map((c) => <Pill key={c.id} label={c.short_name ?? c.name} onPress={() => router.push(`/board/${c.slug}`)} />)}
       </PillRow>
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.accent} />}>
@@ -40,6 +41,7 @@ export default function Board() {
             </View>
           </Pressable>
         ))}
+        {data?.hasMore && <PrimaryBtn label="Load more threads" secondary onPress={() => setLimit(limit + PAGE_SIZE)} style={{ marginTop: 18 }} />}
         {data && !data.threads.length && <T size={15} i color={colors.neutral700} style={{ paddingVertical: 20 }}>No threads yet — start the first one.</T>}
       </ScrollView>
     </Screen>

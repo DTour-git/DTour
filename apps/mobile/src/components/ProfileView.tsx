@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, TextInput, View, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
-import { agoLong, colors, fonts, getProfile, getSaved, n, updateProfile, yearLabel, flair } from '@dtour/shared';
+import { agoLong, changeHandle, colors, currentHandle, fonts, getDrafts, getProfile, getSaved, n, nextHandleChange, updateProfile, yearLabel, flair } from '@dtour/shared';
+import { HandleHint } from './HandleHint';
+import { useHandleCheck } from '@/lib/useHandleCheck';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
 import { useData } from '@/lib/useData';
 import { appRoute } from '@/lib/routes';
+import { pushSupported, registerPush, unregisterPush } from '@/lib/push';
 import { T, Kicker } from './T';
 import { Icon } from './Icon';
 import { AppBar, Avatar, CmykNum, IconBtn, PrimaryBtn, Screen, Tag, rowRule } from './ui';
@@ -18,10 +21,16 @@ export function ProfileView({ handle, isTab }: { handle: string; isTab?: boolean
   const { profile: me, refreshProfile } = useAuth();
   const { data, refreshing, refresh, reload } = useData(async () => {
     const p = await getProfile(supabase, handle);
-    const saved = p && me?.id === p.profile.id ? await getSaved(supabase, p.profile.id) : [];
-    return p && { ...p, saved };
+    if (!p && !isTab) {
+      // A recently changed handle: open the new profile instead.
+      const moved = await currentHandle(supabase, handle);
+      if (moved) { router.replace(`/u/${moved}`); return null; }
+    }
+    const mine = p && me?.id === p.profile.id;
+    const [saved, drafts] = mine ? await Promise.all([getSaved(supabase, p.profile.id), getDrafts(supabase)]) : [[], []];
+    return p && { ...p, saved, drafts };
   }, [handle]);
-  const [tab, setTab] = useState<'activity' | 'threads' | 'saved' | 'library'>('activity');
+  const [tab, setTab] = useState<'activity' | 'threads' | 'saved' | 'library' | 'drafts'>('activity');
   const [editing, setEditing] = useState(false);
   if (!data) return <Screen>{!isTab && <AppBar />}</Screen>;
   const p = data.profile;
@@ -31,7 +40,15 @@ export function ProfileView({ handle, isTab }: { handle: string; isTab?: boolean
 
   const settings = () => Alert.alert('Settings', 'Signed in with your DTU account.', [
     { text: 'Cancel', style: 'cancel' },
-    { text: 'Sign out', style: 'destructive', onPress: () => supabase.auth.signOut() },
+    { text: 'Enable phone alerts', onPress: async () => {
+      try {
+        if (!me) return;
+        if (!pushSupported) { Alert.alert('Not available in Expo Go', 'Phone alerts work in the installed DTour app. In-app notifications still work here.'); return; }
+        const enabled = await registerPush(me.id, true);
+        Alert.alert(enabled ? 'Phone alerts enabled' : 'Permission not granted', enabled ? 'You will receive DTour updates on this device.' : 'You can allow notifications in your phone settings.');
+      } catch (error) { Alert.alert('Could not enable alerts', (error as Error).message); }
+    } },
+    { text: 'Sign out', style: 'destructive', onPress: async () => { await unregisterPush(); await supabase.auth.signOut(); } },
   ]);
 
   return (
@@ -40,6 +57,7 @@ export function ProfileView({ handle, isTab }: { handle: string; isTab?: boolean
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 20, paddingRight: 8 }}>
           <T size={17} w={600}>@{p.handle}</T>
           <View style={{ marginLeft: 'auto', flexDirection: 'row' }}>
+            {(me?.role === 'moderator' || me?.role === 'admin') && <IconBtn name="shield-check" label="Moderation queue" onPress={() => router.push(appRoute('/mod'))} />}
             <IconBtn name="pencil-simple-line" label="Edit profile" onPress={() => setEditing(true)} />
             <IconBtn name="gear-six" label="Settings" onPress={settings} />
           </View>
@@ -68,13 +86,13 @@ export function ProfileView({ handle, isTab }: { handle: string; isTab?: boolean
           <T size={14} style={{ flex: 1 }} numberOfLines={1}><T size={14} w={600}>Open to teams</T>{p.skills.length ? ` · ${p.skills.slice(0, 3).join(', ')}` : ''}</T>
           <Tag tone={p.open_to_teams ? 'accent' : 'neutral'}>{p.open_to_teams ? 'On' : 'Off'}</Tag>
         </Pressable>
-        <View style={{ flexDirection: 'row', gap: 20, marginTop: 22, borderBottomWidth: 1, borderBottomColor: colors.divider }}>
-          {(['activity', 'threads', ...(mine ? ['saved'] : []), 'library'] as const).map((k) => (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 20, marginTop: 22, borderBottomWidth: 1, borderBottomColor: colors.divider }}>
+          {(['activity', 'threads', ...(mine ? ['saved', 'drafts'] : []), 'library'] as const).map((k) => (
             <Pressable key={k} onPress={() => setTab(k as typeof tab)} style={{ paddingBottom: 8, marginBottom: -1, borderBottomWidth: 2, borderBottomColor: tab === k ? colors.accent : 'transparent', minHeight: 32 }}>
               <T size={14.5} w={600} color={tab === k ? colors.text : colors.neutral700}>{k[0].toUpperCase() + k.slice(1)}</T>
             </Pressable>
           ))}
-        </View>
+        </ScrollView>
         {tab === 'activity' && data.activities.map((a) => (
           <Pressable key={a.id} onPress={() => router.push(appRoute(a.route))} style={[{ flexDirection: 'row', gap: 12, paddingVertical: 14 }, rowRule]}>
             <Icon name={ACT_ICON[a.kind] ?? 'chat-circle'} size={20} color={colors.accent} />
@@ -97,33 +115,67 @@ export function ProfileView({ handle, isTab }: { handle: string; isTab?: boolean
             <View style={{ flex: 1 }}><T size={16} w={600} lh={1.3}>{u.title}</T><T size={12.5} color={colors.neutral700}>{u.subject_code} · {n(u.downloads)} downloads</T></View>
           </Pressable>
         ))}
+        {tab === 'drafts' && data.drafts.map((draft) => (
+          <Pressable key={draft.id} onPress={() => router.push({ pathname: '/new', params: { draft: draft.id } })} style={[{ paddingVertical: 14 }, rowRule]}>
+            <T size={16} w={600}>{draft.title || 'Untitled draft'}</T>
+            <T size={12.5} color={colors.neutral700}>{draft.kind} · saved {agoLong(draft.updated_at)}</T>
+          </Pressable>
+        ))}
       </ScrollView>
-      {editing && <EditProfile profile={p} onClose={() => { setEditing(false); reload(); refreshProfile(); }} />}
+      {editing && <EditProfile profile={p} onClose={async (newHandle) => {
+        setEditing(false);
+        await refreshProfile();
+        // On the You tab the new handle arrives with the refreshed profile and reloads by itself.
+        if (newHandle) { if (!isTab) router.replace(`/u/${newHandle}`); } else reload();
+      }} />}
     </Screen>
   );
 }
 
-function EditProfile({ profile, onClose }: { profile: { id: string; bio: string | null; hostel: string | null; skills: string[]; semester: number | null }; onClose: () => void }) {
+function EditProfile({ profile, onClose }: { profile: { id: string; handle: string; onboarded: boolean; handle_changed_at: string | null; bio: string | null; hostel: string | null; skills: string[]; semester: number | null }; onClose: (newHandle?: string) => void }) {
+  const [handle, setHandle] = useState(profile.handle);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const [bio, setBio] = useState(profile.bio ?? '');
   const [hostel, setHostel] = useState(profile.hostel ?? '');
   const [skills, setSkills] = useState(profile.skills.join(', '));
   const [sem, setSem] = useState(String(profile.semester ?? ''));
+  const check = useHandleCheck(handle, profile.handle);
+  const locked = nextHandleChange(profile);
+  const next = check.handle;
+  const changed = next !== profile.handle;
   const save = async () => {
-    await updateProfile(supabase, profile.id, { bio: bio || null, hostel: hostel || null, skills: skills.split(',').map((s) => s.trim()).filter(Boolean), semester: Number(sem) || null });
-    onClose();
+    setBusy(true); setError(null);
+    try {
+      if (changed) await changeHandle(supabase, profile.id, next);
+      await updateProfile(supabase, profile.id, { bio: bio || null, hostel: hostel || null, skills: skills.split(',').map((s) => s.trim()).filter(Boolean), semester: Number(sem) || null });
+      onClose(changed ? next : undefined);
+    } catch (e) { setError((e as Error).message); setBusy(false); }
   };
   const input = { height: 44, paddingHorizontal: 12, backgroundColor: colors.surface, borderRadius: 2, fontFamily: fonts.regular, fontSize: 15, color: colors.text } as const;
   return (
-    <Modal animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <Modal animationType="slide" presentationStyle="pageSheet" onRequestClose={() => onClose()}>
       <View style={{ flex: 1, backgroundColor: colors.bg, padding: 20, gap: 12 }}>
         <T size={23} w={600}>Edit profile</T>
+        <View style={[input, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+          <T size={16} w={600} color={colors.neutral600}>@</T>
+          <TextInput value={handle} onChangeText={(v) => setHandle(v.toLowerCase())} maxLength={24} autoCapitalize="none" autoCorrect={false} accessibilityLabel="Handle"
+            editable={!locked} style={{ flex: 1, height: 44, fontFamily: fonts.regular, fontSize: 15, color: locked ? colors.neutral700 : colors.text }} />
+        </View>
+        {locked
+          ? <T size={12.5} color={colors.neutral700}>You can change your handle again on {locked.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}.</T>
+          : <>
+            <HandleHint check={check} />
+            {changed ? <T size={12.5} color={colors.neutral700}>Posts that mention @{profile.handle} will update to @{next || '…'}, and old links to your profile keep working for 30 days. You can change it again after 7 days.</T> : null}
+          </>}
         <TextInput style={[input, { height: 80, paddingTop: 12 }]} multiline value={bio} onChangeText={setBio} placeholder="Bio" placeholderTextColor={colors.neutral700} />
         <TextInput style={input} value={hostel} onChangeText={setHostel} placeholder="Hostel" placeholderTextColor={colors.neutral700} />
         <TextInput style={input} value={skills} onChangeText={setSkills} placeholder="Skills, comma separated" placeholderTextColor={colors.neutral700} />
         <TextInput style={input} value={sem} onChangeText={setSem} keyboardType="number-pad" placeholder="Semester (1–8)" placeholderTextColor={colors.neutral700} />
+        {error ? <T size={13.5} color={colors.accent2_700}>{error}</T> : null}
         <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
-          <PrimaryBtn label="Cancel" secondary onPress={onClose} style={{ flex: 1 }} />
-          <PrimaryBtn label="Save" onPress={save} style={{ flex: 1 }} />
+          <PrimaryBtn label="Cancel" secondary onPress={() => onClose()} style={{ flex: 1 }} />
+          <PrimaryBtn label="Save" onPress={save} disabled={busy || !check.ok} style={{ flex: 1 }} />
         </View>
       </View>
     </Modal>

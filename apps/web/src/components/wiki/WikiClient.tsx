@@ -50,7 +50,7 @@ export function EditForm({ articleId, body, slug }: { articleId: number; body: s
   return (
     <div>
       {!isMod && <div style={{ fontSize: 14, color: 'var(--color-neutral-800)', marginBottom: 10, padding: '10px 14px', background: 'var(--color-accent-100)', borderRadius: 2 }}>Edits are checked by a moderator before they go live. You’re credited as an editor once it’s approved.</div>}
-      <div style={{ fontSize: 14, color: 'var(--color-neutral-700)', marginBottom: 10 }}>Markdown: <code>### Heading</code>, <code>**bold**</code>, <code>[link](url)</code>, and <code>&gt; [!senior] "quote" — @handle</code> for a senior’s tip.</div>
+      <div style={{ fontSize: 14, color: 'var(--color-neutral-700)', marginBottom: 10 }}>Markdown: <code>### Heading</code>, <code>**bold**</code>, <code>[link](url)</code>, and <code>&gt; [!senior] &quot;quote&quot; — @handle</code> for a senior’s tip.</div>
       <textarea className="input" value={text} onChange={(e) => setText(e.target.value)} style={{ minHeight: 460, font: '400 15px/1.6 ui-monospace, Menlo, monospace' }} />
       <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
         <input className="input" placeholder="What did you change? e.g. “added IT lab tips”" value={summary} onChange={(e) => setSummary(e.target.value)} style={{ height: 40 }} />

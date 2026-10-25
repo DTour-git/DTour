@@ -372,6 +372,35 @@ export type Database = {
         }
         Relationships: []
       }
+      device_push_tokens: {
+        Row: {
+          token: string
+          user_id: string
+          platform: string
+          updated_at: string
+        }
+        Insert: {
+          token: string
+          user_id: string
+          platform: string
+          updated_at?: string
+        }
+        Update: {
+          token?: string
+          user_id?: string
+          platform?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_push_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drafts: {
         Row: {
           board_id: string | null
@@ -591,6 +620,7 @@ export type Database = {
           author_id: string
           body: string
           created_at: string
+          edited_at: string | null
           id: number
           is_demo: boolean
           promoted_thread_id: number | null
@@ -601,6 +631,7 @@ export type Database = {
           author_id: string
           body: string
           created_at?: string
+          edited_at?: string | null
           id?: never
           is_demo?: boolean
           promoted_thread_id?: number | null
@@ -611,6 +642,7 @@ export type Database = {
           author_id?: string
           body?: string
           created_at?: string
+          edited_at?: string | null
           id?: never
           is_demo?: boolean
           promoted_thread_id?: number | null
@@ -990,6 +1022,7 @@ export type Database = {
           github: string | null
           grad_year: number | null
           handle: string
+          handle_changed_at: string | null
           hostel: string | null
           id: string
           is_demo: boolean
@@ -1016,6 +1049,7 @@ export type Database = {
           github?: string | null
           grad_year?: number | null
           handle: string
+          handle_changed_at?: string | null
           hostel?: string | null
           id: string
           is_demo?: boolean
@@ -1042,6 +1076,7 @@ export type Database = {
           github?: string | null
           grad_year?: number | null
           handle?: string
+          handle_changed_at?: string | null
           hostel?: string | null
           id?: string
           is_demo?: boolean
@@ -1067,11 +1102,91 @@ export type Database = {
           },
         ]
       }
+      reports: {
+        Row: {
+          created_at: string
+          details: string | null
+          id: number
+          lounge_message_id: number | null
+          reason: string
+          reply_id: number | null
+          reporter_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          thread_id: number | null
+        }
+        Insert: {
+          created_at?: string
+          details?: string | null
+          id?: never
+          lounge_message_id?: number | null
+          reason: string
+          reply_id?: number | null
+          reporter_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          thread_id?: number | null
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          id?: never
+          lounge_message_id?: number | null
+          reason?: string
+          reply_id?: number | null
+          reporter_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          thread_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_lounge_message_id_fkey"
+            columns: ["lounge_message_id"]
+            isOneToOne: false
+            referencedRelation: "lounge_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_reply_id_fkey"
+            columns: ["reply_id"]
+            isOneToOne: false
+            referencedRelation: "replies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       replies: {
         Row: {
           author_id: string
           body: string
           created_at: string
+          deleted_at: string | null
+          edited_at: string | null
           id: number
           is_demo: boolean
           parent_id: number | null
@@ -1083,6 +1198,8 @@ export type Database = {
           author_id: string
           body: string
           created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
           id?: never
           is_demo?: boolean
           parent_id?: number | null
@@ -1094,6 +1211,8 @@ export type Database = {
           author_id?: string
           body?: string
           created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
           id?: never
           is_demo?: boolean
           parent_id?: number | null
@@ -1654,12 +1773,14 @@ export type Database = {
           board_id: string
           body: string
           created_at: string
+          edited_at: string | null
           from_lounge_message_id: number | null
           id: number
           image_label: string | null
           image_path: string | null
           is_demo: boolean
           kind: string
+          notify_on_reply: boolean
           poll_closes_at: string | null
           reply_count: number
           score: number
@@ -1676,12 +1797,14 @@ export type Database = {
           board_id: string
           body?: string
           created_at?: string
+          edited_at?: string | null
           from_lounge_message_id?: number | null
           id?: never
           image_label?: string | null
           image_path?: string | null
           is_demo?: boolean
           kind?: string
+          notify_on_reply?: boolean
           poll_closes_at?: string | null
           reply_count?: number
           score?: number
@@ -1698,12 +1821,14 @@ export type Database = {
           board_id?: string
           body?: string
           created_at?: string
+          edited_at?: string | null
           from_lounge_message_id?: number | null
           id?: never
           image_label?: string | null
           image_path?: string | null
           is_demo?: boolean
           kind?: string
+          notify_on_reply?: boolean
           poll_closes_at?: string | null
           reply_count?: number
           score?: number
@@ -1760,6 +1885,7 @@ export type Database = {
           checked_at: string | null
           checked_by: string | null
           cover_label: string | null
+          cover_path: string | null
           created_at: string
           dek: string | null
           editor_count: number
@@ -1786,6 +1912,7 @@ export type Database = {
           checked_at?: string | null
           checked_by?: string | null
           cover_label?: string | null
+          cover_path?: string | null
           created_at?: string
           dek?: string | null
           editor_count?: number
@@ -1812,6 +1939,7 @@ export type Database = {
           checked_at?: string | null
           checked_by?: string | null
           cover_label?: string | null
+          cover_path?: string | null
           created_at?: string
           dek?: string | null
           editor_count?: number
@@ -2060,9 +2188,12 @@ export type Database = {
       }
       board_path: { Args: { p_board: string }; Returns: string }
       can_post_as: { Args: { p_society: string }; Returns: boolean }
+      current_handle: { Args: { p_handle: string }; Returns: string }
+      delete_reply: { Args: { p_reply: number }; Returns: undefined }
       dtour_clear_demo: { Args: never; Returns: undefined }
       fmt_n: { Args: { n: number }; Returns: string }
       fuzzy_pattern: { Args: { q: string }; Returns: string }
+      handle_status: { Args: { p_handle: string }; Returns: string }
       hook_before_user_created: { Args: { event: Json }; Returns: Json }
       is_moderator: { Args: never; Returns: boolean }
       is_society_poster: { Args: never; Returns: boolean }
@@ -2118,6 +2249,14 @@ export type Database = {
         Returns: number
       }
       record_download: { Args: { p_item: number }; Returns: string }
+      resolve_report: {
+        Args: { p_remove: boolean; p_report: number }
+        Returns: undefined
+      }
+      review_team_request: {
+        Args: { p_accept: boolean; p_role?: number; p_team: number; p_user: string }
+        Returns: undefined
+      }
       review_wiki_article: {
         Args: { p_approve: boolean; p_article: number; p_note?: string }
         Returns: undefined

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, RefreshControl, ScrollView, Share, TextInput, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, RefreshControl, ScrollView, Share, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
-  acceptReply, ago, colors, getThread, n, postReply, setSaved, sortReplies, voteReply, voteThread, votePoll, fonts,
-  type ReplyNode,
+  acceptReply, ago, colors, deleteReply, deleteThread, editReply, editThread, getThread, n, postReply, setSaved, sortReplies, voteReply, voteThread, votePoll, fonts,
+  type ReplyNode, type ReportTarget,
 } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
 import { useMe, useRequireMe } from '@/lib/auth';
@@ -11,8 +11,9 @@ import { useData } from '@/lib/useData';
 import { usePresence } from '@/lib/presence';
 import { T } from '@/components/T';
 import { Icon } from '@/components/Icon';
-import { Markdown } from '@/components/Markdown';
+import { Markdown, MentionText } from '@/components/Markdown';
 import { AppBar, Avatar, FlairTag, IconBtn, Screen, Seal, Tag } from '@/components/ui';
+import { ActionSheet, EditSheet, ReportSheet, type SheetAction } from '@/components/Sheets';
 
 export default function Thread() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -24,6 +25,9 @@ export default function Thread() {
   const [sort, setSort] = useState<'best' | 'newest'>('best');
   const [draft, setDraft] = useState('');
   const [replyTo, setReplyTo] = useState<ReplyNode | null>(null);
+  const [menu, setMenu] = useState<SheetAction[] | null>(null);
+  const [editing, setEditing] = useState<{ heading: string; title?: string; body: string; save: (v: { title?: string; body: string }) => Promise<void> } | null>(null);
+  const [report, setReport] = useState<ReportTarget | null>(null);
   const slug = data?.board.slug;
   useEffect(() => { if (slug) { setBoard(slug); return () => setBoard(null); } }, [slug]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -52,10 +56,41 @@ export default function Thread() {
     reload();
   };
 
+  const fail = (e: unknown) => Alert.alert('Something went wrong', (e as Error).message);
+  const confirmDelete = (what: string, run: () => Promise<void>) => Alert.alert(`Delete this ${what}?`, 'This can’t be undone.', [
+    { text: 'Cancel', style: 'cancel' },
+    { text: 'Delete', style: 'destructive', onPress: () => { run().catch(fail); } },
+  ]);
+  const threadMenu = () => {
+    const actions: SheetAction[] = [{ label: `Go to ${data.board.short_name ?? data.board.name}`, icon: 'squares-four', onPress: () => router.push(`/board/${data.board.slug}`) }];
+    if (isOp) {
+      actions.push(
+        { label: 'Edit thread', icon: 'pencil-simple-line', onPress: () => setEditing({ heading: 'Edit thread', title: t.title, body: t.body, save: async (v) => { await editThread(supabase, t.id, { title: v.title ?? t.title, body: v.body }).catch((e) => { fail(e); throw e; }); reload(); } }) },
+        { label: 'Delete thread', icon: 'trash', danger: true, onPress: () => confirmDelete('thread and all its replies', async () => { await deleteThread(supabase, t.id); router.back(); }) },
+      );
+    } else {
+      actions.push({ label: 'Report thread', icon: 'flag', danger: true, onPress: () => requireMe() && setReport({ threadId: t.id }) });
+    }
+    setMenu(actions);
+  };
+  const replyMenu = (r: ReplyNode) => {
+    if (r.author.id === me?.id) {
+      setMenu([
+        { label: 'Edit reply', icon: 'pencil-simple-line', onPress: () => setEditing({ heading: 'Edit reply', body: r.body, save: async (v) => { await editReply(supabase, r.id, v.body).catch((e) => { fail(e); throw e; }); reload(); } }) },
+        { label: 'Delete reply', icon: 'trash', danger: true, onPress: () => confirmDelete('reply', async () => { await deleteReply(supabase, r.id); reload(); }) },
+      ]);
+    } else {
+      setMenu([{ label: 'Report reply', icon: 'flag', danger: true, onPress: () => requireMe() && setReport({ replyId: r.id }) }]);
+    }
+  };
+
   return (
     <Screen>
       <AppBar title={data.board.short_name ?? data.board.name} subtitle={`${online.filter((u) => u.board === slug).length} online`}
-        right={<IconBtn name="dots-three" label="More" onPress={() => router.push(`/board/${data.board.slug}`)} />} />
+        right={<IconBtn name="dots-three" label="More" onPress={threadMenu} />} />
+      <ActionSheet visible={!!menu} actions={menu ?? []} onClose={() => setMenu(null)} />
+      {editing && <EditSheet visible heading={editing.heading} title={editing.title} body={editing.body} onSave={editing.save} onClose={() => setEditing(null)} />}
+      <ReportSheet target={report} onClose={() => setReport(null)} onDone={(msg) => Alert.alert(msg)} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.accent} />}>
           {t.tags.length > 0 && <View style={{ flexDirection: 'row', gap: 6, paddingTop: 6, flexWrap: 'wrap' }}>{t.tags.slice(0, 3).map((g, i) => <Tag key={g} tone={i === 0 ? 'accent' : 'neutral'}>{g}</Tag>)}</View>}
@@ -64,7 +99,7 @@ export default function Thread() {
             <Avatar person={t.author} size={26} />
             <T size={12.5} w={600}>@{t.author.handle}</T>{t.society?.verified && <Seal />}
             <FlairTag person={t.author} />
-            <T size={12.5} color={colors.neutral700}>{ago(t.created_at)}</T>
+            <T size={12.5} color={colors.neutral700}>{ago(t.created_at)}{t.edited_at ? ' · edited' : ''}</T>
           </Pressable>
           <View style={{ marginTop: 14 }}><Markdown source={t.body} /></View>
           {data.poll && <Poll threadId={t.id} options={data.poll} mine={data.myPollOption} />}
@@ -94,7 +129,7 @@ export default function Thread() {
             </View>
           </View>
           <View style={{ flexDirection: 'row', gap: 16, marginTop: 18, marginBottom: 14 }}>
-            <T size={14} w={600}>{n(Math.max(t.reply_count, data.replyCount))} replies</T>
+            <T size={14} w={600}>{n(Math.max(t.reply_count, data.replyCount))} {Math.max(t.reply_count, data.replyCount) === 1 ? 'reply' : 'replies'}</T>
             {(['best', 'newest'] as const).map((s) => (
               <Pressable key={s} onPress={() => setSort(s)} hitSlop={10}>
                 <T size={14} w={sort === s ? 600 : 400} color={sort === s ? colors.accent700 : colors.neutral700}>{s === 'best' ? 'Best' : 'Newest'}</T>
@@ -103,7 +138,7 @@ export default function Thread() {
           </View>
           <View style={{ gap: 18 }}>
             {sortReplies(data.replies, sort, t.accepted_reply_id).map((r) => (
-              <Reply key={r.id} r={r} opId={t.author.id} acceptedId={t.accepted_reply_id} isOp={isOp} threadId={t.id} onReply={setReplyTo} onChange={reload} />
+              <Reply key={r.id} r={r} opId={t.author.id} acceptedId={t.accepted_reply_id} isOp={isOp} threadId={t.id} onReply={setReplyTo} onChange={reload} onMore={replyMenu} />
             ))}
             {!data.replies.length && <T size={15} i color={colors.neutral700}>No replies yet. Be the first.</T>}
           </View>
@@ -127,10 +162,11 @@ export default function Thread() {
   );
 }
 
-function Reply({ r, opId, acceptedId, isOp, threadId, onReply, onChange, nested }: {
+function Reply({ r, opId, acceptedId, isOp, threadId, onReply, onChange, onMore, nested }: {
   r: ReplyNode; opId: string; acceptedId: number | null; isOp: boolean; threadId: number;
-  onReply: (r: ReplyNode) => void; onChange: () => void; nested?: boolean;
+  onReply: (r: ReplyNode) => void; onChange: () => void; onMore: (r: ReplyNode) => void; nested?: boolean;
 }) {
+  const deleted = !!r.deleted_at;
   const [v, setV] = useState(r.myVote);
   const [s, setS] = useState(r.score);
   const accepted = r.id === acceptedId;
@@ -140,11 +176,11 @@ function Reply({ r, opId, acceptedId, isOp, threadId, onReply, onChange, nested 
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
       {r.society ? <><T size={12.5} w={600}>{r.society.name}</T>{r.society.verified && <Seal />}</> : <T size={nested ? 12 : 12.5} w={600}>@{r.author.handle}</T>}
       {!r.society && (r.author.id === opId ? <Tag tone="accent2">OP</Tag> : <FlairTag person={r.author} />)}
-      <T size={12.5} color={colors.neutral700}>· {ago(r.created_at)}</T>
+      <T size={12.5} color={colors.neutral700}>· {ago(r.created_at)}{r.edited_at && !deleted ? ' · edited' : ''}</T>
       {accepted && <View style={{ marginLeft: 'auto' }}><Tag tone="accent">Accepted</Tag></View>}
     </View>
   );
-  const actions = (
+  const actions = deleted ? null : (
     <View style={{ flexDirection: 'row', gap: 4, marginTop: 2, marginLeft: -10 }}>
       <Pressable onPress={vote} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, height: 36, paddingHorizontal: 10 }}>
         <Icon name="arrow-fat-up" size={16} color={v === 1 || s > 0 ? colors.accent : colors.neutral700} weight={v === 1 ? 'fill' : 'duotone'} /><T size={12.5} color={colors.neutral700}>{s}</T>
@@ -155,22 +191,26 @@ function Reply({ r, opId, acceptedId, isOp, threadId, onReply, onChange, nested 
           <T size={12.5} color={colors.neutral700}>{accepted ? 'Unaccept' : 'Accept'}</T>
         </Pressable>
       )}
+      <Pressable onPress={() => onMore(r)} accessibilityLabel="More actions" style={{ height: 36, width: 40, alignItems: 'center', justifyContent: 'center' }}>
+        <Icon name="dots-three" size={18} color={colors.neutral700} />
+      </Pressable>
     </View>
   );
+  const bodyStyle = deleted ? { fontStyle: 'italic' as const } : undefined;
   if (nested) {
     return (
       <View style={{ flexDirection: 'row', gap: 10, marginTop: 14, paddingLeft: 12, borderLeftWidth: 2, borderLeftColor: colors.neutral300 }}>
         <Avatar person={r.author} society={r.society} size={24} />
-        <View style={{ flex: 1 }}>{head}<T size={14.5} style={{ marginTop: 2 }}>{r.body}</T>{actions}</View>
+        <View style={{ flex: 1 }}>{head}{deleted ? <T size={14.5} i color={colors.neutral700} style={{ marginTop: 2, ...bodyStyle }}>{r.body}</T> : <View style={{ marginTop: 2 }}><MentionText text={r.body} size={14.5} /></View>}{actions}</View>
       </View>
     );
   }
   return (
     <View>
       {head}
-      <T size={15} lh={1.55} style={{ marginTop: 4 }}>{r.body}</T>
+      {deleted ? <T size={15} lh={1.55} i color={colors.neutral700} style={{ marginTop: 4, ...bodyStyle }}>{r.body}</T> : <View style={{ marginTop: 4 }}><MentionText text={r.body} size={15} lh={1.55} /></View>}
       {actions}
-      {r.children.map((c) => <Reply key={c.id} r={c} opId={opId} acceptedId={acceptedId} isOp={isOp} threadId={threadId} onReply={onReply} onChange={onChange} nested />)}
+      {r.children.map((c) => <Reply key={c.id} r={c} opId={opId} acceptedId={acceptedId} isOp={isOp} threadId={threadId} onReply={onReply} onChange={onChange} onMore={onMore} nested />)}
     </View>
   );
 }

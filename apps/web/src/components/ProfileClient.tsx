@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { updateProfile, type ProfileRow } from '@dtour/shared';
+import { changeHandle, nextHandleChange, updateProfile, type ProfileRow } from '@dtour/shared';
+import { HandleHint } from './HandleHint';
+import { useHandleCheck } from '@/lib/useHandleCheck';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Icon } from './Icon';
 import { useShell } from './shell/Shell';
@@ -42,12 +44,22 @@ export function ProfileButtons({ profile }: { profile: ProfileRow }) {
   const { toast } = useShell();
   const router = useRouter();
   const [open, setOpen] = useState<'edit' | 'settings' | null>(null);
+  const [handle, setHandle] = useState(profile.handle);
+  const [error, setError] = useState<string | null>(null);
+  const check = useHandleCheck(handle, profile.handle);
+  const locked = nextHandleChange(profile);
   const [f, setF] = useState({ bio: profile.bio ?? '', hostel: profile.hostel ?? '', github: profile.github ?? '', linkedin: profile.linkedin ?? '', semester: profile.semester ?? 1 });
   const save = async () => {
+    setError(null);
     try {
-      await updateProfile(supabaseBrowser(), profile.id, { bio: f.bio || null, hostel: f.hostel || null, github: f.github || null, linkedin: f.linkedin || null, semester: Number(f.semester) });
-      setOpen(null); router.refresh(); toast('Profile updated.');
-    } catch (e) { toast((e as Error).message); }
+      const sb = supabaseBrowser();
+      const next = check.handle;
+      if (next !== profile.handle) await changeHandle(sb, profile.id, next);
+      await updateProfile(sb, profile.id, { bio: f.bio || null, hostel: f.hostel || null, github: f.github || null, linkedin: f.linkedin || null, semester: Number(f.semester) });
+      setOpen(null); toast('Profile updated.');
+      if (next !== profile.handle) router.replace(`/u/${next}`);
+      router.refresh();
+    } catch (e) { setError((e as Error).message); }
   };
   return (
     <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
@@ -58,6 +70,19 @@ export function ProfileButtons({ profile }: { profile: ProfileRow }) {
           <div className="dialog" onClick={(e) => e.stopPropagation()} style={{ background: 'var(--color-bg)' }}>
             {open === 'edit' ? <>
               <div className="dialog-title">Edit profile</div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ font: '600 17px var(--font-heading)', color: 'var(--color-neutral-600)' }}>@</span>
+                <input className="input" aria-label="Handle" value={handle} maxLength={24} autoComplete="off" disabled={!!locked}
+                  onChange={(e) => setHandle(e.target.value.toLowerCase())} style={{ flex: 1 }} />
+              </label>
+              {locked
+                ? <div className="dialog-body" style={{ marginTop: -6 }}>You can change your handle again on {locked.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}.</div>
+                : <>
+                  <div style={{ marginTop: -10 }}><HandleHint check={check} /></div>
+                  {check.status !== 'unchanged' && <div className="dialog-body" style={{ marginTop: -6 }}>
+                    Posts that mention @{profile.handle} will update to @{check.handle || '…'}, and old links to your profile keep working for 30 days. You can change it again after 7 days.
+                  </div>}
+                </>}
               <textarea className="input" placeholder="Bio" value={f.bio} maxLength={200} onChange={(e) => setF({ ...f, bio: e.target.value })} style={{ minHeight: 70 }} />
               <input className="input" placeholder="Hostel — e.g. Hostel H-4" value={f.hostel} onChange={(e) => setF({ ...f, hostel: e.target.value })} />
               <input className="input" placeholder="GitHub username" value={f.github} onChange={(e) => setF({ ...f, github: e.target.value })} />
@@ -65,7 +90,8 @@ export function ProfileButtons({ profile }: { profile: ProfileRow }) {
               <select className="input" value={f.semester} onChange={(e) => setF({ ...f, semester: Number(e.target.value) })}>
                 {Array.from({ length: 8 }, (_, i) => <option key={i} value={i + 1}>Semester {i + 1}</option>)}
               </select>
-              <div className="dialog-actions"><button className="btn btn-ghost" onClick={() => setOpen(null)}>Cancel</button><button className="btn btn-primary" onClick={save}>Save</button></div>
+              {error && <div role="alert" style={{ fontSize: 14, color: 'var(--color-accent-2-700)' }}>{error}</div>}
+              <div className="dialog-actions"><button className="btn btn-ghost" onClick={() => { setOpen(null); setError(null); setHandle(profile.handle); }}>Cancel</button><button className="btn btn-primary" onClick={save} disabled={!check.ok}>Save</button></div>
             </> : <>
               <div className="dialog-title">Settings</div>
               <div className="dialog-body">Signed in to DTour with your DTU account.</div>

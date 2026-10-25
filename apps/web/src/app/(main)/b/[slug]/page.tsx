@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { compact, getBoard, n, type FeedTab, type Tone } from '@dtour/shared';
+import { PAGE_SIZE, compact, getBoard, n, type FeedTab, type Tone } from '@dtour/shared';
 import { currentUser } from '@/lib/supabase-server';
 import { CmykNum, H6, TONE_CSS, pad2 } from '@/components/ui';
 import { Icon } from '@/components/Icon';
@@ -11,11 +11,12 @@ import { boardHref } from '@/lib/routes';
 
 const TABS: [FeedTab, string][] = [['hot', 'Hot'], ['new', 'New'], ['top', 'Top this week']];
 
-export default async function BoardPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ tab?: string }> }) {
-  const [{ slug }, { tab: raw }] = await Promise.all([params, searchParams]);
+export default async function BoardPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ tab?: string; n?: string }> }) {
+  const [{ slug }, { tab: raw, n: rawN }] = await Promise.all([params, searchParams]);
+  const limit = Math.min(Math.max(Number(rawN) || PAGE_SIZE, PAGE_SIZE), 400);
   const tab = (TABS.find(([k]) => k === raw)?.[0] ?? 'hot') as FeedTab;
   const { sb, me } = await currentUser();
-  const d = await getBoard(sb, slug, tab);
+  const d = await getBoard(sb, slug, tab, limit);
   if (!d) notFound();
   if (d.board.link_screen) redirect(boardHref(d.board));
   const t = TONE_CSS[d.category.tone as Tone];
@@ -51,6 +52,10 @@ export default async function BoardPage({ params, searchParams }: { params: Prom
           </div>
           <div style={{ marginTop: 8 }}>
             {d.threads.map((th) => <ThreadRow key={th.id} t={th} showBoard={th.board.id !== d.board.id} />)}
+            {d.hasMore && (
+              <Link href={`/b/${slug}?${tab !== 'hot' ? `tab=${tab}&` : ''}n=${limit + PAGE_SIZE}`} scroll={false} className="btn btn-secondary"
+                style={{ alignSelf: 'center', margin: '24px auto 0', display: 'flex', width: 'fit-content', color: 'var(--color-text)' }}>Load more threads</Link>
+            )}
             {!d.threads.length && <div style={{ padding: '30px 0', color: 'var(--color-neutral-700)', fontStyle: 'italic' }}>No threads yet. <Link href={`/new?board=${d.board.slug}`}>Start the first one →</Link></div>}
           </div>
         </div>

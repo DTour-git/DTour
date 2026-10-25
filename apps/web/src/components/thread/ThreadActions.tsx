@@ -4,13 +4,15 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  acceptReply, ago, postReply, setBoardJoined, setSaved, voteReply, voteThread, votePoll, n,
+  acceptReply, ago, deleteReply, editReply, postReply, setBoardJoined, setSaved, voteReply, voteThread, votePoll, n,
   type ReplyNode,
 } from '@dtour/shared';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Icon } from '../Icon';
 import { Avatar, FlairTag, Seal, Tag } from '../ui';
 import { useShell } from '../shell/Shell';
+import { ReportDialog, linkBtn } from '../Manage';
+import { MentionText } from '../Markdown';
 
 /** Vertical rail: upvote · score · downvote · save · share (optimistic). */
 export function VoteRail({ threadId, score, myVote, saved }: { threadId: number; score: number; myVote: number; saved: boolean }) {
@@ -101,11 +103,16 @@ export function ReplyComposer({ threadId, parentId, onDone, autoFocus, placehold
 export function ReplyItem({ r, threadId, opId, acceptedId, isOp, depth = 0 }: {
   r: ReplyNode; threadId: number; opId: string; acceptedId: number | null; isOp: boolean; depth?: number;
 }) {
-  const { toast, requireMe } = useShell();
+  const { me, toast, requireMe } = useShell();
   const router = useRouter();
   const [v, setV] = useState(r.myVote);
   const [s, setS] = useState(r.score);
   const [replying, setReplying] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [reporting, setReporting] = useState(false);
+  const [, start] = useTransition();
+  const mine = me?.id === r.author.id;
+  const deleted = !!r.deleted_at;
   const nested = depth > 0;
   const accepted = r.id === acceptedId;
 
@@ -120,6 +127,17 @@ export function ReplyItem({ r, threadId, opId, acceptedId, isOp, depth = 0 }: {
     catch (e) { toast((e as Error).message); }
   };
 
+  const saveEdit = async () => {
+    if (!editing?.trim()) return;
+    try { await editReply(supabaseBrowser(), r.id, editing); setEditing(null); start(() => router.refresh()); }
+    catch (e) { toast((e as Error).message); }
+  };
+  const remove = async () => {
+    if (!confirm('Delete this reply? This can’t be undone.')) return;
+    try { await deleteReply(supabaseBrowser(), r.id); toast('Reply deleted.'); start(() => router.refresh()); }
+    catch (e) { toast((e as Error).message); }
+  };
+
   const size = nested ? 30 : 36;
   return (
     <div style={nested
@@ -130,17 +148,36 @@ export function ReplyItem({ r, threadId, opId, acceptedId, isOp, depth = 0 }: {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: nested ? 13 : 13.5, color: 'var(--color-neutral-700)', flexWrap: 'wrap' }}>
           {r.society ? <><b style={{ color: 'var(--color-text)' }}>{r.society.name}</b>{r.society.verified && <Seal size={16} />}<span>Society</span></>
             : <><Link href={`/u/${r.author.handle}`} style={{ color: 'var(--color-text)', fontWeight: 600 }}>@{r.author.handle}</Link>{r.author.id === opId ? <Tag tone="accent2">OP</Tag> : <FlairTag person={r.author} />}</>}
-          <span>· {ago(r.created_at)}</span>
+          <span>· {ago(r.created_at)}{r.edited_at && !deleted && ' · edited'}</span>
           {accepted && <Tag tone="accent" style={{ marginLeft: 6 }}><Icon name="check" size={13} style={{ marginRight: 4 }} />Accepted</Tag>}
         </div>
-        <div style={{ fontSize: nested ? 15.5 : 16, lineHeight: nested ? 1.55 : 1.6, marginTop: nested ? 4 : 6, maxWidth: 640, whiteSpace: 'pre-wrap' }}>{r.body}</div>
-        <div style={{ display: 'flex', gap: 18, marginTop: 8, fontSize: 13.5, color: 'var(--color-neutral-700)' }}>
+        {editing !== null ? (
+          <div style={{ background: 'var(--color-surface)', borderRadius: 2, padding: '10px 12px', marginTop: 6, maxWidth: 640 }}>
+            <textarea autoFocus value={editing} onChange={(e) => setEditing(e.target.value)} rows={4} aria-label="Edit reply"
+              onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditing(null); }}
+              style={{ width: '100%', border: 0, background: 'transparent', outline: 'none', resize: 'vertical', font: '400 16px/1.6 var(--font-body)', color: 'var(--color-text)' }} />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button className="btn btn-ghost" onClick={() => setEditing(null)}>Cancel</button>
+              <button className="btn btn-primary" disabled={!editing.trim()} onClick={saveEdit}>Save</button>
+            </div>
+          </div>
+        ) : deleted
+          ? <div style={{ fontSize: nested ? 15.5 : 16, marginTop: nested ? 4 : 6, fontStyle: 'italic', color: 'var(--color-neutral-700)' }}>{r.body}</div>
+          : <div style={{ fontSize: nested ? 15.5 : 16, lineHeight: nested ? 1.55 : 1.6, marginTop: nested ? 4 : 6, maxWidth: 640, whiteSpace: 'pre-wrap' }}><MentionText text={r.body} /></div>}
+        {!deleted && <div style={{ display: 'flex', gap: 18, marginTop: 8, fontSize: 13.5, color: 'var(--color-neutral-700)', flexWrap: 'wrap' }}>
           <button onClick={vote} className="vote-btn" style={{ alignItems: 'center', gap: 4, fontSize: 13.5, fontFamily: 'var(--font-body)' }} aria-pressed={v === 1}>
             <Icon name="arrow-fat-up" size={17} color={v === 1 || s > 0 ? 'var(--color-accent)' : undefined} weight={v === 1 ? 'fill' : 'duotone'} />{s}
           </button>
           <button className="vote-btn" onClick={() => requireMe() && setReplying(true)} style={{ fontSize: 13.5, fontFamily: 'var(--font-body)' }}>Reply</button>
           {isOp && !nested && <button className="vote-btn" onClick={accept} style={{ fontSize: 13.5, fontFamily: 'var(--font-body)' }}>{accepted ? 'Unaccept' : 'Accept answer'}</button>}
-        </div>
+          {mine
+            ? <>
+              <button style={linkBtn} onClick={() => setEditing(r.body)}>Edit</button>
+              <button style={linkBtn} onClick={remove}>Delete</button>
+            </>
+            : <button style={linkBtn} onClick={() => requireMe() && setReporting(true)}>Report</button>}
+        </div>}
+        {reporting && <ReportDialog target={{ replyId: r.id }} onClose={() => setReporting(false)} />}
         {replying && <div style={{ marginTop: 12 }}><ReplyComposer threadId={threadId} parentId={nested ? (r.parent_id ?? r.id) : r.id} autoFocus onDone={() => setReplying(false)} placeholder={`Reply to @${r.author.handle}…`} /></div>}
         {r.children.map((c) => <ReplyItem key={c.id} r={c} threadId={threadId} opId={opId} acceptedId={acceptedId} isOp={isOp} depth={depth + 1} />)}
       </div>

@@ -31,7 +31,7 @@ export default function WikiIndex() {
         <View style={{ paddingHorizontal: 20 }}>
           {data?.mostRead && topic === null && (
             <Pressable onPress={() => router.push(`/wiki/${data.mostRead!.slug}`)} style={{ marginTop: 20 }}>
-              <Halftone height={150} label={data.mostRead.cover_label} />
+              <Halftone height={150} label={data.mostRead.cover_label} src={data.mostRead.cover_path} />
               <Kicker style={{ marginTop: 12 }}>Most read this week</Kicker>
               <T size={23} w={600} lh={1.15} style={{ marginTop: 6 }}>{data.mostRead.title}</T>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>

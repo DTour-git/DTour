@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getSocietyBoard, n, POST_KIND_LABEL, postKindTone } from '@dtour/shared';
+import { getSocietyBoard, POST_KIND_LABEL, postKindTone } from '@dtour/shared';
 import { currentUser } from '@/lib/supabase-server';
 import { Icon } from '@/components/Icon';
 import { Halftone } from '@/components/ui';
@@ -40,7 +40,7 @@ export default async function SocietiesPage({ searchParams }: { searchParams: Pr
           );
           return (
             <div key={p.id} style={{ marginBottom: 30 }}>
-              {p.poster_label && <Halftone height={150} label={p.poster_label} style={{ marginBottom: 12, padding: 8 }} />}
+              {(p.poster_path || p.poster_label) && <Halftone height={150} label={p.poster_label} src={p.poster_path} style={{ marginBottom: 12, padding: 8 }} />}
               <div className="kicker" style={{ color: postKindTone(p.kind) === 'accent2' ? 'var(--color-accent-2-700)' : 'var(--color-accent-700)' }}>{kick}</div>
               <div style={{ font: '600 24px/1.15 var(--font-heading)', margin: '6px 0' }}>{p.title}</div>
               {p.body && <div style={{ fontSize: 15, lineHeight: 1.5, color: 'var(--color-neutral-800)' }}>{p.body}</div>}

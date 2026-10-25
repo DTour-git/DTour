@@ -42,6 +42,8 @@ export declare const FilePdfIcon: PhosphorIcon;
 export declare const FileTextIcon: PhosphorIcon;
 export declare const FireIcon: PhosphorIcon;
 export declare const FlagBannerIcon: PhosphorIcon;
+export declare const FlagIcon: PhosphorIcon;
+export declare const TrashIcon: PhosphorIcon;
 export declare const FunctionIcon: PhosphorIcon;
 export declare const FunnelIcon: PhosphorIcon;
 export declare const GearSixIcon: PhosphorIcon;

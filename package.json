@@ -6,5 +6,10 @@
     "web": "npm run dev -w @dtour/web",
     "mobile": "npm run start -w @dtour/mobile",
     "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "overrides": {
+    "@expo/cli": {
+      "zod": "^4.6.7"
+    }
   }
 }

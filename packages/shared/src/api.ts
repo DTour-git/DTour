@@ -34,19 +34,19 @@ export interface ThreadCard {
   score: number; reply_count: number; created_at: string; tags: string[];
   attachment: Attachment | null; image_label: string | null; image_path: string | null;
   accepted_reply_id: number | null; board: BoardLite; author: PersonLite; society: SocietyLite | null;
-  poll_pct?: number | null;
+  edited_at: string | null; poll_pct?: number | null;
 }
 
 export interface ReplyNode {
   id: number; thread_id: number; parent_id: number | null; body: string; score: number; created_at: string;
-  author: PersonLite; society: SocietyLite | null; children: ReplyNode[]; myVote: number;
+  edited_at: string | null; deleted_at: string | null; author: PersonLite; society: SocietyLite | null; children: ReplyNode[]; myVote: number;
 }
 
 const PERSON = 'id,handle,display_name,branch_code,grad_year,tint,karma';
 const SOCIETY = 'id,slug,name,short_name,icon,tint,verified';
 const BOARD = 'id,slug,name,short_name,category_id,verified_only,parent_id';
 export const THREAD_SELECT =
-  `id,title,body,standfirst,kind,score,reply_count,created_at,tags,attachment,image_label,image_path,accepted_reply_id,` +
+  `id,title,body,standfirst,kind,score,reply_count,created_at,tags,attachment,image_label,image_path,accepted_reply_id,edited_at,` +
   `board:boards!inner(${BOARD}),author:profiles!threads_author_id_fkey(${PERSON}),society:societies(${SOCIETY})`;
 
 type Ok<R> = R extends { data: infer D; error: null } ? D : never;
@@ -85,9 +85,56 @@ export async function updateProfile(sb: DB, id: string, patch: Tables['profiles'
   return must(await sb.from('profiles').update(patch).eq('id', id).select('*').single());
 }
 
-export async function handleAvailable(sb: DB, handle: string, myId: string) {
-  const { data } = await sb.from('profiles').select('id').eq('handle', handle).maybeSingle();
-  return !data || data.id === myId;
+// Same rule as the profiles.handle check constraint.
+export const HANDLE_RE = /^[a-z0-9][a-z0-9._]{2,23}$/;
+export const HANDLE_COOLDOWN_DAYS = 7;
+export function normalizeHandle(raw: string) { return raw.trim().replace(/^@/, '').toLowerCase(); }
+const HANDLE_RULE = 'Handles are 3–24 characters: lowercase letters, numbers, dots and underscores, starting with a letter or number.';
+/** Returns a message explaining what's wrong with the handle's format, or null if it's valid. */
+export function handleProblem(raw: string): string | null {
+  return HANDLE_RE.test(normalizeHandle(raw)) ? null : HANDLE_RULE;
+}
+
+export type HandleStatus = 'invalid' | 'reserved' | 'taken' | 'held' | 'yours' | 'available';
+/** Whether the signed-in student can use a handle, checked by the database. */
+export async function handleStatus(sb: DB, raw: string): Promise<HandleStatus> {
+  const h = normalizeHandle(raw);
+  if (handleProblem(h)) return 'invalid';
+  return must(await sb.rpc('handle_status', { p_handle: h })) as HandleStatus;
+}
+export function handleStatusMessage(status: HandleStatus, raw: string): string | null {
+  const h = normalizeHandle(raw);
+  switch (status) {
+    case 'invalid': return HANDLE_RULE;
+    case 'reserved': return `@${h} is reserved. Try another.`;
+    case 'taken': return `@${h} is taken. Try another.`;
+    case 'held': return `@${h} was someone’s handle recently and is held for them. Try another.`;
+    default: return null;
+  }
+}
+export async function handleAvailable(sb: DB, handle: string, _myId?: string) {
+  const s = await handleStatus(sb, handle);
+  return s === 'available' || s === 'yours';
+}
+/** When this profile may change its handle again, or null if it can now. */
+export function nextHandleChange(p: { onboarded: boolean; handle_changed_at: string | null }): Date | null {
+  if (!p.onboarded || !p.handle_changed_at) return null;
+  const next = new Date(Date.parse(p.handle_changed_at) + HANDLE_COOLDOWN_DAYS * 864e5);
+  return next.getTime() > Date.now() ? next : null;
+}
+/** Checks and saves a new handle. Old @mentions are rewritten by the database. Returns the saved handle. */
+export async function changeHandle(sb: DB, userId: string, raw: string) {
+  const h = normalizeHandle(raw);
+  const msg = handleStatusMessage(await handleStatus(sb, h), h);
+  if (msg) throw new Error(msg);
+  const { error } = await sb.from('profiles').update({ handle: h }).eq('id', userId);
+  if (error) throw new Error(error.code === '23505' ? `@${h} is taken. Try another.` : error.message);
+  return h;
+}
+/** Where an old handle points now (for /u/old-handle links), or null. */
+export async function currentHandle(sb: DB, oldHandle: string) {
+  const { data } = await sb.rpc('current_handle', { p_handle: normalizeHandle(oldHandle) });
+  return (data as string | null) ?? null;
 }
 
 export async function getBranches(sb: DB) {
@@ -163,7 +210,7 @@ export async function getToday(sb: DB, tab: FeedTab = 'hot', branch: string | nu
     sb.from('threads').select(THREAD_SELECT).eq('kind', 'news').order('created_at', { ascending: false }).limit(1).maybeSingle(),
     getTimeline(sb),
     listThreads(sb, { tab, excludeNews: true, limit: 1, branch }),
-    sb.from('wiki_articles').select('id,slug,title,editor_count,checked_at,cover_label').eq('status', 'published').order('views_week', { ascending: false }).limit(1).maybeSingle(),
+    sb.from('wiki_articles').select('id,slug,title,editor_count,checked_at,cover_label,cover_path').eq('status', 'published').order('views_week', { ascending: false }).limit(1).maybeSingle(),
     getDesks(sb),
     sb.from('teams').select('id,title,short_title,deadline_on,deadline_label,urgent,team_roles(name,filled,sort)').order('deadline_on', { nullsFirst: false }).limit(2),
     sb.from('teams').select('id', { count: 'exact', head: true }),
@@ -255,19 +302,21 @@ export async function markBoardsSeen(sb: DB, userId: string) {
   await sb.from('profiles').update({ boards_seen_at: new Date().toISOString() }).eq('id', userId);
 }
 
-export async function getBoard(sb: DB, slug: string, tab: FeedTab = 'hot') {
+export const PAGE_SIZE = 40;
+export async function getBoard(sb: DB, slug: string, tab: FeedTab = 'hot', limit = PAGE_SIZE) {
   const board = must(await sb.from('boards').select('*').eq('slug', slug).maybeSingle());
   if (!board) return null;
   const all = must(await sb.from('boards').select('*'));
   const desc = (id: string): string[] => all.filter((b) => b.parent_id === id).flatMap((b) => [b.id, ...desc(b.id)]);
   const ids = [board.id, ...desc(board.id)];
   const [threads, category, path] = await Promise.all([
-    listThreads(sb, { tab, boardIds: ids, limit: 40 }),
+    listThreads(sb, { tab, boardIds: ids, limit: limit + 1 }),
     sb.from('board_categories').select('*').eq('id', board.category_id).single(),
     boardAncestors(sb, board.id, all),
   ]);
   return {
-    board, threads, category: must(category) as CategoryRow & { tone: Tone }, path,
+    board, threads: threads.slice(0, limit), hasMore: threads.length > limit,
+    category: must(category) as CategoryRow & { tone: Tone }, path,
     children: all.filter((b) => b.parent_id === board.id).sort((a, b) => a.sort - b.sort),
   };
 }
@@ -291,7 +340,7 @@ export async function getThread(sb: DB, id: number, userId: string | null) {
   const thread = must(await sb.from('threads').select(THREAD_SELECT).eq('id', id).maybeSingle()) as unknown as ThreadCard | null;
   if (!thread) return null;
   const [replies, myVote, saved, replyVotes, path, board, joined, poll, myPoll, related, wiki, lounge] = await Promise.all([
-    sb.from('replies').select(`id,thread_id,parent_id,body,score,created_at,author:profiles!replies_author_id_fkey(${PERSON}),society:societies(${SOCIETY})`).eq('thread_id', id).order('created_at'),
+    sb.from('replies').select(`id,thread_id,parent_id,body,score,created_at,edited_at,deleted_at,author:profiles!replies_author_id_fkey(${PERSON}),society:societies(${SOCIETY})`).eq('thread_id', id).order('created_at'),
     userId ? sb.from('thread_votes').select('value').eq('thread_id', id).eq('user_id', userId).maybeSingle() : null,
     userId ? sb.from('saves').select('thread_id').eq('thread_id', id).eq('user_id', userId).maybeSingle() : null,
     userId ? sb.from('reply_votes').select('reply_id,value').eq('user_id', userId) : null,
@@ -360,6 +409,89 @@ export async function postReply(sb: DB, input: { threadId: number; userId: strin
     parent_id: input.parentId ?? null, society_id: input.societyId ?? null,
   }).select('id').single());
 }
+
+// ── Editing and deleting your own posts ───────────────────────────────────
+export async function editThread(sb: DB, id: number, patch: { title: string; body: string }) {
+  must(await sb.from('threads').update({ title: patch.title.trim(), body: patch.body.trim() }).eq('id', id).select('id').single());
+}
+export async function deleteThread(sb: DB, id: number) {
+  must(await sb.from('threads').delete().eq('id', id));
+}
+export async function editReply(sb: DB, id: number, body: string) {
+  must(await sb.from('replies').update({ body: body.trim() }).eq('id', id).select('id').single());
+}
+/** Removes the reply, or blanks it to "[deleted]" when others replied under it. */
+export async function deleteReply(sb: DB, id: number) {
+  must(await sb.rpc('delete_reply', { p_reply: id }));
+}
+
+// ── Reports ───────────────────────────────────────────────────────────────
+export type ReportReason = 'spam' | 'harassment' | 'misinformation' | 'inappropriate' | 'other';
+export const REPORT_REASONS: [ReportReason, string][] = [
+  ['spam', 'Spam or ads'], ['harassment', 'Harassment or hate'], ['misinformation', 'False or misleading'],
+  ['inappropriate', 'Inappropriate content'], ['other', 'Something else'],
+];
+export type ReportTarget = { threadId: number } | { replyId: number } | { loungeMessageId: number };
+
+/** Returns false when you had already reported this. */
+export async function reportContent(sb: DB, i: { userId: string; target: ReportTarget; reason: ReportReason; details?: string }) {
+  const t = i.target;
+  const { error } = await sb.from('reports').insert({
+    reporter_id: i.userId, reason: i.reason, details: i.details?.trim() || null,
+    thread_id: 'threadId' in t ? t.threadId : null,
+    reply_id: 'replyId' in t ? t.replyId : null,
+    lounge_message_id: 'loungeMessageId' in t ? t.loungeMessageId : null,
+  });
+  if (error?.code === '23505') return false;
+  if (error) throw new Error(error.message);
+  return true;
+}
+
+export interface OpenReport {
+  key: string; count: number; reasons: string[]; details: string[]; first_at: string; ids: number[];
+  kind: 'thread' | 'reply' | 'lounge'; title: string; body: string; route: string; author: PersonLite | null;
+}
+export async function getOpenReports(sb: DB): Promise<OpenReport[]> {
+  const rows = must(await sb.from('reports').select(
+    `id,reason,details,created_at,thread_id,reply_id,lounge_message_id,` +
+    `thread:threads(id,title,body,author:profiles!threads_author_id_fkey(${PERSON})),` +
+    `reply:replies(id,body,thread_id,author:profiles!replies_author_id_fkey(${PERSON})),` +
+    `message:lounge_messages(id,body,room_slug,author:profiles!lounge_messages_author_id_fkey(${PERSON}))`,
+  ).eq('status', 'open').order('created_at')) as unknown as {
+    id: number; reason: string; details: string | null; created_at: string;
+    thread_id: number | null; reply_id: number | null; lounge_message_id: number | null;
+    thread: { id: number; title: string; body: string; author: PersonLite } | null;
+    reply: { id: number; body: string; thread_id: number; author: PersonLite } | null;
+    message: { id: number; body: string; room_slug: string; author: PersonLite } | null;
+  }[];
+  const groups = new Map<string, OpenReport>();
+  for (const r of rows) {
+    const key = r.thread_id ? `t${r.thread_id}` : r.reply_id ? `r${r.reply_id}` : `m${r.lounge_message_id}`;
+    let g = groups.get(key);
+    if (!g) {
+      g = r.thread
+        ? { kind: 'thread', title: r.thread.title, body: r.thread.body, route: `/t/${r.thread.id}`, author: r.thread.author } as OpenReport
+        : r.reply
+          ? { kind: 'reply', title: 'Reply', body: r.reply.body, route: `/t/${r.reply.thread_id}`, author: r.reply.author } as OpenReport
+          : { kind: 'lounge', title: `Lounge · #${r.message?.room_slug ?? ''}`, body: r.message?.body ?? '', route: '/lounge', author: r.message?.author ?? null } as OpenReport;
+      Object.assign(g, { key, count: 0, reasons: [], details: [], first_at: r.created_at, ids: [] });
+      groups.set(key, g);
+    }
+    g.count++; g.ids.push(r.id);
+    if (!g.reasons.includes(r.reason)) g.reasons.push(r.reason);
+    if (r.details) g.details.push(r.details);
+  }
+  return [...groups.values()];
+}
+/** How many reported posts are waiting (for the moderator badge). */
+export async function openReportCount(sb: DB) {
+  const { count } = await sb.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'open');
+  return count ?? 0;
+}
+/** Dismiss the reports, or remove the reported content. */
+export async function resolveReport(sb: DB, reportId: number, remove: boolean) {
+  must(await sb.rpc('resolve_report', { p_report: reportId, p_remove: remove }));
+}
 export async function votePoll(sb: DB, threadId: number, optionId: number, userId: string) {
   await sb.from('poll_votes').delete().eq('thread_id', threadId).eq('user_id', userId);
   must(await sb.from('poll_votes').insert({ thread_id: threadId, option_id: optionId, user_id: userId }));
@@ -387,12 +519,12 @@ export async function similarThreads(sb: DB, title: string, limit = 3) {
 
 export interface NewThreadInput {
   userId: string; boardId: string; kind: 'thread' | 'question' | 'poll'; title: string; body: string;
-  tags: string[]; pollOptions?: string[]; pollDays?: number; societyId?: string | null;
+  tags: string[]; pollOptions?: string[]; pollDays?: number; societyId?: string | null; notifyOnReply?: boolean;
 }
 export async function createThread(sb: DB, i: NewThreadInput) {
   const row = must(await sb.from('threads').insert({
     board_id: i.boardId, author_id: i.userId, kind: i.kind, title: i.title.trim(), body: i.body,
-    tags: i.tags, society_id: i.societyId ?? null,
+    tags: i.tags, society_id: i.societyId ?? null, notify_on_reply: i.notifyOnReply ?? true,
     poll_closes_at: i.kind === 'poll' ? new Date(Date.now() + (i.pollDays ?? 3) * 864e5).toISOString() : null,
   }).select('id').single());
   if (i.kind === 'poll' && i.pollOptions?.length) {
@@ -406,13 +538,13 @@ export async function isModerator(sb: DB) {
 }
 
 /** New guides go to the moderation queue (moderators publish directly). Returns the slug. */
-export async function createWikiArticle(sb: DB, i: { userId: string; title: string; body: string; dek?: string; categoryId?: number | null; boardId?: string | null }) {
+export async function createWikiArticle(sb: DB, i: { userId: string; title: string; body: string; dek?: string; categoryId?: number | null; boardId?: string | null; coverPath?: string | null }) {
   const mod = await isModerator(sb);
   const base = i.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
   const slug = `${base}-${Math.random().toString(36).slice(2, 6)}`;
   const words = i.body.split(/\s+/).filter(Boolean).length;
   const row = must(await sb.from('wiki_articles').insert({
-    slug, title: i.title.trim(), body: i.body, dek: i.dek ?? null, category_id: i.categoryId ?? null,
+    slug, title: i.title.trim(), body: i.body, dek: i.dek ?? null, cover_path: i.coverPath ?? null, category_id: i.categoryId ?? null,
     board_id: i.boardId ?? null, started_by: i.userId, read_minutes: Math.max(1, Math.round(words / 220)),
     status: mod ? 'published' : 'pending',
   }).select('id,slug').single());
@@ -430,10 +562,12 @@ export async function createTeam(sb: DB, i: { userId: string; category: string; 
   return row.id;
 }
 
-export async function createSocietyPost(sb: DB, i: { userId: string; societyId: string; kind: string; title: string; body: string; whenLabel: string; whereLabel: string; startsAt?: string | null }) {
+export async function createSocietyPost(sb: DB, i: { userId: string; societyId: string; kind: string; title: string; body: string; whenLabel: string; whereLabel: string; startsAt?: string | null; applyUrl?: string | null; posterPath?: string | null }) {
+  const applyUrl = i.applyUrl?.trim() || null;
+  if (applyUrl && !/^https?:\/\//i.test(applyUrl)) throw new Error('Application link must start with https:// or http://.');
   return must(await sb.from('society_posts').insert({
     society_id: i.societyId, author_id: i.userId, kind: i.kind, title: i.title, body: i.body,
-    when_label: i.whenLabel, short_when: i.whenLabel, where_label: i.whereLabel || null, starts_at: i.startsAt ?? null,
+    when_label: i.whenLabel, short_when: i.whenLabel, where_label: i.whereLabel || null, starts_at: i.startsAt ?? null, apply_url: applyUrl, poster_path: i.posterPath ?? null,
   }).select('id').single()).id;
 }
 
@@ -472,7 +606,7 @@ export async function boardPicker(sb: DB) {
 export async function getWikiIndex(sb: DB) {
   const [cats, arts, editors] = await Promise.all([
     sb.from('wiki_categories').select('*').order('id'),
-    sb.from('wiki_articles').select('id,slug,title,category_id,editor_count,read_minutes,checked_at,cover_label,views_week').eq('status', 'published').order('views_week', { ascending: false }),
+    sb.from('wiki_articles').select('id,slug,title,category_id,editor_count,read_minutes,checked_at,cover_label,cover_path,views_week').eq('status', 'published').order('views_week', { ascending: false }),
     sb.from('wiki_revisions').select('editor_id'),
   ]);
   const articles = must(arts);
@@ -573,6 +707,8 @@ export const NOTIFICATION_ICON: Record<string, string> = {
 // ── Images ────────────────────────────────────────────────────────────────
 /** Upload an image to the public media bucket; returns its URL for ![](…) markdown. */
 export async function uploadImage(sb: DB, userId: string, file: Blob | ArrayBuffer, fileName: string, contentType: string) {
+  if (!contentType.startsWith('image/')) throw new Error('Choose an image file.');
+  if ((file instanceof ArrayBuffer ? file.byteLength : file.size) > 10 * 1048576) throw new Error('Images can be up to 10 MB.');
   const ext = (fileName.split('.').pop() ?? 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
   const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
   const up = await sb.storage.from('media').upload(path, file, { contentType, upsert: false });
@@ -679,20 +815,35 @@ export interface TeamCard {
   team_roles: { id: number; name: string; filled: boolean; sort: number }[];
   team_members: { user: PersonLite }[];
 }
+export interface TeamRequest { team_id: number; created_at: string; user: PersonLite & { skills: string[] } }
 
 export async function getTeams(sb: DB, userId: string | null) {
-  const [teams, mine, deadlines, looking] = await Promise.all([
+  const [teams, mine, deadlines, looking, incoming] = await Promise.all([
     sb.from('teams').select(`*,team_roles(id,name,filled,sort),team_members(user:profiles(${PERSON}))`).order('created_at', { ascending: false }),
-    userId ? sb.from('team_requests').select('team_id').eq('user_id', userId) : null,
+    userId ? sb.from('team_requests').select('team_id,status').eq('user_id', userId) : null,
     sb.from('deadlines').select('*').gte('on_date', istDate()).order('on_date').limit(5),
     sb.from('profiles').select(`${PERSON},skills,semester`).eq('open_to_teams', true).neq('id', userId ?? '00000000-0000-0000-0000-000000000000').order('created_at', { ascending: false }).limit(6),
+    userId
+      ? sb.from('team_requests').select(`team_id,created_at,user:profiles!team_requests_user_id_fkey(${PERSON},skills),team:teams!inner(owner_id)`)
+        .eq('team.owner_id', userId).eq('status', 'pending').order('created_at')
+      : null,
   ]);
+  const requests = new Map<number, TeamRequest[]>();
+  for (const r of (incoming ? must(incoming) : []) as unknown as TeamRequest[]) {
+    requests.set(r.team_id, [...(requests.get(r.team_id) ?? []), { team_id: r.team_id, created_at: r.created_at, user: r.user }]);
+  }
+  const myRows = mine ? must(mine) : [];
   const list = (must(teams) as unknown as TeamCard[]).map((t) => ({ ...t, team_roles: [...t.team_roles].sort((a, b) => a.sort - b.sort) }));
   const counts = list.reduce<Record<string, number>>((c, t) => ({ ...c, [t.category]: (c[t.category] ?? 0) + 1 }), {});
   return {
     teams: list,
     counts,
-    myRequests: new Set((mine ? must(mine) : []).map((r) => r.team_id)),
+    /** Teams you have a pending request with. */
+    myRequests: new Set(myRows.filter((r) => r.status === 'pending').map((r) => r.team_id)),
+    /** Every request you've sent, by team: pending, accepted or declined. */
+    myRequestStatus: new Map(myRows.map((r) => [r.team_id, r.status as 'pending' | 'accepted' | 'declined'])),
+    /** Pending requests to teams you own. */
+    requests,
     deadlines: must(deadlines),
     looking: must(looking) as unknown as (PersonLite & { skills: string[] })[],
   };
@@ -705,6 +856,10 @@ export function matchesSkills(team: TeamCard, skills: string[]) {
 
 export async function toggleTeamRequest(sb: DB, teamId: number) {
   return must(await sb.rpc('toggle_team_request', { p_team: teamId }));
+}
+/** Team owners accept (optionally filling an open role) or decline a request. */
+export async function reviewTeamRequest(sb: DB, i: { teamId: number; userId: string; accept: boolean; roleId?: number | null }) {
+  must(await sb.rpc('review_team_request', { p_team: i.teamId, p_user: i.userId, p_accept: i.accept, p_role: i.roleId ?? undefined }));
 }
 
 // ── Kahan chalein? ────────────────────────────────────────────────────────
@@ -728,8 +883,8 @@ export async function toggleHeart(sb: DB, placeId: number) {
   return must(await sb.rpc('toggle_heart', { p_place: placeId }));
 }
 
-export async function recommendPlace(sb: DB, i: { userId: string; category: string; name: string; whereLabel: string; priceLabel: string; distanceKm?: number | null }) {
-  must(await sb.from('places').insert({ author_id: i.userId, category: i.category, name: i.name, where_label: i.whereLabel, price_label: i.priceLabel, distance_km: i.distanceKm ?? null, sort: 50 }));
+export async function recommendPlace(sb: DB, i: { userId: string; category: string; name: string; whereLabel: string; priceLabel: string; distanceKm?: number | null; imagePath?: string | null }) {
+  must(await sb.from('places').insert({ author_id: i.userId, category: i.category, name: i.name, where_label: i.whereLabel, price_label: i.priceLabel, distance_km: i.distanceKm ?? null, image_path: i.imagePath ?? null, sort: 50 }));
 }
 
 // ── Profile ───────────────────────────────────────────────────────────────
@@ -770,17 +925,20 @@ export async function getDrafts(sb: DB) {
 // ── Lounge ────────────────────────────────────────────────────────────────
 export interface LoungeMessage {
   id: number; room_slug: string; body: string; created_at: string; promoted_thread_id: number | null;
-  author: PersonLite; society: SocietyLite | null;
+  edited_at?: string | null; author: PersonLite; society: SocietyLite | null;
   promoted?: { id: number; reply_count: number; board: { name: string } } | null;
   pending?: boolean;
 }
-export const LOUNGE_SELECT = `id,room_slug,body,created_at,promoted_thread_id,author:profiles!lounge_messages_author_id_fkey(${PERSON}),society:societies(${SOCIETY}),promoted:threads!lounge_messages_promoted_thread_id_fkey(id,reply_count,board:boards(name))`;
+export const LOUNGE_SELECT = `id,room_slug,body,created_at,edited_at,promoted_thread_id,author:profiles!lounge_messages_author_id_fkey(${PERSON}),society:societies(${SOCIETY}),promoted:threads!lounge_messages_promoted_thread_id_fkey(id,reply_count,board:boards(name))`;
 
 export async function getLoungeRooms(sb: DB) {
   return must(await sb.from('lounge_rooms').select('*').order('sort'));
 }
-export async function getLoungeMessages(sb: DB, room: string, limit = 60) {
-  const rows = must(await sb.from('lounge_messages').select(LOUNGE_SELECT).eq('room_slug', room).order('created_at', { ascending: false }).limit(limit));
+/** Latest messages in a room, oldest first. Pass `before` (a created_at) to page back in time. */
+export async function getLoungeMessages(sb: DB, room: string, limit = 60, before?: string) {
+  let q = sb.from('lounge_messages').select(LOUNGE_SELECT).eq('room_slug', room);
+  if (before) q = q.lt('created_at', before);
+  const rows = must(await q.order('created_at', { ascending: false }).limit(limit));
   return (rows as unknown as LoungeMessage[]).reverse();
 }
 export async function getLoungeMessage(sb: DB, id: number) {
@@ -788,6 +946,21 @@ export async function getLoungeMessage(sb: DB, id: number) {
 }
 export async function sendLoungeMessage(sb: DB, room: string, userId: string, body: string) {
   return must(await sb.from('lounge_messages').insert({ room_slug: room, author_id: userId, body: body.trim() }).select('id').single()).id;
+}
+export async function editLoungeMessage(sb: DB, id: number, body: string) {
+  must(await sb.from('lounge_messages').update({ body: body.trim() }).eq('id', id).select('id').single());
+}
+/** Turns your own Lounge message into a thread in a board. Returns the new thread's id. */
+export async function promoteLoungeMessage(sb: DB, messageId: number, boardId: string, title: string) {
+  return must(await sb.rpc('promote_lounge_message', { p_message: messageId, p_board: boardId, p_title: title.trim() })) as number;
+}
+/** A short default title from a message body. */
+export function titleFromMessage(body: string) {
+  const s = body.replace(/\s+/g, ' ').trim();
+  return s.length > 80 ? s.slice(0, 79).replace(/\s+\S*$/, '') + '…' : s;
+}
+export async function deleteLoungeMessage(sb: DB, id: number) {
+  must(await sb.from('lounge_messages').delete().eq('id', id));
 }
 export async function unreadCounts(sb: DB, since: Record<string, string>) {
   const out: Record<string, number> = {};
