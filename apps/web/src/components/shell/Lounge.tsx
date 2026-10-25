@@ -8,6 +8,7 @@ import { Icon } from '../Icon';
 import { Seal } from '../ui';
 import { OnlineCount, useShell } from './Shell';
 import { ReportDialog, linkBtn } from '../Manage';
+import { MentionText } from '../Markdown';
 
 export interface Room { slug: string; label: string; short_label: string | null }
 
@@ -141,7 +142,7 @@ function Drawer({ rooms, onClose }: { rooms: Room[]; onClose: () => void }) {
                   style={{ flex: 1, height: 36 }} />
                 <button type="submit" className="btn btn-primary" style={{ height: 36 }}>Save</button>
               </form>
-            ) : m.body}
+            ) : <MentionText text={m.body} />}
             {m.promoted && (
               <Link href={`/t/${m.promoted.id}`} style={{ marginTop: 8, padding: '10px 12px', background: 'var(--color-surface)', borderRadius: 2, fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-text)' }}>
                 <Icon name="arrow-bend-down-right" size={18} color="var(--color-accent)" />

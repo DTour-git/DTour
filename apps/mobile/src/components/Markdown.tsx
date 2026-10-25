@@ -1,7 +1,7 @@
 import { Linking, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { colors, parse, type Inline } from '@dtour/shared';
+import { colors, parse, splitMentions, type Inline } from '@dtour/shared';
 import { appRoute } from '@/lib/routes';
 import { T, Kicker } from './T';
 
@@ -16,6 +16,18 @@ function Inl({ parts, size, lh }: { parts: Inline[]; size: number; lh: number })
         if (p.t === 'link') return <T key={i} size={size} color={colors.accent700} onPress={() => (p.href.startsWith('/') ? router.push(appRoute(p.href)) : Linking.openURL(p.href))}>{p.v}</T>;
         return p.v;
       })}
+    </T>
+  );
+}
+
+/** Plain text with tappable @mentions (replies, Lounge). */
+export function MentionText({ text, size = 15, lh = 1.5, color }: { text: string; size?: number; lh?: number; color?: string }) {
+  const router = useRouter();
+  return (
+    <T size={size} lh={lh} color={color}>
+      {splitMentions(text).map((p, i) => p.t === 'link'
+        ? <T key={i} size={size} color={colors.accent700} onPress={() => router.push(appRoute(p.href))}>{p.v}</T>
+        : p.v)}
     </T>
   );
 }

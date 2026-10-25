@@ -85,28 +85,56 @@ export async function updateProfile(sb: DB, id: string, patch: Tables['profiles'
   return must(await sb.from('profiles').update(patch).eq('id', id).select('*').single());
 }
 
-export async function handleAvailable(sb: DB, handle: string, myId: string) {
-  const { data } = await sb.from('profiles').select('id').eq('handle', handle).maybeSingle();
-  return !data || data.id === myId;
-}
-
 // Same rule as the profiles.handle check constraint.
 export const HANDLE_RE = /^[a-z0-9][a-z0-9._]{2,23}$/;
+export const HANDLE_COOLDOWN_DAYS = 7;
 export function normalizeHandle(raw: string) { return raw.trim().replace(/^@/, '').toLowerCase(); }
-/** Returns a message explaining what's wrong with the handle, or null if it's valid. */
+const HANDLE_RULE = 'Handles are 3–24 characters: lowercase letters, numbers, dots and underscores, starting with a letter or number.';
+/** Returns a message explaining what's wrong with the handle's format, or null if it's valid. */
 export function handleProblem(raw: string): string | null {
-  return HANDLE_RE.test(normalizeHandle(raw)) ? null : 'Handles are 3–24 characters: lowercase letters, numbers, dots and underscores, starting with a letter or number.';
+  return HANDLE_RE.test(normalizeHandle(raw)) ? null : HANDLE_RULE;
 }
-/** Checks and saves a new handle. Returns the saved handle. */
+
+export type HandleStatus = 'invalid' | 'reserved' | 'taken' | 'held' | 'yours' | 'available';
+/** Whether the signed-in student can use a handle, checked by the database. */
+export async function handleStatus(sb: DB, raw: string): Promise<HandleStatus> {
+  const h = normalizeHandle(raw);
+  if (handleProblem(h)) return 'invalid';
+  return must(await sb.rpc('handle_status', { p_handle: h })) as HandleStatus;
+}
+export function handleStatusMessage(status: HandleStatus, raw: string): string | null {
+  const h = normalizeHandle(raw);
+  switch (status) {
+    case 'invalid': return HANDLE_RULE;
+    case 'reserved': return `@${h} is reserved. Try another.`;
+    case 'taken': return `@${h} is taken. Try another.`;
+    case 'held': return `@${h} was someone’s handle recently and is held for them. Try another.`;
+    default: return null;
+  }
+}
+export async function handleAvailable(sb: DB, handle: string, _myId?: string) {
+  const s = await handleStatus(sb, handle);
+  return s === 'available' || s === 'yours';
+}
+/** When this profile may change its handle again, or null if it can now. */
+export function nextHandleChange(p: { onboarded: boolean; handle_changed_at: string | null }): Date | null {
+  if (!p.onboarded || !p.handle_changed_at) return null;
+  const next = new Date(Date.parse(p.handle_changed_at) + HANDLE_COOLDOWN_DAYS * 864e5);
+  return next.getTime() > Date.now() ? next : null;
+}
+/** Checks and saves a new handle. Old @mentions are rewritten by the database. Returns the saved handle. */
 export async function changeHandle(sb: DB, userId: string, raw: string) {
   const h = normalizeHandle(raw);
-  const problem = handleProblem(h);
-  if (problem) throw new Error(problem);
-  if (!(await handleAvailable(sb, h, userId))) throw new Error(`@${h} is taken. Try another.`);
+  const msg = handleStatusMessage(await handleStatus(sb, h), h);
+  if (msg) throw new Error(msg);
   const { error } = await sb.from('profiles').update({ handle: h }).eq('id', userId);
-  if (error?.code === '23505') throw new Error(`@${h} is taken. Try another.`);
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(error.code === '23505' ? `@${h} is taken. Try another.` : error.message);
   return h;
+}
+/** Where an old handle points now (for /u/old-handle links), or null. */
+export async function currentHandle(sb: DB, oldHandle: string) {
+  const { data } = await sb.rpc('current_handle', { p_handle: normalizeHandle(oldHandle) });
+  return (data as string | null) ?? null;
 }
 
 export async function getBranches(sb: DB) {

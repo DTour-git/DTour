@@ -11,7 +11,7 @@ import { useData } from '@/lib/useData';
 import { usePresence } from '@/lib/presence';
 import { T } from '@/components/T';
 import { Icon } from '@/components/Icon';
-import { Markdown } from '@/components/Markdown';
+import { Markdown, MentionText } from '@/components/Markdown';
 import { AppBar, Avatar, FlairTag, IconBtn, Screen, Seal, Tag } from '@/components/ui';
 import { ActionSheet, EditSheet, ReportSheet, type SheetAction } from '@/components/Sheets';
 
@@ -201,14 +201,14 @@ function Reply({ r, opId, acceptedId, isOp, threadId, onReply, onChange, onMore,
     return (
       <View style={{ flexDirection: 'row', gap: 10, marginTop: 14, paddingLeft: 12, borderLeftWidth: 2, borderLeftColor: colors.neutral300 }}>
         <Avatar person={r.author} society={r.society} size={24} />
-        <View style={{ flex: 1 }}>{head}<T size={14.5} i={deleted} color={deleted ? colors.neutral700 : colors.text} style={{ marginTop: 2, ...bodyStyle }}>{r.body}</T>{actions}</View>
+        <View style={{ flex: 1 }}>{head}{deleted ? <T size={14.5} i color={colors.neutral700} style={{ marginTop: 2, ...bodyStyle }}>{r.body}</T> : <View style={{ marginTop: 2 }}><MentionText text={r.body} size={14.5} /></View>}{actions}</View>
       </View>
     );
   }
   return (
     <View>
       {head}
-      <T size={15} lh={1.55} i={deleted} color={deleted ? colors.neutral700 : colors.text} style={{ marginTop: 4, ...bodyStyle }}>{r.body}</T>
+      {deleted ? <T size={15} lh={1.55} i color={colors.neutral700} style={{ marginTop: 4, ...bodyStyle }}>{r.body}</T> : <View style={{ marginTop: 4 }}><MentionText text={r.body} size={15} lh={1.55} /></View>}
       {actions}
       {r.children.map((c) => <Reply key={c.id} r={c} opId={opId} acceptedId={acceptedId} isOp={isOp} threadId={threadId} onReply={onReply} onChange={onChange} onMore={onMore} nested />)}
     </View>

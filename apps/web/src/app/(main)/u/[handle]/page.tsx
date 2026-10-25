@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import { agoLong, compact, flair, getDrafts, getProfile, getSaved, n, yearLabel } from '@dtour/shared';
+import { notFound, redirect } from 'next/navigation';
+import { agoLong, compact, currentHandle, flair, getDrafts, getProfile, getSaved, n, yearLabel } from '@dtour/shared';
 import { currentUser } from '@/lib/supabase-server';
 import { Icon } from '@/components/Icon';
 import { Avatar, CmykNum, Seal, Tag } from '@/components/ui';
@@ -19,7 +19,12 @@ export default async function ProfilePage({ params, searchParams }: { params: Pr
   const [{ handle }, { tab = 'activity' }] = await Promise.all([params, searchParams]);
   const { sb, me } = await currentUser();
   const d = await getProfile(sb, decodeURIComponent(handle));
-  if (!d) notFound();
+  if (!d) {
+    // A recently changed handle: send old links to the new profile.
+    const moved = await currentHandle(sb, decodeURIComponent(handle));
+    if (moved) redirect(`/u/${moved}${tab !== 'activity' ? `?tab=${tab}` : ''}`);
+    notFound();
+  }
   const p = d.profile;
   const mine = me?.userId === p.id;
   const [saved, drafts] = mine ? await Promise.all([getSaved(sb, p.id), getDrafts(sb)]) : [[], []];

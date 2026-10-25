@@ -1022,6 +1022,7 @@ export type Database = {
           github: string | null
           grad_year: number | null
           handle: string
+          handle_changed_at: string | null
           hostel: string | null
           id: string
           is_demo: boolean
@@ -1048,6 +1049,7 @@ export type Database = {
           github?: string | null
           grad_year?: number | null
           handle: string
+          handle_changed_at?: string | null
           hostel?: string | null
           id: string
           is_demo?: boolean
@@ -1074,6 +1076,7 @@ export type Database = {
           github?: string | null
           grad_year?: number | null
           handle?: string
+          handle_changed_at?: string | null
           hostel?: string | null
           id?: string
           is_demo?: boolean
@@ -2185,10 +2188,12 @@ export type Database = {
       }
       board_path: { Args: { p_board: string }; Returns: string }
       can_post_as: { Args: { p_society: string }; Returns: boolean }
+      current_handle: { Args: { p_handle: string }; Returns: string }
       delete_reply: { Args: { p_reply: number }; Returns: undefined }
       dtour_clear_demo: { Args: never; Returns: undefined }
       fmt_n: { Args: { n: number }; Returns: string }
       fuzzy_pattern: { Args: { q: string }; Returns: string }
+      handle_status: { Args: { p_handle: string }; Returns: string }
       hook_before_user_created: { Args: { event: Json }; Returns: Json }
       is_moderator: { Args: never; Returns: boolean }
       is_society_poster: { Args: never; Returns: boolean }

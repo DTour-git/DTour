@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, TextInput, View, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
-import { agoLong, changeHandle, colors, fonts, getDrafts, getProfile, getSaved, n, normalizeHandle, updateProfile, yearLabel, flair } from '@dtour/shared';
+import { agoLong, changeHandle, colors, currentHandle, fonts, getDrafts, getProfile, getSaved, n, nextHandleChange, updateProfile, yearLabel, flair } from '@dtour/shared';
+import { HandleHint } from './HandleHint';
+import { useHandleCheck } from '@/lib/useHandleCheck';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
 import { useData } from '@/lib/useData';
@@ -19,6 +21,11 @@ export function ProfileView({ handle, isTab }: { handle: string; isTab?: boolean
   const { profile: me, refreshProfile } = useAuth();
   const { data, refreshing, refresh, reload } = useData(async () => {
     const p = await getProfile(supabase, handle);
+    if (!p) {
+      // A recently changed handle: open the new profile instead.
+      const moved = await currentHandle(supabase, handle);
+      if (moved) { router.replace(`/u/${moved}`); return null; }
+    }
     const mine = p && me?.id === p.profile.id;
     const [saved, drafts] = mine ? await Promise.all([getSaved(supabase, p.profile.id), getDrafts(supabase)]) : [[], []];
     return p && { ...p, saved, drafts };
@@ -123,7 +130,7 @@ export function ProfileView({ handle, isTab }: { handle: string; isTab?: boolean
   );
 }
 
-function EditProfile({ profile, onClose }: { profile: { id: string; handle: string; bio: string | null; hostel: string | null; skills: string[]; semester: number | null }; onClose: (newHandle?: string) => void }) {
+function EditProfile({ profile, onClose }: { profile: { id: string; handle: string; onboarded: boolean; handle_changed_at: string | null; bio: string | null; hostel: string | null; skills: string[]; semester: number | null }; onClose: (newHandle?: string) => void }) {
   const [handle, setHandle] = useState(profile.handle);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -131,7 +138,9 @@ function EditProfile({ profile, onClose }: { profile: { id: string; handle: stri
   const [hostel, setHostel] = useState(profile.hostel ?? '');
   const [skills, setSkills] = useState(profile.skills.join(', '));
   const [sem, setSem] = useState(String(profile.semester ?? ''));
-  const next = normalizeHandle(handle);
+  const check = useHandleCheck(handle, profile.handle);
+  const locked = nextHandleChange(profile);
+  const next = check.handle;
   const changed = next !== profile.handle;
   const save = async () => {
     setBusy(true); setError(null);
@@ -149,9 +158,14 @@ function EditProfile({ profile, onClose }: { profile: { id: string; handle: stri
         <View style={[input, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
           <T size={16} w={600} color={colors.neutral600}>@</T>
           <TextInput value={handle} onChangeText={(v) => setHandle(v.toLowerCase())} maxLength={24} autoCapitalize="none" autoCorrect={false} accessibilityLabel="Handle"
-            style={{ flex: 1, height: 44, fontFamily: fonts.regular, fontSize: 15, color: colors.text }} />
+            editable={!locked} style={{ flex: 1, height: 44, fontFamily: fonts.regular, fontSize: 15, color: locked ? colors.neutral700 : colors.text }} />
         </View>
-        {changed ? <T size={12.5} color={colors.neutral700}>Old @mentions of @{profile.handle} won’t point to you anymore.</T> : null}
+        {locked
+          ? <T size={12.5} color={colors.neutral700}>You can change your handle again on {locked.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}.</T>
+          : <>
+            <HandleHint check={check} />
+            {changed ? <T size={12.5} color={colors.neutral700}>Posts that mention @{profile.handle} will update to @{next || '…'}, and old links to your profile keep working for 30 days. You can change it again after 7 days.</T> : null}
+          </>}
         <TextInput style={[input, { height: 80, paddingTop: 12 }]} multiline value={bio} onChangeText={setBio} placeholder="Bio" placeholderTextColor={colors.neutral700} />
         <TextInput style={input} value={hostel} onChangeText={setHostel} placeholder="Hostel" placeholderTextColor={colors.neutral700} />
         <TextInput style={input} value={skills} onChangeText={setSkills} placeholder="Skills, comma separated" placeholderTextColor={colors.neutral700} />
@@ -159,7 +173,7 @@ function EditProfile({ profile, onClose }: { profile: { id: string; handle: stri
         {error ? <T size={13.5} color={colors.accent2_700}>{error}</T> : null}
         <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
           <PrimaryBtn label="Cancel" secondary onPress={() => onClose()} style={{ flex: 1 }} />
-          <PrimaryBtn label="Save" onPress={save} disabled={busy} style={{ flex: 1 }} />
+          <PrimaryBtn label="Save" onPress={save} disabled={busy || !check.ok} style={{ flex: 1 }} />
         </View>
       </View>
     </Modal>

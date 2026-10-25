@@ -26,7 +26,7 @@ export function inline(src: string): Inline[] {
   let last = 0;
   for (const m of src.matchAll(INLINE)) {
     const s = m[0], i = m.index ?? 0;
-    if (i > last) out.push({ t: 'text', v: src.slice(last, i) });
+    if (i > last) out.push(...splitMentions(src.slice(last, i)));
     if (s.startsWith('**')) out.push({ t: 'b', v: s.slice(2, -2) });
     else if (s.startsWith('`') || s.startsWith('$')) out.push({ t: 'code', v: s.slice(1, -1) });
     else if (s.startsWith('[')) {
@@ -34,6 +34,23 @@ export function inline(src: string): Inline[] {
       if (mm) out.push({ t: 'link', v: mm[1], href: mm[2] });
     } else out.push({ t: 'i', v: s.slice(1, -1) });
     last = i + s.length;
+  }
+  if (last < src.length) out.push(...splitMentions(src.slice(last)));
+  return out;
+}
+
+/** Splits plain text into text and @mention pieces (for replies and chat). */
+export function splitMentions(src: string): Inline[] {
+  const out: Inline[] = [];
+  let last = 0;
+  // No lookbehind (older JS engines): check the character before the @ by hand.
+  for (const m of src.matchAll(/@[a-zA-Z0-9][a-zA-Z0-9._]{2,23}/g)) {
+    const i = m.index ?? 0;
+    if (i > 0 && /[\w.@]/.test(src[i - 1])) continue;
+    const h = m[0].replace(/\.+$/, '');
+    if (i > last) out.push({ t: 'text', v: src.slice(last, i) });
+    out.push({ t: 'link', v: h, href: `/u/${h.slice(1).toLowerCase()}` });
+    last = i + h.length;
   }
   if (last < src.length) out.push({ t: 'text', v: src.slice(last) });
   return out;

@@ -9,6 +9,7 @@ import { useData } from '@/lib/useData';
 import { usePresence } from '@/lib/presence';
 import { T } from '@/components/T';
 import { Icon } from '@/components/Icon';
+import { MentionText } from '@/components/Markdown';
 import { Avatar, FlairTag, IconBtn, Screen, Seal, Tag } from '@/components/ui';
 import { ActionSheet, EditSheet, ReportSheet, type SheetAction } from '@/components/Sheets';
 
@@ -143,7 +144,7 @@ export default function Lounge() {
                   {m.society?.verified ? <Seal /> : <FlairTag person={m.author} />}
                   <T size={12.5} color={colors.neutral700}>{chatTime(m.created_at)}{m.edited_at ? ' · edited' : ''}</T>
                 </View>
-                <T size={15} lh={1.45}>{m.body}</T>
+                <MentionText text={m.body} size={15} lh={1.45} />
                 {m.promoted && (
                   <Pressable onPress={() => router.push(`/thread/${m.promoted!.id}`)} style={{ marginTop: 8, paddingVertical: 10, paddingHorizontal: 12, backgroundColor: colors.surface, borderRadius: 2, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <Icon name="arrow-bend-down-right" size={17} color={colors.accent} />
