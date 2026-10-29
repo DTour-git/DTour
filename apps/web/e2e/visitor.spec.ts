@@ -31,9 +31,12 @@ test.describe('visitor', () => {
 
   test('search palette opens with / and ranks matches', async ({ page }) => {
     await page.goto('/boards');
-    await page.keyboard.press('/');
     const dialog = page.getByRole('dialog', { name: 'Search' });
-    await expect(dialog).toBeVisible();
+    // The `/` listener attaches on hydration, which can land after `goto` resolves: retry the key until it's heard.
+    await expect(async () => {
+      await page.keyboard.press('/');
+      await expect(dialog).toBeVisible({ timeout: 1_000 });
+    }).toPass({ timeout: 15_000 });
     await dialog.getByLabel('Search query').fill('dsa pyq');
     await expect(dialog.getByText(/DSA end-sem/).first()).toBeVisible();
   });
