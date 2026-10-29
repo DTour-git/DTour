@@ -22,9 +22,10 @@ export async function proxy(request: NextRequest) {
       },
     },
   );
-  const { data: { user } } = await sb.auth.getUser();
+  // getClaims() refreshes an expired session and verifies the JWT locally (no Auth round trip).
+  const { data } = await sb.auth.getClaims();
   const path = request.nextUrl.pathname;
-  if (!user && MEMBERS_ONLY.some((p) => path.startsWith(p))) {
+  if (!data?.claims && MEMBERS_ONLY.some((p) => path.startsWith(p))) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.search = `?next=${encodeURIComponent(path + request.nextUrl.search)}`;
