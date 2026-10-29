@@ -155,6 +155,6 @@ These are product decisions. Don't change them without asking.
 ## Still open (as of Oct 2026)
 
 - **Email codes** need a custom SMTP provider. Supabase's default mailer only delivers to project members, and the free tier blocks the template edit that puts the 6-digit `{{ .Token }}` in the email. The template is ready in `supabase/templates/otp.html`.
-- **Google sign-in** needs the OAuth client configured in Supabase Auth for the team project.
+- **Google sign-in** is configured on production (`megohwzcghnbfdzsaypz`) but not yet verified end-to-end with a real `@dtu.ac.in` account (redirect URLs, consent screen publishing). It is **not enabled on dev**, so test with email-code accounts there.
 - **Phone push** isn't live yet: the `push` function isn't deployed, and there's no webhook or EAS credentials yet.
 - **Branch protection** on `main` isn't possible on the GitHub Free plan for a private repo. Until the org upgrades (or the repo goes public), "PRs only" and CODEOWNERS reviews are a team rule, not enforced by GitHub.
