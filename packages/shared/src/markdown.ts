@@ -1,13 +1,14 @@
 // Minimal Markdown → block tree, rendered natively by each app.
 // Supports: ### / #### headings, paragraphs, - lists, > quotes,
 // `> [!senior] "quote" — attribution` pull quotes, ``` code fences,
-// and inline **bold**, *italic*, `code`, [links](url), $LaTeX$ (shown as code).
+// and inline **bold**, *italic*, `code`, [links](url), and $LaTeX$.
 
 export type Inline =
   | { t: 'text'; v: string }
   | { t: 'b'; v: string }
   | { t: 'i'; v: string }
   | { t: 'code'; v: string }
+  | { t: 'math'; v: string }
   | { t: 'link'; v: string; href: string };
 
 export type Block =
@@ -17,18 +18,24 @@ export type Block =
   | { t: 'quote'; inl: Inline[] }
   | { t: 'senior'; quote: string; by: string | null }
   | { t: 'code'; v: string }
+  | { t: 'math'; v: string }
   | { t: 'img'; src: string; alt: string };
 
-const INLINE = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\$[^$]+\$|\[[^\]]+\]\([^)\s]+\))/g;
+const INLINE = /(\\\$|\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\$(?!\$|\s)(?:\\.|[^$\\\n])+?\$|\[[^\]]+\]\([^)\s]+\))/g;
 
 export function inline(src: string): Inline[] {
   const out: Inline[] = [];
   let last = 0;
-  for (const m of src.matchAll(INLINE)) {
+  INLINE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = INLINE.exec(src))) {
     const s = m[0], i = m.index ?? 0;
+    if (s.startsWith('$') && (src[i - 1] === '$' || /\s/.test(s[s.length - 2]) || /[\d$]/.test(src[i + s.length] ?? '') || /^\$\d/.test(s) && /\b(?:and|or|for|to)\b/i.test(s))) { INLINE.lastIndex = i + 1; continue; }
     if (i > last) out.push(...splitMentions(src.slice(last, i)));
     if (s.startsWith('**')) out.push({ t: 'b', v: s.slice(2, -2) });
-    else if (s.startsWith('`') || s.startsWith('$')) out.push({ t: 'code', v: s.slice(1, -1) });
+    else if (s.startsWith('`')) out.push({ t: 'code', v: s.slice(1, -1) });
+    else if (s.startsWith('$')) out.push({ t: 'math', v: s.slice(1, -1) });
+    else if (s === '\\$') out.push({ t: 'text', v: '$' });
     else if (s.startsWith('[')) {
       const mm = /^\[([^\]]+)\]\(([^)]+)\)$/.exec(s);
       if (mm) out.push({ t: 'link', v: mm[1], href: mm[2] });
@@ -78,6 +85,16 @@ export function parse(md: string): Block[] {
       for (i++; i < lines.length && !lines[i].trim().startsWith('```'); i++) code.push(lines[i]);
       blocks.push({ t: 'code', v: code.join('\n') });
       continue;
+    }
+    const display = /^\$\$(.+)\$\$$/.exec(trimmed);
+    if (display && display[1].trim()) {
+      flush(); blocks.push({ t: 'math', v: display[1].trim() }); continue;
+    }
+    if (trimmed === '$$') {
+      const end = lines.findIndex((l, j) => j > i && l.trim() === '$$');
+      if (end > i + 1) {
+        flush(); blocks.push({ t: 'math', v: lines.slice(i + 1, end).join('\n') }); i = end; continue;
+      }
     }
     if (!trimmed) { flush(); continue; }
     const img = /^!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)$/.exec(trimmed);

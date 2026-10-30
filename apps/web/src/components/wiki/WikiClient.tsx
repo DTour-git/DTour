@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { n, postWikiTalk, setWikiFeedback, suggestWikiEdit } from '@dtour/shared';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Icon } from '../Icon';
+import { Markdown } from '../Markdown';
 import { useShell } from '../shell/Shell';
 
 export function Useful({ articleId, count, mine }: { articleId: number; count: number; mine: boolean | null }) {
@@ -52,6 +53,10 @@ export function EditForm({ articleId, body, slug }: { articleId: number; body: s
       {!isMod && <div style={{ fontSize: 14, color: 'var(--color-neutral-800)', marginBottom: 10, padding: '10px 14px', background: 'var(--color-accent-100)', borderRadius: 2 }}>Edits are checked by a moderator before they go live. You’re credited as an editor once it’s approved.</div>}
       <div style={{ fontSize: 14, color: 'var(--color-neutral-700)', marginBottom: 10 }}>Markdown: <code>### Heading</code>, <code>**bold**</code>, <code>[link](url)</code>, and <code>&gt; [!senior] &quot;quote&quot; — @handle</code> for a senior’s tip.</div>
       <textarea className="input" value={text} onChange={(e) => setText(e.target.value)} style={{ minHeight: 460, font: '400 15px/1.6 ui-monospace, Menlo, monospace' }} />
+      <details style={{ marginTop: 12 }}>
+        <summary>Preview</summary>
+        <div style={{ padding: '12px 0' }}><Markdown source={text} size={16} /></div>
+      </details>
       <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
         <input className="input" placeholder="What did you change? e.g. “added IT lab tips”" value={summary} onChange={(e) => setSummary(e.target.value)} style={{ height: 40 }} />
         <button className="btn btn-primary" disabled={busy} onClick={save} style={{ whiteSpace: 'nowrap' }}><Icon name="pencil-simple-line" size={17} />{isMod ? 'Publish edit' : 'Submit for review'}</button>

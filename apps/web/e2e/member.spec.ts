@@ -24,4 +24,14 @@ test.describe('member', () => {
     await page.goto('/mod');
     await expect(page.getByRole('heading', { name: 'Moderation' })).toBeVisible();
   });
+
+  test('the composer previews inline, display and invalid maths', async ({ page }) => {
+    await signIn(page, 'e2e.student');
+    await page.goto('/new');
+    await page.getByPlaceholder('Add context. What have you tried? Which branch, semester, professor?').fill('Inline $x^2$ and $\\notacommand$.\n\n$$\nx=1\n$$');
+    await page.getByRole('button', { name: 'Preview' }).click();
+    await expect(page.locator('.markdown .katex')).toHaveCount(2);
+    await expect(page.locator('.markdown .katex-display')).toHaveCount(1);
+    await expect(page.locator('.markdown code')).toHaveText('$\\notacommand$');
+  });
 });

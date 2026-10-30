@@ -86,6 +86,7 @@ input, textarea, select { font-family: inherit; }
 .vote-btn:hover { color: var(--color-accent); }
 
 .markdown p { margin: 0 0 15px; }
+.markdown-compact > :last-child { margin-bottom: 0; }
 .markdown h3 { margin: 30px 0 12px; }
 .markdown h3:first-child { margin-top: 0; }
 .markdown ul { margin: 0 0 15px; padding-left: 22px; }

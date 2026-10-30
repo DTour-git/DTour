@@ -23,6 +23,16 @@ describe('parse', () => {
     expect(parse('```\nconst a = 1;\n```')).toEqual([{ t: 'code', v: 'const a = 1;' }]);
   });
 
+  it('parses standalone display maths and leaves code fences alone', () => {
+    expect(parse('Before\n\n$$\na^2 + b^2\n= c^2\n$$\n\n$$x=1$$\n\n```\n$$x$$\n```')).toEqual([
+      { t: 'p', inl: [{ t: 'text', v: 'Before' }] },
+      { t: 'math', v: 'a^2 + b^2\n= c^2' },
+      { t: 'math', v: 'x=1' },
+      { t: 'code', v: '$$x$$' },
+    ]);
+    expect(parse('$$\nunclosed')).toEqual([{ t: 'p', inl: [{ t: 'text', v: '$$ unclosed' }] }]);
+  });
+
   it('headings() lists the table of contents', () => {
     expect(headings(parse('### A\n\ntext\n\n### B'))).toEqual([
       { text: 'A', id: 'a' },
@@ -35,6 +45,17 @@ describe('inline', () => {
   it('parses bold, italic, code and links', () => {
     const kinds = inline('**b** *i* `c` [l](/wiki/x)').map((p) => p.t);
     expect(kinds).toEqual(['b', 'text', 'i', 'text', 'code', 'text', 'link']);
+  });
+
+  it('recognizes inline maths and preserves escaped dollars, currency and code', () => {
+    expect(inline('Let $x^2$ be ` $y$ ` and \\$5.')).toEqual([
+      { t: 'text', v: 'Let ' }, { t: 'math', v: 'x^2' }, { t: 'text', v: ' be ' },
+      { t: 'code', v: ' $y$ ' }, { t: 'text', v: ' and ' }, { t: 'text', v: '$' }, { t: 'text', v: '5.' },
+    ]);
+    expect(inline('₹100 and $5 or ₹/$ 100')).toEqual([{ t: 'text', v: '₹100 and $5 or ₹/$ 100' }]);
+    expect(inline('$5 and $10')).toEqual([{ t: 'text', v: '$5 and $10' }]);
+    expect(inline('$unclosed')).toEqual([{ t: 'text', v: '$unclosed' }]);
+    expect(inline('$\\frac{1}{2}$')).toEqual([{ t: 'math', v: '\\frac{1}{2}' }]);
   });
 });
 
