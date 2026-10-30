@@ -58,12 +58,15 @@ function must<R extends { data: unknown; error: { message: string } | null }>(r:
 // ── Session & config ──────────────────────────────────────────────────────
 export interface Me { userId: string; email: string | null; profile: ProfileRow }
 
+// getClaims() verifies the JWT locally with the project's cached signing keys,
+// saving the Auth round trip getUser() makes (it falls back to getUser() without WebCrypto).
 export async function getMe(sb: DB): Promise<Me | null> {
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user) return null;
-  const profile = must(await sb.from('profiles').select('*').eq('id', user.id).maybeSingle());
+  const { data } = await sb.auth.getClaims();
+  const claims = data?.claims;
+  if (!claims?.sub) return null;
+  const profile = must(await sb.from('profiles').select('*').eq('id', claims.sub).maybeSingle());
   if (!profile) return null;
-  return { userId: user.id, email: user.email ?? null, profile };
+  return { userId: claims.sub, email: claims.email ?? null, profile };
 }
 
 export async function getConfig(sb: DB): Promise<ConfigRow | null> {
@@ -142,17 +145,13 @@ export async function getBranches(sb: DB) {
 }
 
 // ── Threads ───────────────────────────────────────────────────────────────
-async function withPollPct(sb: DB, threads: ThreadCard[]) {
-  const polls = threads.filter((t) => t.kind === 'poll').map((t) => t.id);
-  if (!polls.length) return threads;
-  const opts = must(await sb.from('poll_options').select('thread_id,votes').in('thread_id', polls));
-  for (const t of threads) {
-    if (t.kind !== 'poll') continue;
-    const o = opts.filter((x) => x.thread_id === t.id);
+// Poll options come embedded in the thread query, so the leading option's share needs no second request.
+function withPollPct(rows: (ThreadCard & { poll_options?: { votes: number }[] })[]): ThreadCard[] {
+  return rows.map(({ poll_options: o = [], ...t }) => {
+    if (t.kind !== 'poll') return t;
     const total = o.reduce((s, x) => s + x.votes, 0);
-    t.poll_pct = total ? Math.round((Math.max(...o.map((x) => x.votes)) / total) * 100) : null;
-  }
-  return threads;
+    return { ...t, poll_pct: total ? Math.round((Math.max(...o.map((x) => x.votes)) / total) * 100) : null };
+  });
 }
 
 export type FeedTab = 'hot' | 'new' | 'top' | 'branch';
@@ -166,7 +165,7 @@ export function hotness(t: { score: number; reply_count: number; created_at: str
 export async function listThreads(sb: DB, opts: {
   tab?: FeedTab; categoryId?: number; boardIds?: string[]; limit?: number; excludeNews?: boolean; branch?: string | null;
 }) {
-  let q = sb.from('threads').select(THREAD_SELECT);
+  let q = sb.from('threads').select(`${THREAD_SELECT},poll_options(votes)`);
   if (opts.excludeNews) q = q.neq('kind', 'news');
   if (opts.categoryId) q = q.eq('board.category_id', opts.categoryId);
   if (opts.boardIds) q = q.in('board_id', opts.boardIds);
@@ -177,9 +176,9 @@ export async function listThreads(sb: DB, opts: {
     q = q.or(`tags.cs.{${opts.branch}},title.ilike.%${opts.branch}%`).order('score', { ascending: false });
   } else q = q.order('score', { ascending: false }).order('created_at', { ascending: false });
   const limit = opts.limit ?? 20;
-  let rows = must(await q.limit(tab === 'hot' ? Math.max(limit, 40) : limit)) as unknown as ThreadCard[];
+  let rows = withPollPct(must(await q.limit(tab === 'hot' ? Math.max(limit, 40) : limit)) as unknown as ThreadCard[]);
   if (tab === 'hot') rows = rows.sort((a, b) => hotness(b) - hotness(a)).slice(0, limit);
-  return withPollPct(sb, rows);
+  return rows;
 }
 
 // ── Today ─────────────────────────────────────────────────────────────────
@@ -193,11 +192,13 @@ export async function getTimeline(sb: DB): Promise<TimelineItem[]> {
   const today = istDate();
   const start = new Date(`${today}T00:00:00+05:30`);
   const end = new Date(start.getTime() + 27 * 3600e3);   // through 3 am, so "12 am" belongs to today
-  let rows = must(await sb.from('campus_events').select('*')
-    .gte('starts_at', start.toISOString()).lt('starts_at', end.toISOString()).order('starts_at'));
-  if (!rows.length) {
-    rows = must(await sb.from('campus_events').select('*').order('starts_at', { ascending: false }).limit(5)).reverse();
-  }
+  // Ask for the fallback (latest five) at the same time, rather than after finding today empty.
+  const [todays, latest] = await Promise.all([
+    sb.from('campus_events').select('*').gte('starts_at', start.toISOString()).lt('starts_at', end.toISOString()).order('starts_at'),
+    sb.from('campus_events').select('*').order('starts_at', { ascending: false }).limit(5),
+  ]);
+  let rows = must(todays);
+  if (!rows.length) rows = must(latest).reverse();
   const now = Date.now();
   return rows.map((r) => {
     const s = Date.parse(r.starts_at), e = r.ends_at ? Date.parse(r.ends_at) : s + 30 * 60e3;
@@ -235,10 +236,13 @@ export async function getToday(sb: DB, tab: FeedTab = 'hot', branch: string | nu
 }
 
 /** Four board "desks": Campus, Padhai, Career, Bahar — top two threads each. */
+const DESK_CATEGORIES = [1, 2, 3, 5];
 export async function getDesks(sb: DB) {
-  const cats = must(await sb.from('board_categories').select('*').in('id', [1, 2, 3, 5]).order('id'));
-  const lists = await Promise.all(cats.map((c) => listThreads(sb, { categoryId: c.id, excludeNews: true, limit: 2 })));
-  return cats.map((c, i) => ({ category: c, threads: lists[i] }));
+  const [cats, ...lists] = await Promise.all([
+    sb.from('board_categories').select('*').in('id', DESK_CATEGORIES).order('id'),
+    ...DESK_CATEGORIES.map((id) => listThreads(sb, { categoryId: id, excludeNews: true, limit: 2 })),
+  ]);
+  return must(cats).map((c) => ({ category: c, threads: lists[DESK_CATEGORIES.indexOf(c.id)] }));
 }
 
 async function getSocietyStrip(sb: DB) {
@@ -304,19 +308,20 @@ export async function markBoardsSeen(sb: DB, userId: string) {
 
 export const PAGE_SIZE = 40;
 export async function getBoard(sb: DB, slug: string, tab: FeedTab = 'hot', limit = PAGE_SIZE) {
-  const board = must(await sb.from('boards').select('*').eq('slug', slug).maybeSingle());
+  // All boards and categories are small tables: load them together, then pick this board out.
+  const [boards, cats] = await Promise.all([sb.from('boards').select('*'), sb.from('board_categories').select('*')]);
+  const all = must(boards);
+  const board = all.find((b) => b.slug === slug);
   if (!board) return null;
-  const all = must(await sb.from('boards').select('*'));
   const desc = (id: string): string[] => all.filter((b) => b.parent_id === id).flatMap((b) => [b.id, ...desc(b.id)]);
   const ids = [board.id, ...desc(board.id)];
-  const [threads, category, path] = await Promise.all([
+  const [threads, path] = await Promise.all([
     listThreads(sb, { tab, boardIds: ids, limit: limit + 1 }),
-    sb.from('board_categories').select('*').eq('id', board.category_id).single(),
     boardAncestors(sb, board.id, all),
   ]);
   return {
     board, threads: threads.slice(0, limit), hasMore: threads.length > limit,
-    category: must(category) as CategoryRow & { tone: Tone }, path,
+    category: must(cats).find((c) => c.id === board.category_id) as CategoryRow & { tone: Tone }, path,
     children: all.filter((b) => b.parent_id === board.id).sort((a, b) => a.sort - b.sort),
   };
 }
@@ -337,24 +342,30 @@ export async function setBoardJoined(sb: DB, boardId: string, userId: string, jo
 
 // ── Thread page ───────────────────────────────────────────────────────────
 export async function getThread(sb: DB, id: number, userId: string | null) {
-  const thread = must(await sb.from('threads').select(THREAD_SELECT).eq('id', id).maybeSingle()) as unknown as ThreadCard | null;
-  if (!thread) return null;
-  const [replies, myVote, saved, replyVotes, path, board, joined, poll, myPoll, related, wiki, lounge] = await Promise.all([
+  // Everything keyed by the thread id loads alongside the thread itself; only
+  // "Related in Library" has to wait, because it needs the thread's attachment.
+  const [threadRes, replies, myVote, saved, replyVotes, boards, joinedBoards, poll, myPoll, wiki, lounge] = await Promise.all([
+    sb.from('threads').select(THREAD_SELECT).eq('id', id).maybeSingle(),
     sb.from('replies').select(`id,thread_id,parent_id,body,score,created_at,edited_at,deleted_at,author:profiles!replies_author_id_fkey(${PERSON}),society:societies(${SOCIETY})`).eq('thread_id', id).order('created_at'),
     userId ? sb.from('thread_votes').select('value').eq('thread_id', id).eq('user_id', userId).maybeSingle() : null,
     userId ? sb.from('saves').select('thread_id').eq('thread_id', id).eq('user_id', userId).maybeSingle() : null,
-    userId ? sb.from('reply_votes').select('reply_id,value').eq('user_id', userId) : null,
-    boardAncestors(sb, thread.board.id),
-    sb.from('boards').select('*').eq('id', thread.board.id).single(),
-    userId ? sb.from('board_members').select('board_id').eq('board_id', thread.board.id).eq('user_id', userId).maybeSingle() : null,
-    thread.kind === 'poll' ? sb.from('poll_options').select('*').eq('thread_id', id).order('sort') : null,
-    thread.kind === 'poll' && userId ? sb.from('poll_votes').select('option_id').eq('thread_id', id).eq('user_id', userId).maybeSingle() : null,
-    thread.attachment?.subject
-      ? sb.from('library_items').select('id,title,kind,format,subject_code').eq('subject_code', thread.attachment.subject).neq('id', thread.attachment.library_item_id ?? -1).order('downloads_week', { ascending: false }).limit(3)
-      : null,
+    userId ? sb.from('reply_votes').select('reply_id,value,replies!inner(thread_id)').eq('user_id', userId).eq('replies.thread_id', id) : null,
+    sb.from('boards').select('*'),
+    userId ? sb.from('board_members').select('board_id').eq('user_id', userId) : null,
+    sb.from('poll_options').select('*').eq('thread_id', id).order('sort'),
+    userId ? sb.from('poll_votes').select('option_id').eq('thread_id', id).eq('user_id', userId).maybeSingle() : null,
     sb.from('wiki_articles').select('slug,title,editor_count,checked_at').eq('status', 'published').order('views_week', { ascending: false }).limit(1).maybeSingle(),
     sb.from('lounge_messages').select('id,room_slug').eq('promoted_thread_id', id).maybeSingle(),
   ]);
+  const thread = must(threadRes) as unknown as ThreadCard | null;
+  if (!thread) return null;
+  const related = thread.attachment?.subject
+    ? await sb.from('library_items').select('id,title,kind,format,subject_code').eq('subject_code', thread.attachment.subject).neq('id', thread.attachment.library_item_id ?? -1).order('downloads_week', { ascending: false }).limit(3)
+    : null;
+  const all = must(boards);
+  const path = await boardAncestors(sb, thread.board.id, all);
+  const board = all.find((b) => b.id === thread.board.id);
+  if (!board) throw new Error(`Board ${thread.board.id} not found`);
   const rv = new Map((replyVotes ? must(replyVotes) : []).map((r) => [r.reply_id, r.value]));
   const flat = (must(replies) as unknown as Omit<ReplyNode, 'children' | 'myVote'>[]).map((r) => ({ ...r, children: [] as ReplyNode[], myVote: rv.get(r.id) ?? 0 }));
   const byId = new Map(flat.map((r) => [r.id, r]));
@@ -367,9 +378,9 @@ export async function getThread(sb: DB, id: number, userId: string | null) {
     myVote: myVote?.data?.value ?? 0,
     saved: !!saved?.data,
     path,
-    board: must(board),
-    joined: !!joined?.data,
-    poll: poll ? must(poll) : null,
+    board,
+    joined: !!joinedBoards && must(joinedBoards).some((j) => j.board_id === board.id),
+    poll: thread.kind === 'poll' ? must(poll) : null,
     myPollOption: myPoll?.data?.option_id ?? null,
     related: related ? must(related) : [],
     wiki: must(wiki),
