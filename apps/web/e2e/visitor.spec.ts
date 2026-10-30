@@ -17,9 +17,15 @@ test.describe('visitor', () => {
     await expect(page.getByRole('heading', { level: 1 })).toContainText('DSA end-sem');
   });
 
-  test('voting as a visitor asks you to sign in', async ({ page }) => {
+  test('upvoting a thread as a visitor asks you to sign in', async ({ page }) => {
     await page.goto('/b/coe-sem-3/1');
-    await page.getByRole('button', { name: 'Upvote' }).click();
+    await page.getByRole('button', { name: 'Upvote', exact: true }).click();
+    await expect(page).toHaveURL(/\/login\?next=/);
+  });
+
+  test('upvoting a reply as a visitor asks you to sign in', async ({ page }) => {
+    await page.goto('/b/coe-sem-3/1');
+    await page.locator('#reply-1').getByRole('button', { name: 'Upvote reply' }).click();
     await expect(page).toHaveURL(/\/login\?next=/);
   });
 
