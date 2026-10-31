@@ -1,5 +1,30 @@
 import { describe, expect, it } from 'vitest';
-import { headings, inline, inlineLines, parse, plain, slugify, splitMentions, wordCount } from './markdown';
+import { headings, inline, inlineLines, markdownExcerpt, parse, plain, slugify, splitMentions, wordCount } from './markdown';
+
+describe('markdownExcerpt', () => {
+  it('keeps inline and display maths intact in a compact preview', () => {
+    expect(markdownExcerpt('Inline $x^2$\n\n$$\ny=1\n$$')).toEqual([
+      { t: 'text', v: 'Inline ' }, { t: 'math', v: 'x^2' },
+      { t: 'text', v: ' ' }, { t: 'math', v: 'y=1' },
+    ]);
+  });
+
+  it('does not cut a formula in half at the excerpt limit', () => {
+    expect(markdownExcerpt('Hi $x^2$', 4)).toEqual([
+      { t: 'text', v: 'Hi ' }, { t: 'text', v: '…' },
+    ]);
+  });
+
+  it('retains inline formatting, link labels and code in a compact preview', () => {
+    expect(markdownExcerpt('**bold** *italic* `code` [link](/wiki) @student\n\n```\nx=1\n```')).toEqual([
+      { t: 'b', v: 'bold' }, { t: 'text', v: ' ' }, { t: 'i', v: 'italic' },
+      { t: 'text', v: ' ' }, { t: 'code', v: 'code' }, { t: 'text', v: ' ' },
+      { t: 'link', v: 'link', href: '/wiki' }, { t: 'text', v: ' ' },
+      { t: 'link', v: '@student', href: '/u/student' }, { t: 'text', v: ' ' },
+      { t: 'code', v: 'x=1' },
+    ]);
+  });
+});
 
 describe('parse', () => {
   it('reads headings, paragraphs and lists', () => {

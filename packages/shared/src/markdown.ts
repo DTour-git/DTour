@@ -137,6 +137,39 @@ export function wordCount(md: string): number {
   return md.split(/\s+/).filter(Boolean).length;
 }
 
+/** Compact preview that keeps complete formulas while limiting its source length. */
+export function markdownExcerpt(md: string, max = 180): Inline[] {
+  const pieces: Inline[] = [];
+  for (const block of parse(md)) {
+    let parts: Inline[];
+    switch (block.t) {
+      case 'p': case 'quote': parts = block.inl; break;
+      case 'h': parts = inline(block.text); break;
+      case 'ul': parts = block.items.flatMap((item, i) => i ? [{ t: 'text' as const, v: ' ' }, ...item] : item); break;
+      case 'senior': parts = inline(block.quote); break;
+      case 'code': parts = [{ t: 'code', v: block.v }]; break;
+      case 'math': parts = [{ t: 'math', v: block.v }]; break;
+      case 'img': parts = [{ t: 'text', v: block.alt }]; break;
+    }
+    if (pieces.length) pieces.push({ t: 'text', v: ' ' });
+    pieces.push(...parts);
+  }
+  const out: Inline[] = [];
+  let remaining = max;
+  for (const part of pieces) {
+    const value = part.t === 'math' ? part.v : part.v.replace(/\s+/g, ' ');
+    if (value.length <= remaining) {
+      out.push({ ...part, v: value });
+      remaining -= value.length;
+    } else {
+      if (part.t !== 'math' && remaining > 0) out.push({ ...part, v: value.slice(0, remaining) });
+      out.push({ t: 'text', v: '…' });
+      break;
+    }
+  }
+  return out;
+}
+
 /** Plain-text excerpt for previews. */
 export function plain(md: string, max = 200): string {
   const s = md.replace(/!\[[^\]]*\]\([^)]*\)/g, '').replace(/[#>*`$\[\]]/g, '').replace(/\(([^)]+)\)/g, '').replace(/\s+/g, ' ').trim();
