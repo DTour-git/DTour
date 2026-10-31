@@ -30,7 +30,7 @@ export function inline(src: string): Inline[] {
   let m: RegExpExecArray | null;
   while ((m = INLINE.exec(src))) {
     const s = m[0], i = m.index ?? 0;
-    if (s.startsWith('$') && (src[i - 1] === '$' || /\s/.test(s[s.length - 2]) || /[\d$]/.test(src[i + s.length] ?? '') || /^\$\d/.test(s) && /\b(?:and|or|for|to)\b/i.test(s))) { INLINE.lastIndex = i + 1; continue; }
+    if (s.startsWith('$') && (src[i - 1] === '$' || /\s/.test(s[s.length - 2]) || /[\d$]/.test(src[i + s.length] ?? '') || /^\$\d/.test(s) && /(?:^|[^\\\w])(?:and|or|for|to)\b/i.test(s))) { INLINE.lastIndex = i + 1; continue; }
     if (i > last) out.push(...splitMentions(src.slice(last, i)));
     if (s.startsWith('**')) out.push({ t: 'b', v: s.slice(2, -2) });
     else if (s.startsWith('`')) out.push({ t: 'code', v: s.slice(1, -1) });
@@ -44,6 +44,11 @@ export function inline(src: string): Inline[] {
   }
   if (last < src.length) out.push(...splitMentions(src.slice(last)));
   return out;
+}
+
+/** Inline-only Markdown, one entry per line, for replies and chat: no headings, lists or images. */
+export function inlineLines(src: string): Inline[][] {
+  return src.replace(/\r\n/g, '\n').split('\n').map(inline);
 }
 
 /** Splits plain text into text and @mention pieces (for replies and chat). */
@@ -86,13 +91,15 @@ export function parse(md: string): Block[] {
       blocks.push({ t: 'code', v: code.join('\n') });
       continue;
     }
-    const display = /^\$\$(.+)\$\$$/.exec(trimmed);
+    const display = /^\$\$((?:(?!\$\$).)+)\$\$$/.exec(trimmed);
     if (display && display[1].trim()) {
       flush(); blocks.push({ t: 'math', v: display[1].trim() }); continue;
     }
     if (trimmed === '$$') {
-      const end = lines.findIndex((l, j) => j > i && l.trim() === '$$');
-      if (end > i + 1) {
+      // The closing $$ must come before the next blank line or code fence.
+      let end = i + 1;
+      while (end < lines.length && lines[end].trim() && lines[end].trim() !== '$$' && !lines[end].trim().startsWith('```')) end++;
+      if (end > i + 1 && lines[end]?.trim() === '$$') {
         flush(); blocks.push({ t: 'math', v: lines.slice(i + 1, end).join('\n') }); i = end; continue;
       }
     }

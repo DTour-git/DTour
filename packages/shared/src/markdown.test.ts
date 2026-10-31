@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { headings, inline, parse, plain, slugify, splitMentions, wordCount } from './markdown';
+import { headings, inline, inlineLines, parse, plain, slugify, splitMentions, wordCount } from './markdown';
 
 describe('parse', () => {
   it('reads headings, paragraphs and lists', () => {
@@ -33,6 +33,18 @@ describe('parse', () => {
     expect(parse('$$\nunclosed')).toEqual([{ t: 'p', inl: [{ t: 'text', v: '$$ unclosed' }] }]);
   });
 
+  it('does not pair a stray $$ across a blank line or code fence', () => {
+    expect(parse('$$\nx\n\ntext\n\n```\n$$\n```')).toEqual([
+      { t: 'p', inl: [{ t: 'text', v: '$$ x' }] },
+      { t: 'p', inl: [{ t: 'text', v: 'text' }] },
+      { t: 'code', v: '$$' },
+    ]);
+  });
+
+  it('does not join two display formulas on one line', () => {
+    expect(parse('$$a^2$$ and $$b^2$$')).toEqual([{ t: 'p', inl: [{ t: 'text', v: '$$a^2$$ and $$b^2$$' }] }]);
+  });
+
   it('headings() lists the table of contents', () => {
     expect(headings(parse('### A\n\ntext\n\n### B'))).toEqual([
       { text: 'A', id: 'a' },
@@ -56,6 +68,21 @@ describe('inline', () => {
     expect(inline('$5 and $10')).toEqual([{ t: 'text', v: '$5 and $10' }]);
     expect(inline('$unclosed')).toEqual([{ t: 'text', v: '$unclosed' }]);
     expect(inline('$\\frac{1}{2}$')).toEqual([{ t: 'math', v: '\\frac{1}{2}' }]);
+  });
+
+  it('keeps maths that uses \\to after a number', () => {
+    expect(inline('$1 \\to 2$')).toEqual([{ t: 'math', v: '1 \\to 2' }]);
+    expect(inline('$0 \\to \\infty$')).toEqual([{ t: 'math', v: '0 \\to \\infty' }]);
+  });
+});
+
+describe('inlineLines', () => {
+  it('keeps line breaks and ignores block syntax', () => {
+    expect(inlineLines('Unit 1: trees\n## Unit 2: $x$\n- ![x](https://e.x/p.gif)')).toEqual([
+      [{ t: 'text', v: 'Unit 1: trees' }],
+      [{ t: 'text', v: '## Unit 2: ' }, { t: 'math', v: 'x' }],
+      [{ t: 'text', v: '- !' }, { t: 'link', v: 'x', href: 'https://e.x/p.gif' }],
+    ]);
   });
 });
 

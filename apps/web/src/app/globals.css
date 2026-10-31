@@ -85,12 +85,13 @@ input, textarea, select { font-family: inherit; }
 .vote-btn { background: none; border: 0; padding: 0; cursor: pointer; color: var(--color-neutral-700); display: flex; }
 .vote-btn:hover { color: var(--color-accent); }
 
+/* Clip so oversized or shifted maths (\rule, \kern, \raisebox) can't spill over the rest of the page. */
+.markdown, .mention-text { overflow: clip; overflow-clip-margin: 4px; }
 .markdown p { margin: 0 0 15px; }
-.markdown-compact > :last-child { margin-bottom: 0; }
 .markdown h3 { margin: 30px 0 12px; }
 .markdown h3:first-child { margin-top: 0; }
 .markdown ul { margin: 0 0 15px; padding-left: 22px; }
-.markdown code { font: 0.88em ui-monospace, Menlo, monospace; background: var(--color-surface); padding: 1px 5px; border-radius: 2px; }
+.markdown code, .mention-text code { font: 0.88em ui-monospace, Menlo, monospace; background: var(--color-surface); padding: 1px 5px; border-radius: 2px; }
 .markdown pre { background: var(--color-surface); padding: 14px 16px; border-radius: 2px; overflow: auto; font: 14px/1.5 ui-monospace, Menlo, monospace; }
 
 .toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: var(--color-text); color: var(--color-bg); padding: 10px 16px; border-radius: 2px; font-size: 14px; z-index: 50; box-shadow: var(--shadow-md); }
