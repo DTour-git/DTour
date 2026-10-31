@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-require-imports -- MathJax is required lazily, see engine() */
 import { useMemo } from 'react';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, useWindowDimensions, View } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { colors } from '@dtour/shared';
 import { T } from './T';
@@ -41,22 +41,26 @@ function typeset(source: string, display: boolean, size: number, color: string) 
   const height = xml?.match(/height="([\d.]+)ex"/);
   if (!xml || !width || !height) throw new Error('Could not render maths');
   // Same idea as KaTeX's maxSize on the web: a formula taller than 10em shows as source instead of a giant
-  // box over the Lounge or thread. Inline maths wider than a phone line is scaled down, up to half size.
+  // box over the Lounge or thread.
   const w = Number(width[1]) * size * 0.5, h = Number(height[1]) * size * 0.5;
-  const scale = display ? 1 : Math.min(1, (size * 22) / w);
-  if (h > size * 10 || w > size * 100 || scale < 0.5) throw new Error('Maths too large');
-  return { xml: xml.replace(/currentColor/g, color), width: w * scale, height: h * scale };
+  if (h > size * 10 || w > size * 100) throw new Error('Maths too large');
+  return { xml: xml.replace(/currentColor/g, color), width: w, height: h };
 }
 
-export function Formula({ source, size, display = false, color = colors.text }: { source: string; size: number; display?: boolean; color?: string }) {
+/** `maxWidth` is the width of the line inline maths sits in; until it's measured, the screen width minus the usual gutters. */
+export function Formula({ source, size, display = false, color = colors.text, maxWidth }: { source: string; size: number; display?: boolean; color?: string; maxWidth?: number }) {
+  const screen = useWindowDimensions().width;
+  const lineWidth = maxWidth ?? screen - 40;
   const result = useMemo(() => {
     try { return typeset(source, display, size, color); } catch { return null; }
   }, [source, display, size, color]);
-  if (!result) {
+  // Inline maths wider than its line is scaled down to fit, up to half size; past that it shows as source.
+  const scale = result && !display ? Math.min(1, lineWidth / result.width) : 1;
+  if (!result || scale < 0.5) {
     const raw = display ? `$$${source}$$` : `$${source}$`;
     return <T size={size * 0.9} color={color} style={{ fontFamily: 'Menlo', backgroundColor: colors.surface }}>{raw}</T>;
   }
-  const svg = <SvgXml xml={result.xml} width={result.width} height={result.height} accessibilityLabel={source} />;
+  const svg = <SvgXml xml={result.xml} width={result.width * scale} height={result.height * scale} accessibilityLabel={source} />;
   return display
     ? <ScrollView horizontal style={{ marginBottom: 12 }} contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}><View>{svg}</View></ScrollView>
     : svg;

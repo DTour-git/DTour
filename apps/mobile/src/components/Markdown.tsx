@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Linking, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -8,13 +9,16 @@ import { Formula } from './Formula';
 
 function Inl({ parts, size, lh, color, weight = 400, italic = false }: { parts: Inline[]; size: number; lh: number; color?: string; weight?: 400 | 600; italic?: boolean }) {
   const router = useRouter();
+  // Inline maths scales down to the real line width (nested replies and small phones are narrower), so measure it when there is any.
+  const [width, setWidth] = useState<number>();
+  const hasMath = parts.some((p) => p.t === 'math');
   return (
-    <T size={size} lh={lh} color={color} w={weight} i={italic}>
+    <T size={size} lh={lh} color={color} w={weight} i={italic} onLayout={hasMath ? (e) => setWidth(e.nativeEvent.layout.width) : undefined}>
       {parts.map((p, i) => {
         if (p.t === 'b') return <T key={i} size={size} w={600} i={italic} color={color}>{p.v}</T>;
         if (p.t === 'i') return <T key={i} size={size} w={weight} i color={color}>{p.v}</T>;
         if (p.t === 'code') return <T key={i} size={size * 0.9} color={color} style={{ fontFamily: 'Menlo', backgroundColor: colors.surface }}>{p.v}</T>;
-        if (p.t === 'math') return <Formula key={i} source={p.v} size={size} color={color} />;
+        if (p.t === 'math') return <Formula key={i} source={p.v} size={size} color={color} maxWidth={width} />;
         if (p.t === 'link') return <T key={i} size={size} w={weight} i={italic} color={colors.accent700} onPress={() => (p.href.startsWith('/') ? router.push(appRoute(p.href)) : Linking.openURL(p.href))}>{p.v}</T>;
         return p.v;
       })}
