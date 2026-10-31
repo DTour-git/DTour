@@ -1,12 +1,13 @@
 import Link from 'next/link';
 import {
-  ago, clock, dayOfMonth, deadlineText, getConfig, getToday, n, POST_KIND_LABEL, postKindTone, timelineTime, weekOfSem, weekdayShort,
+  ago, clock, dayOfMonth, deadlineText, getConfig, getToday, markdownExcerpt, n, POST_KIND_LABEL, postKindTone, timelineTime, weekOfSem, weekdayShort,
   type FeedTab, type ThreadCard, type Tone,
 } from '@dtour/shared';
 import { currentUser } from '@/lib/supabase-server';
 import { Icon } from '@/components/Icon';
 import { CmykNum, FlairTag, Halftone, Seal, Tag, TONE_CSS, pad2 } from '@/components/ui';
 import { threadHref } from '@/lib/routes';
+import { Formula } from '@/components/Formula';
 
 const TABS: { id: FeedTab; label: string }[] = [
   { id: 'hot', label: 'Hot' }, { id: 'new', label: 'New' }, { id: 'top', label: 'Top this week' }, { id: 'branch', label: 'My branch' },
@@ -114,7 +115,19 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
                   <CategoryTag thread={f} /><b style={{ color: 'var(--color-text)' }}>@{f.author.handle}</b><FlairTag person={f.author} />{ago(f.created_at)}
                 </div>
                 <h3 style={{ fontSize: 32, lineHeight: 1.14, margin: '12px 0 10px', textWrap: 'balance' }}>{f.title}</h3>
-                <p style={{ fontSize: 17, lineHeight: 1.55, color: 'var(--color-neutral-800)', margin: 0, maxWidth: 600 }}>{f.standfirst ?? excerpt(f.body)}</p>
+                <p className="feed-excerpt" style={{ fontSize: 17, lineHeight: 1.55, color: 'var(--color-neutral-800)', margin: 0, maxWidth: 600, overflow: 'hidden' }}>
+                  {f.standfirst ?? markdownExcerpt(f.body).map((part, i) => {
+                    switch (part.t) {
+                      case 'math': return <Formula key={i} source={part.v} />;
+                      case 'b': return <b key={i}>{part.v}</b>;
+                      case 'i': return <i key={i}>{part.v}</i>;
+                      case 'code': return <code key={i}>{part.v}</code>;
+                      // The whole card is already a link to the thread.
+                      case 'link': return <span key={i} style={{ textDecoration: 'underline' }}>{part.v}</span>;
+                      default: return <span key={i}>{part.v}</span>;
+                    }
+                  })}
+                </p>
                 <div style={{ display: 'flex', gap: 22, marginTop: 14, fontSize: 14, color: 'var(--color-neutral-700)', flexWrap: 'wrap' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="chat-circle" size={18} />{n(f.reply_count)} replies</span>
                   {f.attachment && <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="file-pdf" size={18} color="var(--color-accent-2)" />{f.tags.includes('PYQ') ? 'PYQ sheet' : 'Attachment'}</span>}
@@ -251,9 +264,4 @@ async function AcceptedBy({ threadId }: { threadId: number }) {
   const a = (data as unknown as { accepted: { society: { name: string } | null; author: { handle: string } } | null })?.accepted;
   if (!a) return null;
   return <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="check-circle" size={18} color="var(--color-accent)" />Answered by {a.society?.name ?? `@${a.author.handle}`}</span>;
-}
-
-function excerpt(body: string) {
-  const s = body.replace(/\s+/g, ' ').trim();
-  return s.length > 180 ? s.slice(0, 179) + '…' : s;
 }

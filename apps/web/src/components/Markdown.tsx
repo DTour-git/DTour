@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { parse, splitMentions, type Inline } from '@dtour/shared';
+import { inline, inlineLines, parse, type Inline } from '@dtour/shared';
+import { Formula } from './Formula';
 
 function Inl({ parts }: { parts: Inline[] }) {
   return <>{parts.map((p, i) => {
@@ -7,15 +8,16 @@ function Inl({ parts }: { parts: Inline[] }) {
       case 'b': return <b key={i}>{p.v}</b>;
       case 'i': return <i key={i}>{p.v}</i>;
       case 'code': return <code key={i}>{p.v}</code>;
+      case 'math': return <Formula key={i} source={p.v} />;
       case 'link': return p.href.startsWith('/') ? <Link key={i} href={p.href}>{p.v}</Link> : <a key={i} href={p.href} target="_blank" rel="noreferrer">{p.v}</a>;
       default: return <span key={i}>{p.v}</span>;
     }
   })}</>;
 }
 
-/** Plain text with @mentions turned into profile links (replies, Lounge). */
+/** Inline Markdown (bold, italic, code, links, maths) and @mentions for replies and Lounge messages, line by line. */
 export function MentionText({ text }: { text: string }) {
-  return <Inl parts={splitMentions(text)} />;
+  return <div className="mention-text">{inlineLines(text).map((parts, i) => <span key={i}>{i > 0 && <br />}<Inl parts={parts} /></span>)}</div>;
 }
 
 /** Renders DTour markdown. `senior` quotes get the "From a senior" box. */
@@ -25,16 +27,17 @@ export function Markdown({ source, size = 17, lineHeight = 1.65 }: { source: str
     <div className="markdown" style={{ fontSize: size, lineHeight }}>
       {blocks.map((b, i) => {
         switch (b.t) {
-          case 'h': return b.level === 3 ? <h3 key={i} id={b.id}>{b.text}</h3> : <h4 key={i} id={b.id}>{b.text}</h4>;
+          case 'h': return b.level === 3 ? <h3 key={i} id={b.id}><Inl parts={inline(b.text)} /></h3> : <h4 key={i} id={b.id}><Inl parts={inline(b.text)} /></h4>;
           case 'p': return <p key={i}><Inl parts={b.inl} /></p>;
           case 'ul': return <ul key={i}>{b.items.map((it, k) => <li key={k}><Inl parts={it} /></li>)}</ul>;
           case 'quote': return <blockquote key={i} style={{ margin: '0 0 15px', paddingLeft: 14, borderLeft: '2px solid var(--color-neutral-300)', color: 'var(--color-neutral-800)' }}><Inl parts={b.inl} /></blockquote>;
           case 'code': return <pre key={i}>{b.v}</pre>;
+          case 'math': return <Formula key={i} source={b.v} display />;
           case 'img': return <img key={i} src={b.src} alt={b.alt} loading="lazy" style={{ maxWidth: '100%', borderRadius: 2, margin: '6px 0 16px' }} />;
           case 'senior': return (
             <div key={i} style={{ margin: '26px 0', padding: '20px 24px', background: 'var(--color-surface)', borderRadius: 2 }}>
               <div className="kicker" style={{ color: 'var(--color-accent-2-700)', marginBottom: 6 }}>From a senior</div>
-              <div style={{ font: 'italic 400 19px/1.5 var(--font-body)' }}>{b.quote}</div>
+              <div style={{ font: 'italic 400 19px/1.5 var(--font-body)' }}><Inl parts={inline(b.quote)} /></div>
               {b.by && <div style={{ fontSize: 13.5, color: 'var(--color-neutral-700)', marginTop: 8 }}>— {b.by}</div>}
             </div>
           );
