@@ -315,13 +315,15 @@ export async function getBoard(sb: DB, slug: string, tab: FeedTab = 'hot', limit
   if (!board) return null;
   const desc = (id: string): string[] => all.filter((b) => b.parent_id === id).flatMap((b) => [b.id, ...desc(b.id)]);
   const ids = [board.id, ...desc(board.id)];
+  const category = must(cats).find((c) => c.id === board.category_id) as (CategoryRow & { tone: Tone }) | undefined;
+  if (!category) throw new Error(`Category ${board.category_id} not found for board ${board.slug}`);
   const [threads, path] = await Promise.all([
     listThreads(sb, { tab, boardIds: ids, limit: limit + 1 }),
     boardAncestors(sb, board.id, all),
   ]);
   return {
     board, threads: threads.slice(0, limit), hasMore: threads.length > limit,
-    category: must(cats).find((c) => c.id === board.category_id) as CategoryRow & { tone: Tone }, path,
+    category, path,
     children: all.filter((b) => b.parent_id === board.id).sort((a, b) => a.sort - b.sort),
   };
 }
@@ -344,21 +346,22 @@ export async function setBoardJoined(sb: DB, boardId: string, userId: string, jo
 export async function getThread(sb: DB, id: number, userId: string | null) {
   // Everything keyed by the thread id loads alongside the thread itself; only
   // "Related in Library" has to wait, because it needs the thread's attachment.
-  const [threadRes, replies, myVote, saved, replyVotes, boards, joinedBoards, poll, myPoll, wiki, lounge] = await Promise.all([
-    sb.from('threads').select(THREAD_SELECT).eq('id', id).maybeSingle(),
+  // Poll options ride along in the thread query (empty for non-polls), so no request is wasted.
+  const [threadRes, replies, myVote, saved, replyVotes, boards, joinedBoards, myPoll, wiki, lounge] = await Promise.all([
+    sb.from('threads').select(`${THREAD_SELECT},poll_options(*)`).eq('id', id).order('sort', { referencedTable: 'poll_options' }).maybeSingle(),
     sb.from('replies').select(`id,thread_id,parent_id,body,score,created_at,edited_at,deleted_at,author:profiles!replies_author_id_fkey(${PERSON}),society:societies(${SOCIETY})`).eq('thread_id', id).order('created_at'),
     userId ? sb.from('thread_votes').select('value').eq('thread_id', id).eq('user_id', userId).maybeSingle() : null,
     userId ? sb.from('saves').select('thread_id').eq('thread_id', id).eq('user_id', userId).maybeSingle() : null,
     userId ? sb.from('reply_votes').select('reply_id,value,replies!inner(thread_id)').eq('user_id', userId).eq('replies.thread_id', id) : null,
     sb.from('boards').select('*'),
     userId ? sb.from('board_members').select('board_id').eq('user_id', userId) : null,
-    sb.from('poll_options').select('*').eq('thread_id', id).order('sort'),
     userId ? sb.from('poll_votes').select('option_id').eq('thread_id', id).eq('user_id', userId).maybeSingle() : null,
     sb.from('wiki_articles').select('slug,title,editor_count,checked_at').eq('status', 'published').order('views_week', { ascending: false }).limit(1).maybeSingle(),
     sb.from('lounge_messages').select('id,room_slug').eq('promoted_thread_id', id).maybeSingle(),
   ]);
-  const thread = must(threadRes) as unknown as ThreadCard | null;
-  if (!thread) return null;
+  const row = must(threadRes) as unknown as (ThreadCard & { poll_options: Tables['poll_options']['Row'][] }) | null;
+  if (!row) return null;
+  const { poll_options: pollOptions, ...thread } = row;
   const related = thread.attachment?.subject
     ? await sb.from('library_items').select('id,title,kind,format,subject_code').eq('subject_code', thread.attachment.subject).neq('id', thread.attachment.library_item_id ?? -1).order('downloads_week', { ascending: false }).limit(3)
     : null;
@@ -380,7 +383,7 @@ export async function getThread(sb: DB, id: number, userId: string | null) {
     path,
     board,
     joined: !!joinedBoards && must(joinedBoards).some((j) => j.board_id === board.id),
-    poll: thread.kind === 'poll' ? must(poll) : null,
+    poll: thread.kind === 'poll' ? pollOptions : null,
     myPollOption: myPoll?.data?.option_id ?? null,
     related: related ? must(related) : [],
     wiki: must(wiki),

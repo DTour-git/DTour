@@ -140,7 +140,7 @@ export function ReplyItem({ r, threadId, opId, acceptedId, isOp, depth = 0 }: {
 
   const size = nested ? 30 : 36;
   return (
-    <div style={nested
+    <div id={`reply-${r.id}`} style={nested
       ? { display: 'grid', gridTemplateColumns: `${size}px minmax(0,1fr)`, gap: 12, marginTop: 20, paddingLeft: 16, borderLeft: '2px solid var(--color-neutral-300)' }
       : { display: 'grid', gridTemplateColumns: `${size}px minmax(0,1fr)`, gap: 14 }}>
       <Avatar person={r.author} society={r.society} size={size} />
@@ -165,7 +165,7 @@ export function ReplyItem({ r, threadId, opId, acceptedId, isOp, depth = 0 }: {
           ? <div style={{ fontSize: nested ? 15.5 : 16, marginTop: nested ? 4 : 6, fontStyle: 'italic', color: 'var(--color-neutral-700)' }}>{r.body}</div>
           : <div style={{ fontSize: nested ? 15.5 : 16, lineHeight: nested ? 1.55 : 1.6, marginTop: nested ? 4 : 6, maxWidth: 640, whiteSpace: 'pre-wrap' }}><MentionText text={r.body} /></div>}
         {!deleted && <div style={{ display: 'flex', gap: 18, marginTop: 8, fontSize: 13.5, color: 'var(--color-neutral-700)', flexWrap: 'wrap' }}>
-          <button onClick={vote} className="vote-btn" style={{ alignItems: 'center', gap: 4, fontSize: 13.5, fontFamily: 'var(--font-body)' }} aria-pressed={v === 1}>
+          <button onClick={vote} className="vote-btn" style={{ alignItems: 'center', gap: 4, fontSize: 13.5, fontFamily: 'var(--font-body)' }} aria-label="Upvote reply" aria-pressed={v === 1}>
             <Icon name="arrow-fat-up" size={17} color={v === 1 || s > 0 ? 'var(--color-accent)' : undefined} weight={v === 1 ? 'fill' : 'duotone'} />{s}
           </button>
           <button className="vote-btn" onClick={() => requireMe() && setReplying(true)} style={{ fontSize: 13.5, fontFamily: 'var(--font-body)' }}>Reply</button>
