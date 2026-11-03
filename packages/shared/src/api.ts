@@ -10,7 +10,8 @@ import type { Tint, Tone } from './tokens';
 
 export type DB = SupabaseClient<Database>;
 type Tables = Database['public']['Tables'];
-export type ProfileRow = Tables['profiles']['Row'];
+export type Suspension = { ends_at: string | null; reason: string | null };
+export type ProfileRow = Tables['profiles']['Row'] & { suspension?: Suspension | null };
 export type BoardRow = Tables['boards']['Row'];
 export type CategoryRow = Tables['board_categories']['Row'];
 export type SocietyRow = Tables['societies']['Row'];
@@ -66,7 +67,27 @@ export async function getMe(sb: DB): Promise<Me | null> {
   if (!claims?.sub) return null;
   const profile = must(await sb.from('profiles').select('*').eq('id', claims.sub).maybeSingle());
   if (!profile) return null;
-  return { userId: claims.sub, email: claims.email ?? null, profile };
+  const suspension = await getMySuspension(sb);
+  return { userId: claims.sub, email: claims.email ?? null, profile: { ...profile, suspension } };
+}
+
+export async function getMySuspension(sb: DB): Promise<Suspension | null> {
+  const rows = must(await sb.rpc('my_suspension'));
+  return rows[0] ?? null;
+}
+
+export function suspensionMessage(s: Suspension) {
+  return `Your account is suspended from writing ${s.ends_at ? `until ${new Date(s.ends_at).toLocaleString()}` : 'indefinitely'}.${s.reason ? ` Reason: ${s.reason}` : ''}`;
+}
+
+export async function getSuspensionHistory(sb: DB) {
+  return must(await sb.rpc('suspension_history'));
+}
+
+export async function setMemberSuspension(sb: DB, handle: string, reason: string, endsAt: string | null, shareReason: boolean, suspend: boolean) {
+  const target = must(await sb.from('profiles').select('id').eq('handle', handle.trim().replace(/^@/, '').toLowerCase()).maybeSingle());
+  if (!target) throw new Error('Member not found');
+  must(await sb.rpc('set_member_suspension', { p_user: target.id, p_reason: reason, p_ends_at: endsAt, p_share_reason: shareReason, p_suspend: suspend }));
 }
 
 export async function getConfig(sb: DB): Promise<ConfigRow | null> {

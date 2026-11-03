@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, TextInput, View } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import {
-  REPORT_REASONS, agoLong, colors, fonts, getModQueue, getOpenReports, plain, resolveReport, reviewArticle, reviewRevision,
+  REPORT_REASONS, agoLong, colors, fonts, getModQueue, getOpenReports, getSuspensionHistory, setMemberSuspension, plain, resolveReport, reviewArticle, reviewRevision,
 } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
 import { useMe } from '@/lib/auth';
@@ -18,11 +18,15 @@ export default function Mod() {
   const me = useMe();
   const router = useRouter();
   const { data, refreshing, refresh, reload } = useData(async () => {
-    const [queue, reports] = await Promise.all([getModQueue(supabase), getOpenReports(supabase)]);
-    return { ...queue, reports };
+    const [queue, reports, history] = await Promise.all([getModQueue(supabase), getOpenReports(supabase), getSuspensionHistory(supabase)]);
+    return { ...queue, reports, history };
   });
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
+  const [handle, setHandle] = useState('');
+  const [reason, setReason] = useState('');
+  const [end, setEnd] = useState('');
+  const [share, setShare] = useState(false);
   if (!me) return <Redirect href="/login" />;
   if (me.role !== 'moderator' && me.role !== 'admin') return <Redirect href="/" />;
 
@@ -37,6 +41,21 @@ export default function Mod() {
     <Screen>
       <AppBar title="Moderation" subtitle="Reports, new guides and wiki edits" />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.accent} />}>
+        <Section title="Member suspensions" count={data?.history.length ?? 0} />
+        <T size={14} color={colors.neutral700}>Enter a handle and a reason for the moderator record. Leave the end date empty for an indefinite suspension.</T>
+        <TextInput accessibilityLabel="Member handle" value={handle} onChangeText={setHandle} placeholder="@handle" autoCapitalize="none" style={{ marginTop: 10, padding: 10, backgroundColor: colors.surface, fontFamily: fonts.regular }} />
+        <TextInput accessibilityLabel="Suspension reason" value={reason} onChangeText={setReason} placeholder="Reason (required)" maxLength={1000} style={{ marginTop: 10, padding: 10, backgroundColor: colors.surface, fontFamily: fonts.regular }} />
+        <TextInput accessibilityLabel="Suspension end date" value={end} onChangeText={setEnd} placeholder="End date, YYYY-MM-DD (optional)" style={{ marginTop: 10, padding: 10, backgroundColor: colors.surface, fontFamily: fonts.regular }} />
+        <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: share }} onPress={() => setShare(!share)} style={{ paddingVertical: 12 }}><T>{share ? '☑' : '☐'} Show the reason to the member</T></Pressable>
+        <Buttons busy={busy === 'suspension'} no="Lift suspension" yes="Suspend member"
+          onNo={() => act('suspension', () => setMemberSuspension(supabase, handle, reason, null, false, false))}
+          onYes={() => act('suspension', async () => {
+            if (end && (!/^\d{4}-\d{2}-\d{2}$/.test(end) || Number.isNaN(Date.parse(`${end}T23:59:59+05:30`)))) throw new Error('Enter a valid date as YYYY-MM-DD');
+            await setMemberSuspension(supabase, handle, reason, end ? new Date(`${end}T23:59:59+05:30`).toISOString() : null, share, true);
+          })} />
+        <T size={16} w={600} style={{ marginTop: 20 }}>Suspension history</T>
+        {data?.history.map((e) => <View key={e.id} style={[{ paddingVertical: 10 }, rowRule]}><T size={14}><T w={600}>@{e.handle}</T> · {e.action === 'suspend' ? 'suspended' : 'suspension lifted'} by @{e.actor_handle} · {new Date(e.created_at).toLocaleString()}</T><T size={14}>{e.reason}{e.action === 'suspend' ? ` · ${e.ends_at ? `until ${new Date(e.ends_at).toLocaleString()}` : 'indefinite'} · reason ${e.share_reason ? 'shared' : 'private'}` : ''}</T></View>)}
+        {data && !data.history.length && <Empty>No suspension history.</Empty>}
         <Section title="Reported posts" count={data?.reports.length ?? 0} />
         {data?.reports.map((r) => (
           <View key={r.key} style={[{ paddingVertical: 14 }, rowRule]}>

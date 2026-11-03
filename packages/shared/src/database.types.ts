@@ -2175,6 +2175,9 @@ export type Database = {
       }
     }
     Functions: {
+      my_suspension: { Args: never; Returns: { ends_at: string | null; reason: string | null }[] }
+      set_member_suspension: { Args: { p_user: string; p_reason: string; p_ends_at: string | null; p_share_reason: boolean; p_suspend: boolean }; Returns: undefined }
+      suspension_history: { Args: never; Returns: { id: number; user_id: string; handle: string; actor_handle: string; action: string; reason: string; share_reason: boolean; ends_at: string | null; created_at: string }[] }
       accept_reply: {
         Args: { p_reply: number; p_thread: number }
         Returns: undefined

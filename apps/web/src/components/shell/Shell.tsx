@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import type { ProfileRow } from '@dtour/shared';
+import { suspensionMessage, type ProfileRow } from '@dtour/shared';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 
 export interface OnlineUser { id: string; handle: string; board: string | null; society: string | null }
@@ -22,7 +22,7 @@ interface ShellCtx {
   setLoungeOpen: (v: boolean) => void;
   loungeRoom: string | null;
   openLounge: (room: string) => void;
-  toast: (msg: string) => void;
+  toast: (msg: string, duration?: number) => void;
 }
 
 const Ctx = createContext<ShellCtx | null>(null);
@@ -41,6 +41,7 @@ export function Shell({ me, children }: { me: ProfileRow | null; children: React
   const [loungeOpen, setLoungeOpen] = useState(false);
   const [loungeRoom, setLoungeRoom] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const channelRef = useRef<ReturnType<ReturnType<typeof supabaseBrowser>['channel']> | null>(null);
   const boardRef = useRef<string | null>(null);
 
@@ -82,15 +83,20 @@ export function Shell({ me, children }: { me: ProfileRow | null; children: React
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const toast = useCallback((msg: string) => {
+  const toast = useCallback((msg: string, duration = 2600) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
     setToastMsg(msg);
-    window.setTimeout(() => setToastMsg(null), 2600);
+    toastTimer.current = setTimeout(() => setToastMsg(null), duration);
   }, []);
 
   const requireMe = useCallback(() => {
     if (!me) router.push(`/login?next=${encodeURIComponent(pathname)}`);
+    if (me?.suspension && (!me.suspension.ends_at || Date.parse(me.suspension.ends_at) > Date.now())) {
+      toast(suspensionMessage(me.suspension), 10000);
+      return null;
+    }
     return me;
-  }, [me, router, pathname]);
+  }, [me, router, pathname, toast]);
 
   const value = useMemo<ShellCtx>(() => ({
     me, requireMe, online, setPresenceBoard, searchOpen,

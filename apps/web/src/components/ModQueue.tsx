@@ -8,6 +8,7 @@ import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Markdown } from './Markdown';
 import { Tag } from './ui';
 import { useShell } from './shell/Shell';
+import { Suspensions } from './Suspensions';
 
 const REASON = Object.fromEntries(REPORT_REASONS);
 
@@ -30,6 +31,7 @@ export function ModQueue({ articles, revisions, reports }: { articles: PendingAr
 
   return (
     <div style={{ marginTop: 34, display: 'flex', flexDirection: 'column', gap: 40 }}>
+      <Suspensions />
       <section>
         <h3 style={{ marginBottom: 6 }}>Reported posts · {reports.length}</h3>
         {reports.map((r) => (

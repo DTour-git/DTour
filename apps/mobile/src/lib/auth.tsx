@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useRouter } from 'expo-router';
+import { Alert, AppState } from 'react-native';
 import type { Session } from '@supabase/supabase-js';
-import type { ProfileRow } from '@dtour/shared';
+import { getMySuspension, suspensionMessage, type ProfileRow } from '@dtour/shared';
 import { supabase } from './supabase';
 
 interface AuthCtx {
@@ -25,6 +26,10 @@ export function useRequireMe() {
   const router = useRouter();
   return useCallback(() => {
     if (!profile) router.push('/login');
+    if (profile?.suspension && (!profile.suspension.ends_at || Date.parse(profile.suspension.ends_at) > Date.now())) {
+      Alert.alert('Account suspended', suspensionMessage(profile.suspension));
+      return null;
+    }
     return profile;
   }, [profile, router]);
 }
@@ -37,7 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const load = useCallback(async (s: Session | null) => {
     if (!s) { setProfile(null); return; }
     const { data, error } = await supabase.from('profiles').select('*').eq('id', s.user.id).maybeSingle();
-    setProfile(data);
+    const suspension = data ? await getMySuspension(supabase) : null;
+    setProfile(data ? { ...data, suspension } : null);
     // A saved sign-in whose account no longer exists (deleted, or the database was reset):
     // drop it on this device so the app opens signed out instead of hanging.
     if (!data && !error) await supabase.auth.signOut({ scope: 'local' });
@@ -57,5 +63,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [load]);
 
   const refreshProfile = useCallback(() => load(session), [load, session]);
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && session) void load(session);
+    });
+    return () => sub.remove();
+  }, [load, session]);
   return <Ctx.Provider value={{ ready, session, profile, refreshProfile }}>{children}</Ctx.Provider>;
 }
