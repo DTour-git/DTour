@@ -72,7 +72,7 @@ export function slugify(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
-export function parse(md: string): Block[] {
+export function parse(md: string, { allowImages = true }: { allowImages?: boolean } = {}): Block[] {
   const lines = md.replace(/\r\n/g, '\n').split('\n');
   const blocks: Block[] = [];
   let para: string[] = [];
@@ -105,7 +105,11 @@ export function parse(md: string): Block[] {
     }
     if (!trimmed) { flush(); continue; }
     const img = /^!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)$/.exec(trimmed);
-    if (img) { flush(); blocks.push({ t: 'img', alt: img[1], src: img[2] }); continue; }
+    if (img) {
+      flush();
+      if (allowImages) blocks.push({ t: 'img', alt: img[1], src: img[2] });
+      continue;
+    }
     const h = /^(#{2,4})\s+(.*)$/.exec(trimmed);
     if (h) {
       flush();

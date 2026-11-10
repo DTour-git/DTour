@@ -61,7 +61,7 @@ export function ModQueue({ articles, revisions, reports }: { articles: PendingAr
               </div>
               {a.dek && <div style={{ fontStyle: 'italic', color: 'var(--color-neutral-800)', marginTop: 4 }}>{a.dek}</div>}
               <button className="btn btn-ghost" onClick={() => setOpen(open === k ? null : k)}>{open === k ? 'Hide' : 'Read'} the guide</button>
-              {open === k && <div style={{ background: 'var(--color-surface)', padding: '14px 18px', borderRadius: 2, marginTop: 8 }}><Markdown source={a.body || '*Empty*'} size={16} /></div>}
+              {open === k && <div style={{ background: 'var(--color-surface)', padding: '14px 18px', borderRadius: 2, marginTop: 8 }}><Markdown source={a.body || '*Empty*'} size={16} allowImages={false} /></div>}
               <Actions k={k} onApprove={() => reviewArticle(supabaseBrowser(), a.id, true, notes[k])} onReject={() => reviewArticle(supabaseBrowser(), a.id, false, notes[k])} />
             </div>
           );
@@ -82,8 +82,8 @@ export function ModQueue({ articles, revisions, reports }: { articles: PendingAr
               <button className="btn btn-ghost" onClick={() => setOpen(open === k ? null : k)}>{open === k ? 'Hide' : 'Compare'} versions</button>
               {open === k && (
                 <div className="grid-2" style={{ gap: 16, marginTop: 8 }}>
-                  <div><div className="label-caps">Current</div><div style={{ background: 'var(--color-surface)', padding: '12px 16px', borderRadius: 2, maxHeight: 420, overflow: 'auto' }}><Markdown source={r.article.body} size={15} /></div></div>
-                  <div><div className="label-caps">Suggested</div><div style={{ background: 'var(--color-accent-100)', padding: '12px 16px', borderRadius: 2, maxHeight: 420, overflow: 'auto' }}><Markdown source={r.body ?? ''} size={15} /></div></div>
+                  <div><div className="label-caps">Current</div><div style={{ background: 'var(--color-surface)', padding: '12px 16px', borderRadius: 2, maxHeight: 420, overflow: 'auto' }}><Markdown source={r.article.body} size={15} allowImages={false} /></div></div>
+                  <div><div className="label-caps">Suggested</div><div style={{ background: 'var(--color-accent-100)', padding: '12px 16px', borderRadius: 2, maxHeight: 420, overflow: 'auto' }}><Markdown source={r.body ?? ''} size={15} allowImages={false} /></div></div>
                 </div>
               )}
               <Actions k={k} onApprove={() => reviewRevision(supabaseBrowser(), r.id, true, notes[k])} onReject={() => reviewRevision(supabaseBrowser(), r.id, false, notes[k])} />

@@ -2,9 +2,11 @@ import { expect, test } from '@playwright/test';
 import { cleanup, signIn } from './helpers';
 
 const marker = `e2e reply ${Date.now()}`;
+const revisionMarker = `e2e wiki image ${Date.now()}`;
 
 test.afterAll(async () => {
   await cleanup('replies', `body=like.${encodeURIComponent('e2e reply %')}`);
+  await cleanup('wiki_revisions', `summary=eq.${encodeURIComponent(revisionMarker)}`);
 });
 
 test.describe('member', () => {
@@ -23,6 +25,25 @@ test.describe('member', () => {
     await signIn(page, 'e2e.moderator');
     await page.goto('/mod');
     await expect(page.getByRole('heading', { name: 'Moderation' })).toBeVisible();
+  });
+
+  test('the moderation preview omits images from a suggested edit', async ({ page }) => {
+    const imageUrl = 'https://example.invalid/wiki-preview.png';
+    await page.route(imageUrl, (route) => route.abort());
+    await signIn(page, 'e2e.student');
+    await page.goto('/wiki/how-to-get-a-9-cgpa-at-dtu?tab=edit');
+    await page.locator('textarea').fill(`### Preview text\n\n![Test image](${imageUrl})`);
+    await page.getByPlaceholder(/What did you change/).fill(revisionMarker);
+    await page.getByRole('button', { name: 'Submit for review' }).click();
+    await expect(page).toHaveURL(/\/wiki\/how-to-get-a-9-cgpa-at-dtu$/);
+
+    await page.context().clearCookies();
+    await signIn(page, 'e2e.moderator');
+    await page.goto('/mod');
+    const revision = page.locator('.row-rule').filter({ hasText: revisionMarker });
+    await revision.getByRole('button', { name: 'Compare versions' }).click();
+    await expect(revision.getByRole('heading', { name: 'Preview text' })).toBeVisible();
+    await expect(revision.locator('img')).toHaveCount(0);
   });
 
   test('the composer previews inline, display and invalid maths', async ({ page }) => {
