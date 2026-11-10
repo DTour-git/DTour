@@ -28,7 +28,7 @@ const admin = {
 };
 
 /** Signs the page in as a dev test account through a one-time magic link. */
-export async function signIn(page: Page, handle = 'e2e.student') {
+export async function signIn(page: Page, handle = 'e2e.student', next = '/') {
   const res = await fetch(`${env.DEV_SUPABASE_URL}/auth/v1/admin/generate_link`, {
     method: 'POST',
     headers: admin,
@@ -37,7 +37,7 @@ export async function signIn(page: Page, handle = 'e2e.student') {
   const body = await res.json();
   const hash = body.hashed_token ?? body.properties?.hashed_token;
   if (!hash) throw new Error(`No sign-in link for ${handle}: ${JSON.stringify(body)}`);
-  await page.goto(`/auth/confirm?token_hash=${hash}&type=magiclink`);
+  await page.goto(`/auth/confirm?token_hash=${hash}&type=magiclink&next=${encodeURIComponent(next)}`);
   await page.waitForURL((u) => !u.pathname.startsWith('/auth') && !u.pathname.startsWith('/login'));
 }
 
