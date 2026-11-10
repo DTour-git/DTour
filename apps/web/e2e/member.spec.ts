@@ -32,9 +32,10 @@ test.describe('member', () => {
     await page.route(imageUrl, (route) => route.abort());
     await signIn(page, 'e2e.student');
     await page.goto('/wiki/how-to-get-a-9-cgpa-at-dtu?tab=edit');
-    await page.locator('textarea').fill(`### Preview text\n\n![Test image](${imageUrl})`);
-    await page.getByPlaceholder(/What did you change/).fill(revisionMarker);
-    await page.getByRole('button', { name: 'Submit for review' }).click();
+    const editor = page.getByRole('article');
+    await editor.locator('textarea').fill(`### Preview text\n\n![Test image](${imageUrl})`);
+    await editor.getByPlaceholder(/What did you change/).fill(revisionMarker);
+    await editor.getByRole('button', { name: 'Submit for review' }).click();
     await expect(page).toHaveURL(/\/wiki\/how-to-get-a-9-cgpa-at-dtu$/);
 
     await page.context().clearCookies();
