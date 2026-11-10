@@ -44,6 +44,13 @@ describe('parse', () => {
     expect(parse('![photo](https://x.supabase.co/a.jpg)')).toEqual([{ t: 'img', alt: 'photo', src: 'https://x.supabase.co/a.jpg' }]);
   });
 
+  it('omits image blocks without changing surrounding Markdown when images are disabled', () => {
+    expect(parse('**Before**\n![photo](https://example.invalid/a.png)\nAfter', { allowImages: false })).toEqual([
+      { t: 'p', inl: [{ t: 'b', v: 'Before' }] },
+      { t: 'p', inl: [{ t: 'text', v: 'After' }] },
+    ]);
+  });
+
   it('keeps code fences verbatim', () => {
     expect(parse('```\nconst a = 1;\n```')).toEqual([{ t: 'code', v: 'const a = 1;' }]);
   });

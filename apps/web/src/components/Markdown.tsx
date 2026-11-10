@@ -21,8 +21,8 @@ export function MentionText({ text }: { text: string }) {
 }
 
 /** Renders DTour markdown. `senior` quotes get the "From a senior" box. */
-export function Markdown({ source, size = 17, lineHeight = 1.65 }: { source: string; size?: number; lineHeight?: number }) {
-  const blocks = parse(source);
+export function Markdown({ source, size = 17, lineHeight = 1.65, allowImages }: { source: string; size?: number; lineHeight?: number; allowImages?: boolean }) {
+  const blocks = parse(source, { allowImages });
   return (
     <div className="markdown" style={{ fontSize: size, lineHeight }}>
       {blocks.map((b, i) => {
