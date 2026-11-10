@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { safeNext } from '@/lib/auth-next';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Icon } from '@/components/Icon';
 import { LogoMark } from '@/components/ui';
@@ -15,7 +16,7 @@ export default function LoginPage() {
 function Login() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get('next') ?? '/';
+  const next = safeNext(params.get('next'));
   const [step, setStep] = useState<'start' | 'code'>('start');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');

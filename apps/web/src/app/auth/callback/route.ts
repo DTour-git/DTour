@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { safeNext } from '@/lib/auth-next';
 import { supabaseServer } from '@/lib/supabase-server';
 
 // Google OAuth (PKCE) lands here with ?code=…
@@ -14,8 +15,4 @@ export async function GET(request: NextRequest) {
     if (error) return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(error.message)}`, url.origin));
   }
   return NextResponse.redirect(new URL(next, url.origin));
-}
-
-function safeNext(n: string | null) {
-  return n && n.startsWith('/') && !n.startsWith('//') ? n : '/';
 }

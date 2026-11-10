@@ -50,7 +50,7 @@ npm run format             # Prettier on files your branch changed (never the wh
 
 **Before you call a change done**, run `npm run check`. If you changed SQL, also run `npm run test:db`; if you changed a web flow, also run `npm run test:e2e`. If you changed mobile code, also confirm it bundles: `cd apps/mobile && npx expo export --platform android --output-dir /tmp/x`.
 
-CI (`.github/workflows/ci.yml`) runs two jobs on every PR and every push to `main`: **check** (typecheck, lints, unit tests, web build) and **dev-db** (database + browser tests against the dev project, using the `DEV_*` repository secrets; one run at a time).
+CI (`.github/workflows/ci.yml`) runs two jobs on every PR and every push to `main`. **check** runs typecheck, lint, unit tests, and the web build. **dev-db** runs database and browser tests against a fresh local Supabase stack on each runner. It uses local test credentials and requires no hosted Supabase secrets.
 
 ## Tests
 

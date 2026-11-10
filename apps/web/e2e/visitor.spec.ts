@@ -4,7 +4,7 @@ import { expect, test } from '@playwright/test';
 test.describe('visitor', () => {
   test('Today shows the lead story, timeline and boards', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByText('Today at DTU')).toBeVisible();
+    await expect(page.getByRole('main').getByText('Today at DTU')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'From the boards' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Sign in' })).toBeVisible();
   });
