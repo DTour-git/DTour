@@ -12,16 +12,16 @@ const BAR = ['var(--color-accent-2)', 'var(--color-accent)', 'var(--color-neutra
 
 export async function generateMetadata({ params }: { params: Promise<{ handle: string }> }) {
   const { handle } = await params;
-  return { title: `@${decodeURIComponent(handle)}` };
+  return { title: `@${handle}` };
 }
 
 export default async function ProfilePage({ params, searchParams }: { params: Promise<{ handle: string }>; searchParams: Promise<{ tab?: string }> }) {
   const [{ handle }, { tab = 'activity' }] = await Promise.all([params, searchParams]);
   const { sb, me } = await currentUser();
-  const d = await getProfile(sb, decodeURIComponent(handle));
+  const d = await getProfile(sb, handle);
   if (!d) {
     // A recently changed handle: send old links to the new profile.
-    const moved = await currentHandle(sb, decodeURIComponent(handle));
+    const moved = await currentHandle(sb, handle);
     if (moved) redirect(`/u/${moved}${tab !== 'activity' ? `?tab=${tab}` : ''}`);
     notFound();
   }

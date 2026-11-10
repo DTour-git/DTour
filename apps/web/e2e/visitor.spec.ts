@@ -17,6 +17,16 @@ test.describe('visitor', () => {
     await expect(page.getByRole('heading', { level: 1 })).toContainText('DSA end-sem');
   });
 
+  test('malformed profile handles show the not-found page', async ({ page }) => {
+    await page.goto('/u/e2e%2Estudent');
+    await expect(page.getByRole('heading', { name: '@e2e.student' })).toBeVisible();
+    await page.goto('/u/e2e%252Estudent');
+    await expect(page.getByRole('heading', { name: 'This page went missing.' })).toBeVisible();
+    await expect(page).not.toHaveTitle('@e2e.student · DTour');
+    await page.goto('/u/100%25');
+    await expect(page.getByRole('heading', { name: 'This page went missing.' })).toBeVisible();
+  });
+
   test('voting as a visitor asks you to sign in', async ({ page }) => {
     await page.goto('/b/coe-sem-3/1');
     await page.getByRole('button', { name: 'Upvote' }).click();
