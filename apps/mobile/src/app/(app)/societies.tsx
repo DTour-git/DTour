@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Linking, RefreshControl, ScrollView, View } from 'react-native';
+import { Alert, Linking, RefreshControl, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors, getSocietyBoard, n, POST_KIND_LABEL, postKindTone, toggleRsvp } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
 import { useMe, useRequireMe } from '@/lib/auth';
 import { useData } from '@/lib/useData';
+import { openUserLink } from '@/lib/links';
 import { T, Kicker } from '@/components/T';
 import { AppBar, Halftone, IconBtn, Pill, PillRow, PrimaryBtn, Screen, Seal, rowRule } from '@/components/ui';
 
@@ -55,7 +56,7 @@ export default function Societies() {
                 <T size={12.5} color={colors.neutral700}>{p.society.short_name ?? p.society.name}</T>{p.society.verified && <Seal />}
                 <T size={12.5} color={colors.neutral700} style={{ flex: 1 }}> · {p.kind === 'recruiting' ? p.meta_note ?? 'open' : `${n(p.rsvp_count)} ${p.rsvp_word}`}</T>
                 {p.kind === 'recruiting'
-                  ? <PrimaryBtn label="Apply" secondary height={36} onPress={() => p.apply_url && Linking.openURL(p.apply_url)} />
+                  ? <PrimaryBtn label="Apply" secondary height={36} onPress={() => p.apply_url && !openUserLink(p.apply_url, { push: (r) => router.push(r), openURL: (u) => Linking.openURL(u) }) && Alert.alert('Link not opened', 'This application link is not a web address.')} />
                   : p.kind !== 'talk' && <PrimaryBtn label={going ? 'Going ✓' : 'RSVP'} secondary={!going} height={36} onPress={() => rsvp(p.id)} />}
               </View>
             </View>
