@@ -14,6 +14,7 @@
     },
     "android": {
       "package": "in.dtour.app",
+      "allowBackup": false,
       "adaptiveIcon": {
         "backgroundColor": "#f3f2f2",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -39,7 +40,8 @@
         }
       ],
       "expo-image",
-      "expo-status-bar"
+      "expo-status-bar",
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,
