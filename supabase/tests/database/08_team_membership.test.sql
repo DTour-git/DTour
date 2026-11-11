@@ -3,7 +3,7 @@
 -- e2e2 owns the teams, e2e1 asks to join, profile 2 is a student who never asked.
 begin;
 \ir 00_helpers.sql
-select plan(26);
+select plan(34);
 
 insert into public.teams (id, owner_id, category, event_name, title)
 overriding system value values
@@ -92,8 +92,31 @@ select is((select count(*) from public.team_members where team_id = 90031 and us
 -- The owner may still answer a request by changing its status.
 insert into public.team_requests (team_id, user_id) values (90032, '00000000-0000-4000-8000-000000000002');
 select is(pg_temp.try_as('authenticated', '00000000-0000-4000-8000-00000000e2e2',
+  $q$update public.team_requests set status = 'accepted' where team_id = 90032$q$),
+  '42501', 'the owner cannot accept without adding the member');
+select is(pg_temp.try_as('authenticated', '00000000-0000-4000-8000-00000000e2e2',
   $q$update public.team_requests set status = 'declined' where team_id = 90032$q$),
-  'ok', 'the owner can still change a request''s status');
+  'ok', 'the owner can still answer a pending request');
+select is((select status from public.team_requests where team_id = 90032),
+  'declined', 'the answer is saved');
+
+-- An answered request can't be changed again.
+select is(pg_temp.try_as('authenticated', '00000000-0000-4000-8000-00000000e2e2',
+  $q$update public.team_requests set status = 'accepted' where team_id = 90032$q$),
+  'ok', 'the owner''s update on an answered request runs');
+select is((select status from public.team_requests where team_id = 90032),
+  'declined', 'but the declined request stays declined');
+select is(pg_temp.try_as('authenticated', '00000000-0000-4000-8000-00000000e2e1',
+  'select public.toggle_team_request(90031)'), 'ok', 'a removed member can ask again');
+select is(pg_temp.try_as('authenticated', '00000000-0000-4000-8000-00000000e2e2',
+  'select public.review_team_request(90031, ''00000000-0000-4000-8000-00000000e2e1'', true)'),
+  'ok', 'accepting through the review step still works');
+select is(pg_temp.try_as('authenticated', '00000000-0000-4000-8000-00000000e2e2',
+  $q$update public.team_requests set status = 'declined' where team_id = 90031$q$),
+  'ok', 'the owner''s update on a member''s request runs');
+select is((select status from public.team_requests
+           where team_id = 90031 and user_id = '00000000-0000-4000-8000-00000000e2e1'),
+  'accepted', 'but a member''s request stays accepted');
 
 select * from finish();
 rollback;

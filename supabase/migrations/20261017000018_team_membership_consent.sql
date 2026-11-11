@@ -17,10 +17,16 @@ create policy "own rows insert" on public.team_requests for insert to authentica
 
 -- The owner's update policy checked only the old row, so the row could be
 -- rewritten to any team or student. The guard below pins those columns.
+-- Only pending requests can be answered, and only review_team_request can
+-- accept one, because accepting must also add the member. A direct update
+-- can only decline. So the team page never shows a member "not accepted" or
+-- a non-member "in".
 drop policy if exists "owner reviews requests" on public.team_requests;
 create policy "owner reviews requests" on public.team_requests for update to authenticated
-  using (exists (select 1 from public.teams t where t.id = team_id and t.owner_id = auth.uid()))
-  with check (exists (select 1 from public.teams t where t.id = team_id and t.owner_id = auth.uid()));
+  using (status = 'pending'
+         and exists (select 1 from public.teams t where t.id = team_id and t.owner_id = auth.uid()))
+  with check (status = 'declined'
+              and exists (select 1 from public.teams t where t.id = team_id and t.owner_id = auth.uid()));
 
 -- Reviewing a request changes only its status.
 create or replace function public.tg_team_request_guard()
