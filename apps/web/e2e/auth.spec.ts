@@ -31,3 +31,26 @@ test('email code sign-in keeps its next destination on-site', async ({ page }) =
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page).toHaveURL('/');
 });
+
+test('the sign-in alert never shows text from the link', async ({ page }) => {
+  const bait = 'Your DTour account is locked. Call +91 90000 00000 to unlock it.';
+  await page.goto(`/login?error=${encodeURIComponent(bait)}`);
+  await expect(page.getByRole('main').getByRole('alert')).toHaveText('Sign-in didn’t go through. Please try again.');
+  await expect(page.getByText(bait)).toHaveCount(0);
+
+  await page.goto('/login?error=not_dtu');
+  await expect(page.getByRole('main').getByRole('alert')).toHaveText(
+    'DTour is only for DTU students — sign in with your @dtu.ac.in email.',
+  );
+});
+
+test('auth redirects send an error code, not Supabase text', async ({ request }) => {
+  const bait = 'Your DTour account is locked. Call +91 90000 00000.';
+  const callback = await request.get(`/auth/callback?error=access_denied&error_description=${encodeURIComponent(bait)}`, {
+    maxRedirects: 0,
+  });
+  expect(callback.headers().location).toBe(new URL('/login?error=cancelled', callback.url()).href);
+
+  const confirm = await request.get('/auth/confirm', { maxRedirects: 0 });
+  expect(confirm.headers().location).toBe(new URL('/login?error=link_expired', confirm.url()).href);
+});

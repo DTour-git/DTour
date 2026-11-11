@@ -3,6 +3,7 @@
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { safeNext } from '@/lib/auth-next';
+import { loginErrorMessage } from '@/lib/login-error';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Icon } from '@/components/Icon';
 import { LogoMark } from '@/components/ui';
@@ -21,7 +22,7 @@ function Login() {
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(params.get('error'));
+  const [error, setError] = useState<string | null>(() => loginErrorMessage(params.get('error')));
 
   const google = async () => {
     setBusy(true); setError(null);
