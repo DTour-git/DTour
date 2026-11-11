@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getSocietyBoard, POST_KIND_LABEL, postKindTone } from '@dtour/shared';
+import { getSocietyBoard, POST_KIND_LABEL, postKindTone, safeHref } from '@dtour/shared';
 import { currentUser } from '@/lib/supabase-server';
 import { Icon } from '@/components/Icon';
 import { Halftone } from '@/components/ui';
@@ -47,7 +47,7 @@ export default async function SocietiesPage({ searchParams }: { searchParams: Pr
               <div style={{ fontSize: 13, color: 'var(--color-neutral-700)', marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
                 {p.society.short_name ?? p.society.name} {p.society.verified && <Icon name="seal-check" size={15} color="var(--color-accent)" />} ·{' '}
                 {p.kind === 'recruiting'
-                  ? <a href={p.apply_url ?? '#'} target="_blank" rel="noreferrer">Apply</a>
+                  ? <a href={safeHref(p.apply_url) ?? '#'} target="_blank" rel="noreferrer">Apply</a>
                   : <span style={{ display: 'contents' }}><Rsvp postId={p.id} going={going} count={p.rsvp_count} word={p.rsvp_word} label="RSVP" /></span>}
               </div>
             </div>

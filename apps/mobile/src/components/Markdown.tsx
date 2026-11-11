@@ -3,7 +3,7 @@ import { Linking, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { colors, inline, inlineLines, parse, type Inline } from '@dtour/shared';
-import { appRoute } from '@/lib/routes';
+import { openUserLink, resolveLink } from '@/lib/links';
 import { T, Kicker } from './T';
 import { Formula } from './Formula';
 
@@ -19,7 +19,10 @@ function Inl({ parts, size, lh, color, weight = 400, italic = false }: { parts: 
         if (p.t === 'i') return <T key={i} size={size} w={weight} i color={color}>{p.v}</T>;
         if (p.t === 'code') return <T key={i} size={size * 0.9} color={color} style={{ fontFamily: 'Menlo', backgroundColor: colors.surface }}>{p.v}</T>;
         if (p.t === 'math') return <Formula key={i} source={p.v} size={size} color={color} maxWidth={width} />;
-        if (p.t === 'link') return <T key={i} size={size} w={weight} i={italic} color={colors.accent700} onPress={() => (p.href.startsWith('/') ? router.push(appRoute(p.href)) : Linking.openURL(p.href))}>{p.v}</T>;
+        // Links that are not web pages or DTour routes (tel:, intent:, upi:, …) stay plain text.
+        if (p.t === 'link') return resolveLink(p.href).kind === 'blocked'
+          ? <T key={i} size={size} w={weight} i={italic} color={color}>{p.v}</T>
+          : <T key={i} size={size} w={weight} i={italic} color={colors.accent700} accessibilityRole="link" onPress={() => openUserLink(p.href, { push: (r) => router.push(r), openURL: (u) => Linking.openURL(u) })}>{p.v}</T>;
         return p.v;
       })}
     </T>

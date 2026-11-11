@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { inline, inlineLines, parse, type Inline } from '@dtour/shared';
+import { inline, inlineLines, linkTarget, parse, type Inline } from '@dtour/shared';
 import { Formula } from './Formula';
 
 function Inl({ parts }: { parts: Inline[] }) {
@@ -9,7 +9,13 @@ function Inl({ parts }: { parts: Inline[] }) {
       case 'i': return <i key={i}>{p.v}</i>;
       case 'code': return <code key={i}>{p.v}</code>;
       case 'math': return <Formula key={i} source={p.v} />;
-      case 'link': return p.href.startsWith('/') ? <Link key={i} href={p.href}>{p.v}</Link> : <a key={i} href={p.href} target="_blank" rel="noreferrer">{p.v}</a>;
+      case 'link': {
+        // Only DTour pages and http(s) links become links; javascript:, data:, intent: and the like stay text.
+        const to = linkTarget(p.href);
+        if (to.kind === 'internal') return <Link key={i} href={to.path}>{p.v}</Link>;
+        if (to.kind === 'external') return <a key={i} href={to.url} target="_blank" rel="noreferrer">{p.v}</a>;
+        return <span key={i}>{p.v}</span>;
+      }
       default: return <span key={i}>{p.v}</span>;
     }
   })}</>;
