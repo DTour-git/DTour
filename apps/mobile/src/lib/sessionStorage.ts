@@ -81,53 +81,90 @@ export function createSessionStorage(secure: SecureBackend, legacy?: LegacyBacke
     await legacy?.removeItem(key).catch(() => {});
   }
 
+  // Reads that fail are not cached, so the next read tries the store again.
+  async function read(key: string): Promise<{ value: string | null; ok: boolean }> {
+    let count: number | null;
+    try {
+      count = await readCount(key);
+    } catch {
+      // An unreadable entry (for example a Keystore key invalidated after a
+      // lock-screen change) means the user signs in again.
+      return { value: null, ok: false };
+    }
+
+    if (count === null) {
+      // One-time move of a session saved by an older build.
+      const old = legacy ? await legacy.getItem(key).catch(() => null) : null;
+      if (old === null) return { value: null, ok: true };
+      try {
+        await write(key, old);
+        await dropLegacy(key);
+      } catch {
+        // Keep the old copy until a later write succeeds, so the user stays signed in.
+      }
+      return { value: old, ok: true };
+    }
+
+    try {
+      const parts: string[] = [];
+      for (let i = 0; i < count; i++) {
+        const part = await secure.getItemAsync(chunkKey(key, i));
+        if (part === null) return { value: null, ok: false };
+        parts.push(part);
+      }
+      return { value: parts.join(''), ok: true };
+    } catch {
+      return { value: null, ok: false };
+    }
+  }
+
+  // A value spans several secure-store entries, and the auth client takes no
+  // lock around storage (every request reads the session, a refresh writes
+  // it). So every operation that touches the store runs one at a time, and
+  // reads are answered from memory once the value is known: a read never sees
+  // half of a write.
+  const cache = new Map<string, string | null>();
+  let tail: Promise<unknown> = Promise.resolve();
+  function serial<T>(fn: () => Promise<T>): Promise<T> {
+    const run = tail.then(fn, fn);
+    tail = run.catch(() => {});
+    return run;
+  }
+
   return {
-    async getItem(key) {
-      let count: number | null;
-      try {
-        count = await readCount(key);
-      } catch {
-        // An unreadable entry (for example a Keystore key invalidated after a
-        // lock-screen change) means the user signs in again.
-        return null;
-      }
+    getItem(key) {
+      if (cache.has(key)) return Promise.resolve(cache.get(key)!);
+      return serial(async () => {
+        if (cache.has(key)) return cache.get(key)!;
+        const { value, ok } = await read(key);
+        if (ok) cache.set(key, value);
+        return value;
+      });
+    },
 
-      if (count === null) {
-        // One-time move of a session saved by an older build.
-        const old = legacy ? await legacy.getItem(key).catch(() => null) : null;
-        if (old === null) return null;
+    setItem(key, value) {
+      return serial(async () => {
         try {
-          await write(key, old);
-          await dropLegacy(key);
-        } catch {
-          // Keep the old copy until a later write succeeds, so the user stays signed in.
+          await write(key, value);
+        } catch (e) {
+          // The store may now hold part of the value: read it back next time.
+          cache.delete(key);
+          throw e;
         }
-        return old;
-      }
-
-      try {
-        const parts: string[] = [];
-        for (let i = 0; i < count; i++) {
-          const part = await secure.getItemAsync(chunkKey(key, i));
-          if (part === null) return null;
-          parts.push(part);
-        }
-        return parts.join('');
-      } catch {
-        return null;
-      }
+        cache.set(key, value);
+        await dropLegacy(key);
+      });
     },
 
-    async setItem(key, value) {
-      await write(key, value);
-      await dropLegacy(key);
-    },
-
-    async removeItem(key) {
-      const count = (await readCount(key).catch(() => null)) ?? 0;
-      await secure.deleteItemAsync(countKey(key));
-      await deleteChunks(key, 0, count);
-      await dropLegacy(key);
+    removeItem(key) {
+      return serial(async () => {
+        cache.delete(key);
+        const count = (await readCount(key).catch(() => null)) ?? 0;
+        await secure.deleteItemAsync(countKey(key));
+        await deleteChunks(key, 0, count);
+        cache.set(key, null);
+        await dropLegacy(key);
+      });
     },
   };
 }

@@ -87,7 +87,7 @@ describe('createSessionStorage', () => {
     expect(await storage.getItem(KEY)).toBeNull();
     await storage.setItem(KEY, session);
     secure.map.delete(`${KEY}.1`);
-    expect(await storage.getItem(KEY)).toBeNull();
+    expect(await createSessionStorage(secure.backend).getItem(KEY)).toBeNull();
   });
 
   it('moves a plaintext session from AsyncStorage into the secure store and deletes the old copy', async () => {
@@ -107,6 +107,45 @@ describe('createSessionStorage', () => {
     await storage.setItem(KEY, session);
     await storage.removeItem(`${KEY}-code-verifier`);
     expect(legacy.map.size).toBe(0);
+  });
+
+  it('never returns half of a write when reads and a refresh overlap', async () => {
+    // Writes take a timer tick each (as Keychain writes are slow); reads are
+    // quick, so a read can land between two chunk writes.
+    const map = new Map<string, string>();
+    const tick = () => new Promise((r) => setTimeout(r, 1));
+    const slow: SecureBackend = {
+      getItemAsync: async (k) => map.get(k) ?? null,
+      setItemAsync: async (k, v) => void (await tick(), map.set(k, v)),
+      deleteItemAsync: async (k) => void (await tick(), map.delete(k)),
+    };
+    const before = JSON.stringify({ refresh_token: 'old', pad: 'o'.repeat(5000) });
+    const after = JSON.stringify({ refresh_token: 'new', pad: 'n'.repeat(5000) });
+    await createSessionStorage(slow).setItem(KEY, before);
+
+    // A fresh instance, as on app start: nothing cached yet.
+    const storage = createSessionStorage(slow);
+    const reads = Array.from({ length: 30 }, (_, i) => new Promise((r) => setTimeout(r, i)).then(() => storage.getItem(KEY)));
+    const write = storage.setItem(KEY, after);
+    const seen = await Promise.all(reads);
+    await write;
+
+    for (const v of seen) expect([before, after]).toContain(v);
+    expect(await storage.getItem(KEY)).toBe(after);
+    expect(await createSessionStorage(slow).getItem(KEY)).toBe(after);
+  });
+
+  it('does not cache a failed read', async () => {
+    let fail = true;
+    const secure = memorySecure();
+    await createSessionStorage(secure.backend).setItem(KEY, session);
+    const storage = createSessionStorage({
+      ...secure.backend,
+      getItemAsync: (k) => (fail ? Promise.reject(new Error('locked')) : secure.backend.getItemAsync(k)),
+    });
+    expect(await storage.getItem(KEY)).toBeNull();
+    fail = false;
+    expect(await storage.getItem(KEY)).toBe(session);
   });
 
   it('treats an unreadable secure store as signed out', async () => {
