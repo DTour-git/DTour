@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import type { EmailOtpType } from '@supabase/supabase-js';
 import { safeNext } from '@/lib/auth-next';
+import { loginErrorCode, loginErrorUrl } from '@/lib/login-error';
 import { supabaseServer } from '@/lib/supabase-server';
 
 // Email links (magic link / confirmation) land here with ?token_hash=…&type=…
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
     const sb = await supabaseServer();
     const { error } = await sb.auth.verifyOtp({ token_hash, type });
     if (!error) return NextResponse.redirect(new URL(next, url.origin));
-    return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(error.message)}`, url.origin));
+    return NextResponse.redirect(loginErrorUrl(url.origin, loginErrorCode(error)));
   }
-  return NextResponse.redirect(new URL('/login?error=Invalid%20link', url.origin));
+  return NextResponse.redirect(loginErrorUrl(url.origin, 'link_expired'));
 }
