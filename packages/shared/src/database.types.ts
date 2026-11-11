@@ -989,10 +989,10 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "poll_votes_option_id_fkey"
-            columns: ["option_id"]
+            columns: ["option_id", "thread_id"]
             isOneToOne: false
             referencedRelation: "poll_options"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "thread_id"]
           },
           {
             foreignKeyName: "poll_votes_thread_id_fkey"
