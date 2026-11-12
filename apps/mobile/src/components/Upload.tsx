@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Alert, Modal, Pressable, TextInput, View } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
-import { colors, fonts, uploadLibraryItem } from '@dtour/shared';
+import { LIBRARY_MIME_TYPES, colors, fonts, uploadLibraryItem } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
 import { useRequireMe } from '@/lib/auth';
 import { T } from './T';
@@ -20,7 +20,7 @@ export function UploadSheet({ subjects, defaultSubject, onClose, onDone }: { sub
   const [busy, setBusy] = useState(false);
 
   const pick = async () => {
-    const r = await DocumentPicker.getDocumentAsync({ type: ['application/pdf', 'application/zip', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'image/*'], copyToCacheDirectory: true });
+    const r = await DocumentPicker.getDocumentAsync({ type: LIBRARY_MIME_TYPES, copyToCacheDirectory: true });
     if (!r.canceled && r.assets[0]) { setFile(r.assets[0]); if (!title) setTitle(r.assets[0].name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ')); }
   };
   const upload = async () => {
@@ -40,7 +40,7 @@ export function UploadSheet({ subjects, defaultSubject, onClose, onDone }: { sub
         <T size={23} w={600}>Upload to the Library</T>
         <Pressable onPress={pick} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderWidth: 1, borderStyle: 'dashed', borderColor: colors.neutral400, borderRadius: 2 }}>
           <Icon name="upload-simple" size={20} color={colors.accent} />
-          <T size={14} color={colors.neutral700} style={{ flex: 1 }}>{file ? `${file.name}` : 'Choose a PDF, PPT, ZIP or image'}</T>
+          <T size={14} color={colors.neutral700} style={{ flex: 1 }}>{file ? `${file.name}` : 'Choose a PDF, PPT, DOC, ZIP, PNG or JPEG'}</T>
         </Pressable>
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>{KINDS.map(([k, l]) => <Pill key={k} label={l} active={kind === k} onPress={() => setKind(k)} />)}</View>
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>{subjects.map((s) => <Pill key={s.code} label={s.code} active={subject === s.code} onPress={() => setSubject(s.code)} />)}</View>

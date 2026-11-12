@@ -716,9 +716,20 @@ export const NOTIFICATION_ICON: Record<string, string> = {
 };
 
 // ── Images ────────────────────────────────────────────────────────────────
+export const IMAGE_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/heic', 'image/heif'];
+const LIBRARY_FILE_MIMES: Record<string, string> = {
+  pdf: 'application/pdf', zip: 'application/zip', doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  ppt: 'application/vnd.ms-powerpoint', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
+};
+export const LIBRARY_MIME_TYPES = [...new Set(Object.values(LIBRARY_FILE_MIMES))];
+export const LIBRARY_FILE_ACCEPT = Object.keys(LIBRARY_FILE_MIMES).map((ext) => `.${ext}`).join(',');
+
 /** Upload an image to the public media bucket; returns its URL for ![](…) markdown. */
 export async function uploadImage(sb: DB, userId: string, file: Blob | ArrayBuffer, fileName: string, contentType: string) {
-  if (!contentType.startsWith('image/')) throw new Error('Choose an image file.');
+  contentType = contentType.trim().toLowerCase();
+  if (!IMAGE_MIME_TYPES.includes(contentType)) throw new Error('Choose a PNG, JPEG, WebP, GIF or HEIC/HEIF image.');
   if ((file instanceof ArrayBuffer ? file.byteLength : file.size) > 10 * 1048576) throw new Error('Images can be up to 10 MB.');
   const ext = (fileName.split('.').pop() ?? 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
   const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
@@ -782,8 +793,12 @@ export async function uploadLibraryItem(sb: DB, i: {
   file: Blob | ArrayBuffer; fileName: string; contentType: string; size: number;
 }) {
   const ext = (i.fileName.split('.').pop() ?? 'bin').toLowerCase();
+  let contentType = i.contentType.trim().toLowerCase();
+  if (!contentType || contentType === 'application/octet-stream') contentType = LIBRARY_FILE_MIMES[ext] ?? '';
+  if (contentType === 'application/x-zip-compressed') contentType = 'application/zip';
+  if (!LIBRARY_MIME_TYPES.includes(contentType)) throw new Error('Choose a PDF, PPT/PPTX, DOC/DOCX, ZIP, PNG or JPEG file.');
   const path = `${i.userId}/${i.subjectCode}/${Date.now()}-${i.fileName.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-  const up = await sb.storage.from('library').upload(path, i.file, { contentType: i.contentType, upsert: false });
+  const up = await sb.storage.from('library').upload(path, i.file, { contentType, upsert: false });
   if (up.error) throw new Error(up.error.message);
   const format = ({ pdf: 'PDF', ppt: 'PPT', pptx: 'PPT', zip: 'ZIP', doc: 'DOC', docx: 'DOC', png: 'Image', jpg: 'Image', jpeg: 'Image' } as Record<string, string>)[ext] ?? ext.toUpperCase();
   return must(await sb.from('library_items').insert({

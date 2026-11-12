@@ -1,6 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Page } from '@playwright/test';
+import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@dtour/shared';
 
 // Same rules as scripts/dev-env.mjs: read .env.dev (or CI env vars) and never touch production.
 const PROD_REF = 'megohwzcghnbfdzsaypz';
@@ -13,7 +15,7 @@ function devEnv() {
       if (m && !line.trim().startsWith('#')) env[m[1]] = m[2];
     }
   }
-  for (const k of ['DEV_SUPABASE_URL', 'DEV_SUPABASE_SECRET_KEY']) {
+  for (const k of ['DEV_SUPABASE_URL', 'DEV_SUPABASE_PUBLISHABLE_KEY', 'DEV_SUPABASE_SECRET_KEY']) {
     if (process.env[k]) env[k] = process.env[k]!;
     if (!env[k]) throw new Error(`${k} is missing — copy .env.dev.example to .env.dev`);
     if (env[k].includes(PROD_REF)) throw new Error(`${k} points at PRODUCTION — e2e tests only run against dev`);
@@ -27,8 +29,7 @@ const admin = {
   'Content-Type': 'application/json',
 };
 
-/** Signs the page in as a dev test account through a one-time magic link. */
-export async function signIn(page: Page, handle = 'e2e.student', next = '/') {
+async function signInToken(handle: string) {
   const res = await fetch(`${env.DEV_SUPABASE_URL}/auth/v1/admin/generate_link`, {
     method: 'POST',
     headers: admin,
@@ -37,8 +38,24 @@ export async function signIn(page: Page, handle = 'e2e.student', next = '/') {
   const body = await res.json();
   const hash = body.hashed_token ?? body.properties?.hashed_token;
   if (!hash) throw new Error(`No sign-in link for ${handle}: ${JSON.stringify(body)}`);
+  return hash as string;
+}
+
+/** Signs the page in as a dev test account through a one-time magic link. */
+export async function signIn(page: Page, handle = 'e2e.student', next = '/') {
+  const hash = await signInToken(handle);
   await page.goto(`/auth/confirm?token_hash=${hash}&type=magiclink&next=${encodeURIComponent(next)}`);
   await page.waitForURL((u) => !u.pathname.startsWith('/auth') && !u.pathname.startsWith('/login'));
+}
+
+/** A member client for API integration tests, using the same dev account as the browser. */
+export async function signInClient() {
+  const sb = createClient<Database>(env.DEV_SUPABASE_URL, env.DEV_SUPABASE_PUBLISHABLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { error } = await sb.auth.verifyOtp({ token_hash: await signInToken('e2e.student'), type: 'magiclink' });
+  if (error) throw error;
+  return sb;
 }
 
 /** Deletes rows the tests created, using the dev secret key (bypasses RLS). */

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  createSocietyPost, createTeam, createThread, createWikiArticle, flair, saveDraft, similarThreads, uploadImage, uploadLibraryItem,
+  IMAGE_MIME_TYPES, LIBRARY_FILE_ACCEPT, createSocietyPost, createTeam, createThread, createWikiArticle, flair, saveDraft, similarThreads, uploadImage, uploadLibraryItem,
   type Database, type PostType, type ProfileRow, type SocietyLite, type Tone,
 } from '@dtour/shared';
 import { supabaseBrowser } from '@/lib/supabase-browser';
@@ -238,8 +238,8 @@ export function Composer({ me, boards, societies, subjects, initialType, initial
           {preview
             ? <div style={{ minHeight: 180, padding: '10px 14px', background: 'var(--color-surface)', borderRadius: '0 0 2px 2px' }}><Markdown source={text || '*Nothing to preview yet.*'} size={16} /></div>
             : <textarea ref={body} className="input" value={text} onChange={(e) => setText(e.target.value)} placeholder="Add context. What have you tried? Which branch, semester, professor?" style={{ borderRadius: '0 0 2px 2px', minHeight: 180, font: '400 16px/1.6 var(--font-body)', borderTop: 'none', display: 'block' }} />}
-          <input ref={fileRef} type="file" hidden onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-          <input ref={imgRef} type="file" accept="image/*" hidden onChange={async (e) => {
+          <input ref={fileRef} type="file" accept={LIBRARY_FILE_ACCEPT} hidden onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+          <input ref={imgRef} type="file" accept={IMAGE_MIME_TYPES.join(',')} hidden onChange={async (e) => {
             const f = e.target.files?.[0]; e.target.value = '';
             if (!f) return;
             if (f.size > 10 * 1048576) { toast('Images can be up to 10 MB.'); return; }
@@ -306,7 +306,7 @@ export function Composer({ me, boards, societies, subjects, initialType, initial
             <div><Label>Where</Label><input className="input" placeholder="SPS-12" value={ev.where} onChange={(e) => setEv({ ...ev, where: e.target.value })} /></div>
             {ev.kind !== 'recruiting' && <div style={{ gridColumn: '1 / -1' }}><Label>Start date and time (for reminders)</Label><input className="input" type="datetime-local" value={ev.starts} onChange={(e) => setEv({ ...ev, starts: e.target.value })} /></div>}
             {ev.kind === 'recruiting' && <div style={{ gridColumn: '1 / -1' }}><Label>Application link</Label><input className="input" type="url" placeholder="https://…" value={ev.applyUrl} onChange={(e) => setEv({ ...ev, applyUrl: e.target.value })} /></div>}
-            <div style={{ gridColumn: '1 / -1' }}><Label>Poster image</Label><input type="file" accept="image/*" onChange={(e) => setPoster(e.target.files?.[0] ?? null)} />{poster && <div style={{ marginTop: 5, fontSize: 13 }}>{poster.name}</div>}</div>
+            <div style={{ gridColumn: '1 / -1' }}><Label>Poster image</Label><input type="file" accept={IMAGE_MIME_TYPES.join(',')} onChange={(e) => setPoster(e.target.files?.[0] ?? null)} />{poster && <div style={{ marginTop: 5, fontSize: 13 }}>{poster.name}</div>}</div>
             <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--color-neutral-800)' }}>
               <Icon name="seal-check" size={20} color="var(--color-accent)" />
               {societies.length ? <>Posting as a verified society shows the badge and lists this on the <Link href="/societies">Society board</Link> and the Today timeline.</> : <>Only verified society accounts can post here. Ask your society’s admin to add you.</>}
@@ -321,7 +321,7 @@ export function Composer({ me, boards, societies, subjects, initialType, initial
             </div>
           </div>
         )}
-        {type === 'article' && <div style={{ marginTop: 16 }}><Label>Cover image</Label><input type="file" accept="image/*" onChange={(e) => setCover(e.target.files?.[0] ?? null)} />{cover && <div style={{ marginTop: 5, fontSize: 13 }}>{cover.name}</div>}</div>}
+        {type === 'article' && <div style={{ marginTop: 16 }}><Label>Cover image</Label><input type="file" accept={IMAGE_MIME_TYPES.join(',')} onChange={(e) => setCover(e.target.files?.[0] ?? null)} />{cover && <div style={{ marginTop: 5, fontSize: 13 }}>{cover.name}</div>}</div>}
 
         {(type === 'thread' || type === 'question' || type === 'poll') && (
           <div style={{ marginTop: 28 }}>

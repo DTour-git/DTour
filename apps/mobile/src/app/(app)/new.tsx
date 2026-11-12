@@ -3,7 +3,7 @@ import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
-import { boardPicker, colors, createTeam, createThread, createWikiArticle, createSocietyPost, fonts, getArticle, myPostingSocieties, saveDraft, similarThreads, suggestWikiEdit, uploadImage, uploadLibraryItem, type ProfileRow, type SocietyLite } from '@dtour/shared';
+import { LIBRARY_MIME_TYPES, boardPicker, colors, createTeam, createThread, createWikiArticle, createSocietyPost, fonts, getArticle, myPostingSocieties, saveDraft, similarThreads, suggestWikiEdit, uploadImage, uploadLibraryItem, type ProfileRow, type SocietyLite } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
 import { useMe } from '@/lib/auth';
 import { useData } from '@/lib/useData';
@@ -102,7 +102,7 @@ function Composer({ me }: { me: ProfileRow }) {
   };
 
   const pickFile = async () => {
-    const result = await DocumentPicker.getDocumentAsync({ type: ['application/pdf', 'application/zip', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'image/*'], copyToCacheDirectory: true });
+    const result = await DocumentPicker.getDocumentAsync({ type: LIBRARY_MIME_TYPES, copyToCacheDirectory: true });
     if (!result.canceled && result.assets[0]) setFile(result.assets[0]);
   };
 
