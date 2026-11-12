@@ -121,7 +121,7 @@ export async function handleAvailable(sb: DB, handle: string, _myId?: string) {
 }
 /** When this profile may change its handle again, or null if it can now. */
 export function nextHandleChange(p: { onboarded: boolean; handle_changed_at: string | null }): Date | null {
-  if (!p.onboarded || !p.handle_changed_at) return null;
+  if (!p.handle_changed_at) return null;
   const next = new Date(Date.parse(p.handle_changed_at) + HANDLE_COOLDOWN_DAYS * 864e5);
   return next.getTime() > Date.now() ? next : null;
 }

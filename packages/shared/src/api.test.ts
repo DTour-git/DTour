@@ -1,7 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { hotness, matchesSkills, sortReplies, type ReplyNode, type TeamCard } from './api';
+import { hotness, matchesSkills, nextHandleChange, sortReplies, type ReplyNode, type TeamCard } from './api';
 
 const ago = (h: number) => new Date(Date.now() - h * 3600e3).toISOString();
+
+describe('nextHandleChange', () => {
+  it('uses the server clock even when onboarding was cleared', () => {
+    const changed = ago(24);
+    expect(nextHandleChange({ onboarded: false, handle_changed_at: changed })?.toISOString()).toBe(
+      new Date(Date.parse(changed) + 7 * 864e5).toISOString(),
+    );
+  });
+  it('allows a change after the cooldown expires', () => {
+    expect(nextHandleChange({ onboarded: true, handle_changed_at: ago(8 * 24) })).toBeNull();
+  });
+  it('does not lock a profile that has never changed its handle', () => {
+    expect(nextHandleChange({ onboarded: true, handle_changed_at: null })).toBeNull();
+  });
+});
 
 describe('hotness', () => {
   it('prefers a fresh thread over an older one with slightly more votes', () => {
