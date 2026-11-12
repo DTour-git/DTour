@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { searchSubjects, uploadLibraryItem, type SubjectRow } from '@dtour/shared';
+import { LIBRARY_FILE_ACCEPT, searchSubjects, uploadLibraryItem, type SubjectRow } from '@dtour/shared';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Icon } from '../Icon';
 import { useShell } from '../shell/Shell';
@@ -78,9 +78,9 @@ function UploadDialog({ subjects, defaultSubject, onClose }: { subjects: { code:
       <div className="dialog" onClick={(e) => e.stopPropagation()} style={{ width: 'min(480px, 100%)', background: 'var(--color-bg)' }} role="dialog" aria-label="Upload to the Library">
         <div className="dialog-title">Upload to the Library</div>
         <button onClick={() => fileRef.current?.click()} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px', border: '1px dashed var(--color-neutral-400)', borderRadius: 2, background: 'none', cursor: 'pointer', fontSize: 14, color: 'var(--color-neutral-700)', textAlign: 'left', fontFamily: 'var(--font-body)' }}>
-          <Icon name="upload-simple" size={20} color="var(--color-accent)" />{file ? `${file.name} · ${(file.size / 1048576).toFixed(1)} MB` : 'Choose a PDF, PPT, ZIP or image (max 50 MB)'}
+          <Icon name="upload-simple" size={20} color="var(--color-accent)" />{file ? `${file.name} · ${(file.size / 1048576).toFixed(1)} MB` : 'Choose a PDF, PPT, DOC, ZIP, PNG or JPEG (max 50 MB)'}
         </button>
-        <input ref={fileRef} type="file" hidden accept=".pdf,.ppt,.pptx,.zip,.doc,.docx,.png,.jpg,.jpeg" onChange={(e) => { const f = e.target.files?.[0] ?? null; setFile(f); if (f && !title) setTitle(f.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ')); }} />
+        <input ref={fileRef} type="file" hidden accept={LIBRARY_FILE_ACCEPT} onChange={(e) => { const f = e.target.files?.[0] ?? null; setFile(f); if (f && !title) setTitle(f.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ')); }} />
         <div>
           <div className="label-caps">Type</div>
           <div className="seg">{KINDS.map(([k, l]) => <label key={k} className="seg-opt"><input type="radio" name="kind" checked={kind === k} onChange={() => setKind(k)} />{l}</label>)}</div>

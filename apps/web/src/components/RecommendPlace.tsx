@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { recommendPlace, uploadImage } from '@dtour/shared';
+import { IMAGE_MIME_TYPES, recommendPlace, uploadImage } from '@dtour/shared';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Icon } from './Icon';
 import { useShell } from './shell/Shell';
@@ -37,7 +37,7 @@ export function RecommendPlace() {
             <input className="input" placeholder="Name — e.g. Sec-11 momo lane" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} style={{ height: 40 }} />
             <input className="input" placeholder="Where — e.g. Rohini · after 8 pm" value={f.where} onChange={(e) => setF({ ...f, where: e.target.value })} style={{ height: 40 }} />
             <input className="input" placeholder="Price — e.g. ₹60 or ₹₹" value={f.price} onChange={(e) => setF({ ...f, price: e.target.value })} style={{ height: 40 }} />
-            <label style={{ fontSize: 14 }}>Photo <input type="file" accept="image/*" onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} /></label>
+            <label style={{ fontSize: 14 }}>Photo <input type="file" accept={IMAGE_MIME_TYPES.join(',')} onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} /></label>
             <div className="dialog-actions"><button className="btn btn-ghost" onClick={() => setOpen(false)}>Cancel</button><button className="btn btn-primary" onClick={save}>Add</button></div>
           </div>
         </div>
