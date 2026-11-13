@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import Link from 'next/link';
-import { flair, initials, type PersonLite, type SocietyLite, type Tint, type Tone } from '@dtour/shared';
+import { flair, initials, mediaImageUrl, type PersonLite, type SocietyLite, type Tint, type Tone } from '@dtour/shared';
 import { Icon } from './Icon';
 
 /** Two overlapping speech bubbles (cyan + magenta, multiply) — the DTour mark. */
@@ -73,7 +73,9 @@ export function CmykNum({ children, size, tracking = '-.04em', style }: { childr
 }
 
 /** Striped halftone placeholder (or a real image) with the 3px dot screen. */
-export function Halftone({ height, label, src, style }: { height: number; label?: string | null; src?: string | null; style?: CSSProperties }) {
+export function Halftone({ height, label, src: stored, style }: { height: number; label?: string | null; src?: string | null; style?: CSSProperties }) {
+  // Only DTour's own uploads are loaded; any other address would track every viewer (issue #43).
+  const src = mediaImageUrl(stored, process.env.NEXT_PUBLIC_SUPABASE_URL);
   return (
     <div className="halftone" style={{ height, display: 'flex', alignItems: 'flex-end', padding: src ? 0 : label ? 14 : 0, ...style }}>
       {src ? <img src={src} alt={label ?? ''} /> : label ? <span className="placeholder-label">{label}</span> : null}

@@ -4,7 +4,7 @@ import Svg, { Circle, Defs, Pattern, Rect } from 'react-native-svg';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { colors, initials, tagTone, tint, tone as toneMap, flair, type Tint, type Tone, type TagTone, type SocietyLite } from '@dtour/shared';
+import { colors, initials, mediaImageUrl, tagTone, tint, tone as toneMap, flair, type Tint, type Tone, type TagTone, type SocietyLite } from '@dtour/shared';
 import { T } from './T';
 import { Icon } from './Icon';
 
@@ -73,7 +73,9 @@ export function CmykNum({ children, size, tracking = -0.04 }: { children: string
 }
 
 /** Striped placeholder with the 3px halftone dot screen. */
-export function Halftone({ height, label, src, style }: { height: number; label?: string | null; src?: string | null; style?: ViewStyle }) {
+export function Halftone({ height, label, src: stored, style }: { height: number; label?: string | null; src?: string | null; style?: ViewStyle }) {
+  // Only DTour's own uploads are loaded; any other address would track every viewer (issue #43).
+  const src = mediaImageUrl(stored, process.env.EXPO_PUBLIC_SUPABASE_URL);
   return (
     <View style={[{ height, overflow: 'hidden', justifyContent: 'flex-end', padding: 8 }, style]}>
       {src ? <Image source={src} style={StyleSheet.absoluteFill} contentFit="cover" accessibilityLabel={label ?? 'Photo'} /> : null}
