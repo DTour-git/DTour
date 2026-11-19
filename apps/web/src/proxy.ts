@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { sessionCookieOptions } from '@/lib/session-cookies';
 
 // Reading is public; only these need an account (writes are also guarded in the UI and by RLS).
 const MEMBERS_ONLY = ['/new', '/onboarding', '/mod'];
@@ -12,6 +13,7 @@ export async function proxy(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
+      cookieOptions: sessionCookieOptions,
       cookies: {
         getAll: () => request.cookies.getAll(),
         setAll: (list) => {
