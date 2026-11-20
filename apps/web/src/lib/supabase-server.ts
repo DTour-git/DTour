@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { cache } from 'react';
 import { createServerClient } from '@supabase/ssr';
 import { getMe, type Database } from '@dtour/shared';
+import { sessionCookieOptions } from './session-cookies';
 
 export async function supabaseServer() {
   const store = await cookies();
@@ -10,6 +11,7 @@ export async function supabaseServer() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
+      cookieOptions: sessionCookieOptions,
       cookies: {
         getAll: () => store.getAll(),
         setAll: (list) => {
