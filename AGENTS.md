@@ -148,7 +148,7 @@ These are product decisions. Don't change them without asking.
 - **Blocked:** `supabase db push`, `supabase db reset` without `--db-url`, `supabase link`, force pushes, pushing to `main`, `git reset --hard`, destructive commands that mention the production ref, and reading real `.env` files.
 - **Hooks** (`.claude/hooks/`):
   - `guard-migrations.mjs` blocks edits to any migration already on `origin/main`.
-  - `guard-bash.mjs` catches the blocked commands even inside longer command lines.
+  - `guard-bash.mjs` catches the blocked commands (and `supabase link`) even inside longer command lines, behind wrappers like `npx` or `npm exec`, in quoted words, in `sh -c`/`eval` scripts, in `$(…)`, and in heredocs fed to a shell. Commands only mentioned in prose (commit messages, PR bodies) still pass.
   - `typecheck-on-stop.mjs` runs `npm run typecheck` when Claude finishes with changed `.ts`/`.tsx` files, and sends any errors back so they get fixed.
 - Personal overrides go in `.claude/settings.local.json` (gitignored).
 
