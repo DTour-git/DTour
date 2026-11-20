@@ -2249,6 +2249,10 @@ export type Database = {
         Returns: number
       }
       record_download: { Args: { p_item: number }; Returns: string }
+      register_push_token: {
+        Args: { p_platform: string; p_token: string }
+        Returns: undefined
+      }
       resolve_report: {
         Args: { p_remove: boolean; p_report: number }
         Returns: undefined

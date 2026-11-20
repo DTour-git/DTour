@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import type { Session } from '@supabase/supabase-js';
 import type { ProfileRow } from '@dtour/shared';
 import { supabase } from './supabase';
+import { unregisterPush } from './push';
 
 interface AuthCtx {
   ready: boolean;
@@ -13,6 +14,15 @@ interface AuthCtx {
 
 const Ctx = createContext<AuthCtx>({ ready: false, session: null, profile: null, refreshProfile: async () => {} });
 export const useAuth = () => useContext(Ctx);
+
+/**
+ * Signs out of this device. The push registration goes first, while the session
+ * can still delete it, so the phone stops getting this student's notifications (#44).
+ */
+export async function signOut(options?: Parameters<typeof supabase.auth.signOut>[0]) {
+  await unregisterPush().catch(() => {});
+  await supabase.auth.signOut(options);
+}
 
 /** The signed-in profile, or null for a visitor browsing without an account. */
 export function useMe(): ProfileRow | null {
@@ -40,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(data);
     // A saved sign-in whose account no longer exists (deleted, or the database was reset):
     // drop it on this device so the app opens signed out instead of hanging.
-    if (!data && !error) await supabase.auth.signOut({ scope: 'local' });
+    if (!data && !error) await signOut({ scope: 'local' });
   }, []);
 
   useEffect(() => {

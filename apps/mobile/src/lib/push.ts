@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { supabase } from './supabase';
 
@@ -13,10 +14,13 @@ export function loadNotifications(): NotificationsModule | null {
   return pushSupported ? (require('expo-notifications') as NotificationsModule) : null;
 }
 
-let registeredToken: string | null = null;
+// The token registered from this installation, kept across restarts so sign-out
+// can always remove it (#44). It isn't a secret on its own: RLS keeps the row
+// private, and only the token's owner can delete it.
+const TOKEN_KEY = 'dtour.pushToken';
 
 /** Registers this installation after permission is granted. */
-export async function registerPush(userId: string, requestPermission = false) {
+export async function registerPush(requestPermission = false) {
   const Notifications = loadNotifications();
   if (!Notifications) return false;
   if (Platform.OS === 'android') {
@@ -31,14 +35,18 @@ export async function registerPush(userId: string, requestPermission = false) {
   const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
   if (!projectId) throw new Error('Set up the Expo EAS project before enabling phone notifications.');
   const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
-  const { error } = await supabase.from('device_push_tokens').upsert({ token, user_id: userId, platform: Platform.OS, updated_at: new Date().toISOString() }, { onConflict: 'token' });
+  // The RPC takes the token over from whoever registered it before on this phone (#44).
+  const { error } = await supabase.rpc('register_push_token', { p_token: token, p_platform: Platform.OS });
   if (error) throw error;
-  registeredToken = token;
+  await AsyncStorage.setItem(TOKEN_KEY, token).catch(() => {});
   return true;
 }
 
+/** Removes this installation's push registration. Call it while still signed in: RLS needs the session to delete the row. */
 export async function unregisterPush() {
-  if (!registeredToken) return;
-  await supabase.from('device_push_tokens').delete().eq('token', registeredToken);
-  registeredToken = null;
+  const token = await AsyncStorage.getItem(TOKEN_KEY).catch(() => null);
+  if (!token) return;
+  const { error } = await supabase.from('device_push_tokens').delete().eq('token', token);
+  if (error) throw error;
+  await AsyncStorage.removeItem(TOKEN_KEY).catch(() => {});
 }
