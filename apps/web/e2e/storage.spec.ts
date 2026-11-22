@@ -106,13 +106,13 @@ test('upload helpers reject unsupported types before uploading', async () => {
 
 test('the composer explains unsupported image types', async ({ page }) => {
   await signIn(page, 'e2e.student', '/new');
-  await page
-    .locator(`input[accept="${IMAGE_MIME_TYPES.join(',')}"]`)
-    .first()
-    .setInputFiles({
-      name: 'drawing.svg',
-      mimeType: 'image/svg+xml',
-      buffer: Buffer.from('<svg/>'),
-    });
-  await expect(page.getByText('Choose a PNG, JPEG, WebP, GIF or HEIC/HEIF image.', { exact: true })).toBeVisible();
+  const input = page.locator(`input[accept="${IMAGE_MIME_TYPES.join(',')}"]`).first();
+  const message = page.getByText('Choose a PNG, JPEG, WebP, GIF or HEIC/HEIF image.', { exact: true });
+  // On a cold first load the file can land before React has attached the
+  // composer's change handler, and that event is lost. Retry the upload until
+  // the composer reacts; it still fails if the message never appears.
+  await expect(async () => {
+    await input.setInputFiles({ name: 'drawing.svg', mimeType: 'image/svg+xml', buffer: Buffer.from('<svg/>') });
+    await expect(message).toBeVisible({ timeout: 1_000 });
+  }).toPass({ timeout: 10_000 });
 });
