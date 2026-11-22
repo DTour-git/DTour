@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { n, postWikiTalk, setWikiFeedback, suggestWikiEdit } from '@dtour/shared';
+import { deleteWikiTalk, n, postWikiTalk, setWikiFeedback, suggestWikiEdit } from '@dtour/shared';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Icon } from '../Icon';
 import { Markdown } from '../Markdown';
 import { useShell } from '../shell/Shell';
+import { ReportDialog, linkBtn } from '../Manage';
 
 export function Useful({ articleId, count, mine }: { articleId: number; count: number; mine: boolean | null }) {
   const { requireMe } = useShell();
@@ -76,8 +77,34 @@ export function TalkForm({ articleId }: { articleId: number }) {
   };
   return (
     <div style={{ display: 'flex', gap: 10, marginBottom: 26 }}>
-      <input className="input" placeholder="Start a discussion about this guide…" value={body} onChange={(e) => setBody(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && post()} style={{ height: 42 }} />
+      <input className="input" placeholder="Start a discussion about this guide…" value={body} maxLength={2000} onChange={(e) => setBody(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && post()} style={{ height: 42 }} />
       <button className="btn btn-primary" onClick={post}>Post</button>
     </div>
+  );
+}
+
+/** Delete (your own, or any as a moderator) and Report for one talk post (#55). */
+export function TalkActions({ id, authorId }: { id: number; authorId: string }) {
+  const { me, requireMe, toast } = useShell();
+  const router = useRouter();
+  const [reporting, setReporting] = useState(false);
+  const mine = me?.id === authorId;
+  const moderator = me?.role === 'moderator' || me?.role === 'admin';
+  const remove = async () => {
+    if (!confirm(mine ? 'Delete your talk post? This can’t be undone.' : 'Remove this talk post for everyone?')) return;
+    try {
+      await deleteWikiTalk(supabaseBrowser(), id);
+      toast(mine ? 'Talk post deleted.' : 'Talk post removed.');
+      router.refresh();
+    } catch (e) {
+      toast((e as Error).message);
+    }
+  };
+  return (
+    <span style={{ display: 'inline-flex', gap: 14, marginLeft: 10, fontSize: 13, color: 'var(--color-neutral-700)' }}>
+      {(mine || moderator) && <button style={linkBtn} onClick={remove}>{mine ? 'Delete' : 'Remove'}</button>}
+      {!mine && <button style={linkBtn} onClick={() => requireMe() && setReporting(true)}>Report</button>}
+      {reporting && <ReportDialog target={{ wikiTalkId: id }} onClose={() => setReporting(false)} />}
+    </span>
   );
 }

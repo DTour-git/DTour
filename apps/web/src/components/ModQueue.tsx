@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { REPORT_REASONS, agoLong, resolveReport, reviewArticle, reviewRevision, type OpenReport, type PendingArticle, type PendingRevision } from '@dtour/shared';
+import { REPORT_REASONS, agoLong, reportedNoun, resolveReport, reviewArticle, reviewRevision, type OpenReport, type PendingArticle, type PendingRevision } from '@dtour/shared';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Markdown } from './Markdown';
 import { Tag } from './ui';
@@ -43,7 +43,7 @@ export function ModQueue({ articles, revisions, reports }: { articles: PendingAr
             {r.details.map((d, i) => <div key={i} style={{ fontSize: 14, fontStyle: 'italic', color: 'var(--color-neutral-800)', marginTop: 6 }}>“{d}”</div>)}
             <div style={{ display: 'flex', gap: 10, marginTop: 12, justifyContent: 'flex-end' }}>
               <button className="btn btn-secondary" onClick={() => act(r.key, () => resolveReport(supabaseBrowser(), r.ids[0], false), 'Report dismissed.')}>Keep it up</button>
-              <button className="btn btn-primary" onClick={() => confirm('Remove this post for everyone?') && act(r.key, () => resolveReport(supabaseBrowser(), r.ids[0], true), 'Removed.')}>Remove {r.kind === 'lounge' ? 'message' : r.kind}</button>
+              <button className="btn btn-primary" onClick={() => confirm('Remove this post for everyone?') && act(r.key, () => resolveReport(supabaseBrowser(), r.ids[0], true), 'Removed.')}>Remove {reportedNoun(r.kind)}</button>
             </div>
           </div>
         ))}

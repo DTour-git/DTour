@@ -5,7 +5,7 @@ import { currentUser } from '@/lib/supabase-server';
 import { Icon } from '@/components/Icon';
 import { Avatar, H6 } from '@/components/ui';
 import { Markdown } from '@/components/Markdown';
-import { EditForm, TalkForm, Useful } from '@/components/wiki/WikiClient';
+import { EditForm, TalkActions, TalkForm, Useful } from '@/components/wiki/WikiClient';
 
 const TABS = ['read', 'edit', 'history', 'talk'] as const;
 
@@ -99,6 +99,7 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
             {d.talk.map((t) => (
               <div key={t.id} className="row-rule" style={{ padding: '14px 0', fontSize: 15, lineHeight: 1.5 }}>
                 <b>@{t.author.handle}</b> <span style={{ color: 'var(--color-neutral-700)', fontSize: 13 }}>· {agoLong(t.created_at)}</span>
+                <TalkActions id={t.id} authorId={t.author.id} />
                 <div>{t.body}</div>
               </div>
             ))}
