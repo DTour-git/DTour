@@ -47,7 +47,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!profile || !session) return;
     // Previously granted permission is enough to refresh the token silently.
-    registerPush(profile.id).catch(() => {});
+    registerPush().catch(() => {});
   }, [profile, session]);
 
   return <Ctx.Provider value={{ unread: profile ? unread : 0, setUnread, version }}>
