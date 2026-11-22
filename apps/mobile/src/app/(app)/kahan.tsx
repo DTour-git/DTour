@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, RefreshControl, ScrollView, TextInput, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { colors, dayNum, fonts, getPlaces, recommendPlace, toggleHeart, uploadImage, weekdayCaps } from '@dtour/shared';
+import { colors, dayNum, deletePlace, fonts, getPlaces, recommendPlace, toggleHeart, uploadImage, weekdayCaps } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
 import { useMe, useRequireMe } from '@/lib/auth';
 import { useData } from '@/lib/useData';
@@ -23,6 +23,21 @@ export default function Kahan() {
   const { data, setData, refreshing, refresh, reload } = useData(() => getPlaces(supabase, me?.id ?? null));
   const keep = <P extends { under_100: boolean; on_campus: boolean }>(xs: P[]) => xs.filter((x) => (f !== 'cheap' || x.under_100) && (f !== 'campus' || x.on_campus));
   const show = (s: string) => f === 'all' || f === 'cheap' || f === s || (f === 'campus' && (s === 'canteen' || s === 'chill'));
+
+  // Delete a place you added, or remove any as a moderator (#28).
+  const canRemove = (authorId: string | null) => !!me && ((authorId !== null && me.id === authorId) || me.role === 'moderator' || me.role === 'admin');
+  const removePlace = (id: number, authorId: string | null) => {
+    const mine = !!me && authorId === me.id;
+    Alert.alert(mine ? 'Delete the place you added?' : 'Remove this place for everyone?', 'This can’t be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: mine ? 'Delete' : 'Remove', style: 'destructive', onPress: () => deletePlace(supabase, id).then(reload).catch((e) => Alert.alert('Could not remove it', (e as Error).message)) },
+    ]);
+  };
+  const removeLink = (id: number, authorId: string | null) => canRemove(authorId) ? (
+    <Pressable onPress={() => removePlace(id, authorId)} hitSlop={8} style={{ marginTop: 4 }}>
+      <T size={12.5} w={600} color={colors.neutral700}>{me?.id === authorId ? 'Delete' : 'Remove'}</T>
+    </Pressable>
+  ) : null;
 
   const heart = async (id: number) => {
     if (!data || !requireMe()) return;
@@ -67,6 +82,7 @@ export default function Kahan() {
                       <Icon name="heart" size={14} color={colors.accent700} weight={data.myHearts.has(p.id) ? 'fill' : 'duotone'} /><T size={13} color={colors.accent700}>{k(p.hearts)}</T>
                     </Pressable>
                   </View>
+                  {removeLink(p.id, p.author_id)}
                 </View>
               ))}
             </ScrollView>
@@ -81,6 +97,7 @@ export default function Kahan() {
                   <Halftone height={110} label={p.name} src={p.image_path} />
                   <T size={16} w={600} style={{ marginTop: 8 }}>{p.short_name ?? p.name}</T>
                   <T size={12.5} color={colors.neutral700}>{[p.distance_km && `${p.distance_km} km`, p.price_label, p.recs ? `${p.recs} recs` : p.tags[0]].filter(Boolean).join(' · ')}</T>
+                  {removeLink(p.id, p.author_id)}
                 </View>
               ))}
             </ScrollView>
@@ -96,7 +113,7 @@ export default function Kahan() {
                     <T size={22} w={600} lh={1} color={i === 0 ? colors.accent2_700 : colors.text}>{p.event_on ? dayNum(p.event_on + 'T12:00:00+05:30') : ''}</T>
                     <T size={10.5} ls={0.1} color={colors.neutral700}>{p.event_on ? weekdayCaps(p.event_on + 'T12:00:00+05:30') : ''}</T>
                   </View>
-                  <View style={{ flex: 1 }}><T size={16} w={600}>{p.short_name ?? p.name}</T><T size={12.5} color={colors.neutral700}>{p.short_where ?? p.where_label}</T></View>
+                  <View style={{ flex: 1 }}><T size={16} w={600}>{p.short_name ?? p.name}</T><T size={12.5} color={colors.neutral700}>{p.short_where ?? p.where_label}</T>{removeLink(p.id, p.author_id)}</View>
                   {p.metro_minutes ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}><Icon name="train-simple" size={15} color={colors.accent} /><T size={12} color={colors.neutral700}>{p.metro_minutes}m</T></View> : null}
                 </View>
               ))}
@@ -109,7 +126,7 @@ export default function Kahan() {
                 {keep(data.chill).map((p) => (
                   <View key={p.id} style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
                     <Icon name={p.icon ?? 'map-pin'} size={24} color={colors.accent} />
-                    <View><T size={16} w={600}>{p.name}</T><T size={12.5} color={colors.neutral700}>{p.short_where ?? p.where_label}</T></View>
+                    <View><T size={16} w={600}>{p.name}</T><T size={12.5} color={colors.neutral700}>{p.short_where ?? p.where_label}</T>{removeLink(p.id, p.author_id)}</View>
                   </View>
                 ))}
               </View>

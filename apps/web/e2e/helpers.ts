@@ -59,6 +59,16 @@ export async function signInClient() {
 }
 
 /** Deletes rows the tests created, using the dev secret key (bypasses RLS). */
+/** Inserts rows with the dev service key, for setting up data the UI can't create (cleaned up by `cleanup`). */
+export async function adminInsert(table: string, rows: object | object[]) {
+  const res = await fetch(`${env.DEV_SUPABASE_URL}/rest/v1/${table}`, {
+    method: 'POST',
+    headers: { ...admin, Prefer: 'return=minimal' },
+    body: JSON.stringify(rows),
+  });
+  if (!res.ok) throw new Error(`Insert into ${table} failed: ${res.status} ${await res.text()}`);
+}
+
 export async function cleanup(table: string, filter: string) {
   await fetch(`${env.DEV_SUPABASE_URL}/rest/v1/${table}?${filter}`, { method: 'DELETE', headers: admin });
 }
