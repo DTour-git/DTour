@@ -144,12 +144,13 @@ These are product decisions. Don't change them without asking.
 `.claude/settings.json` is shared by the team:
 
 - **Allowed without asking:** checks, tests, lint, format, read-only git and `gh pr` commands.
-- **Always asks:** `git push`, `npm run db:dev:reset`, `supabase migration …`, `gh pr merge`.
+- **Always asks:** `git push`, `npm run db:dev:reset`, `npm run dev:login …` (it mints a live dev sign-in link), `supabase migration …`, `gh pr merge`.
 - **Blocked:** `supabase db push`, `supabase db reset` without `--db-url`, `supabase link`, force pushes, pushing to `main`, `git reset --hard`, destructive commands that mention the production ref, and reading real `.env` files.
 - **Hooks** (`.claude/hooks/`):
   - `guard-migrations.mjs` blocks edits to any migration already on `origin/main`.
-  - `guard-bash.mjs` catches the blocked commands (and `supabase link`) even inside longer command lines, behind wrappers like `npx` or `npm exec`, in quoted words, in `sh -c`/`eval` scripts, in `$(…)`, and in heredocs fed to a shell. Commands only mentioned in prose (commit messages, PR bodies) still pass.
+  - `guard-bash.mjs` catches the blocked commands (and `supabase link`) even inside longer command lines, behind wrappers like `npx` or `npm exec`, in quoted words, in `sh -c`/`eval` scripts, in `$(…)`, and in heredocs fed to a shell. It also refuses any command that names a secret env file (`.env`, `.env.dev`, `.env.local`; the `.example` templates are fine). Commands only mentioned in prose (commit messages, PR bodies) still pass.
   - `typecheck-on-stop.mjs` runs `npm run typecheck` when Claude finishes with changed `.ts`/`.tsx` files, and sends any errors back so they get fixed.
+- **The secret-file rules are advisory, not a boundary.** The test commands that run without asking execute repository code, and the test helpers read `.env.dev` on purpose. So anything that can change a test and run it can read the dev keys. That's why `.env.dev` must only ever hold **dev** project values (the dev scripts refuse production ones), and why production secrets never go in any file in the repo.
 - Personal overrides go in `.claude/settings.local.json` (gitignored).
 
 ## Still open (as of Oct 2026)
