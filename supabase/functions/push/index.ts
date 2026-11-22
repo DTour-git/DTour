@@ -1,4 +1,5 @@
 import { withSupabase } from 'npm:@supabase/server@^1';
+import { pushText } from './text.ts';
 
 type Notification = { id: number; user_id: string; text: string; snippet: string | null; route: string };
 type Webhook = { type: string; table: string; schema: string; record: Notification };
@@ -22,7 +23,8 @@ export default {
     const messages = tokens.map(({ token }) => ({
       to: token,
       title: 'DTour',
-      body: event.record.text,
+      // Shortened: phones show this on the lock screen (#46). The full text is in the app.
+      body: pushText(event.record.text),
       sound: 'default',
       data: { route: event.record.route, notificationId: event.record.id },
     }));
