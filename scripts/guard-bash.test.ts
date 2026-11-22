@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { blocked } from '../.claude/hooks/guard-bash.mjs';
@@ -35,6 +36,17 @@ describe('guard-bash blocks', () => {
     ['git push origin "main"'],
     ['bash -c "git push origin HEAD:main"'],
     ['psql "$URL" -c "drop table x" # megohwzcghnbfdzsaypz'],
+    // #48: secret env files, however they're named or read.
+    ['cat .env.dev'],
+    ['head -5 ./.env.dev'],
+    ['grep KEY .env'],
+    ['less apps/web/.env.local'],
+    ['cp apps/mobile/.env /tmp/x'],
+    ['source .env.dev && echo ok'],
+    ['node -e "1" < .env.dev'],
+    ['cat ".env.dev"'],
+    ['bash -c "cat .env.dev"'],
+    ['ls .env*'],
   ])('%j', (cmd) => {
     expect(blocked(cmd)).toBeTruthy();
   });
@@ -55,6 +67,10 @@ describe('guard-bash allows', () => {
     ["gh pr create --body-file - <<'EOF'\n1. `supabase db push` from an up-to-date main\nEOF"],
     ['echo "$(git rev-parse HEAD)"'],
     ['bash -c "npm run check"'],
+    ['cat .env.example'],
+    ['cat apps/web/.env.example .env.dev.example'],
+    ['git commit -m "Copy .env.dev.example to .env.dev and fill it in"'],
+    ['npm run test:db'],
     // "bash" inside a file name, and sh -c only mentioned in prose, are not shells.
     ["node .claude/hooks/guard-bash.mjs > out; cat > t.mjs <<'EOF'\nconst c = [\"sh -c 'supabase db push'\"];\nEOF"],
     ['git commit -m "Never use sh -c \'supabase db push\' either"'],
@@ -76,5 +92,17 @@ describe('the hook as Claude Code runs it', () => {
 
   it('exits 0 for an allowed command', () => {
     expect(run('git status').status).toBe(0);
+  });
+});
+
+describe('team settings (#48)', () => {
+  const settings = JSON.parse(readFileSync(new URL('../.claude/settings.json', import.meta.url), 'utf8'));
+  it('asks before minting a dev sign-in link', () => {
+    expect(settings.permissions.allow).not.toContain('Bash(npm run dev:login *)');
+    expect(settings.permissions.ask).toContain('Bash(npm run dev:login *)');
+  });
+  it('still denies reading the secret env files', () => {
+    for (const f of ['./.env', './.env.dev', './apps/web/.env.local', './apps/mobile/.env'])
+      expect(settings.permissions.deny).toContain(`Read(${f})`);
   });
 });

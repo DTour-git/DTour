@@ -71,6 +71,15 @@ const rules = [
   ],
   [at('git\\s+push\\b[^;&|\\n]*(\\s-f\\b|--force(?!-with-lease))'), 'shape', 'Force push is not allowed.'],
   [at('git\\s+push\\b[^;&|\\n]*\\s(\\S+\\s+)?(HEAD:)?main\\b'), 'shape', 'Do not push to main directly. Open a pull request.'],
+  // #48: the Read() deny rules in settings.json don't cover the shell, so name the
+  // secret env files here too (.env, .env.dev, .env.local, anywhere in the repo;
+  // the *.example templates are fine). This only stops a command that names the
+  // file: scripts and tests that load it themselves still can (see AGENTS.md).
+  [
+    /(?:^|[\s=<>(:/])\.env(?:\.dev|\.local)?(?=$|[\s;&|)<>`*])/,
+    'shape',
+    'Secret env files (.env, .env.dev, .env.local) stay out of agent commands. Edit or copy them yourself.',
+  ],
 ];
 
 /** The reason `cmd` is blocked, or null. */

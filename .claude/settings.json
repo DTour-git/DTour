@@ -12,7 +12,6 @@
       "Bash(npm run build:web)",
       "Bash(npm run format)",
       "Bash(npm run format:check)",
-      "Bash(npm run dev:login *)",
       "Bash(npx tsc *)",
       "Bash(npx eslint *)",
       "Bash(npx vitest *)",
@@ -29,7 +28,13 @@
       "Bash(gh run view *)",
       "Bash(gh run list *)"
     ],
-    "ask": ["Bash(npm run db:dev:reset)", "Bash(supabase migration *)", "Bash(git push *)", "Bash(gh pr merge *)"],
+    "ask": [
+      "Bash(npm run db:dev:reset)",
+      "Bash(npm run dev:login *)",
+      "Bash(supabase migration *)",
+      "Bash(git push *)",
+      "Bash(gh pr merge *)"
+    ],
     "deny": [
       "Bash(supabase db reset --linked *)",
       "Bash(supabase db push *)",
