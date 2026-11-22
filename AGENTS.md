@@ -109,7 +109,7 @@ These are product decisions. Don't change them without asking.
 - **Never run `supabase db reset --linked`** or anything else that wipes the live project.
 - **After a schema change, regenerate the shared types:**
   `supabase gen types typescript --project-id megohwzcghnbfdzsaypz --schema public > packages/shared/src/database.types.ts`
-- **Demo content.** Rows from `seed.sql` are flagged `is_demo`. Notifications skip demo users, and `select public.dtour_clear_demo();` removes all demo content before launch.
+- **Demo content.** Rows from `seed.sql` are flagged `is_demo`. Notifications skip demo users, and `select public.dtour_clear_demo();` removes all demo content, and the dev test accounts at `@dtour.invalid`, before launch.
 
 ## Platform gotchas
 
