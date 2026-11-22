@@ -213,7 +213,9 @@ export async function getToday(sb: DB, tab: FeedTab = 'hot', branch: string | nu
     listThreads(sb, { tab, excludeNews: true, limit: 1, branch }),
     sb.from('wiki_articles').select('id,slug,title,editor_count,checked_at,cover_label,cover_path').eq('status', 'published').order('views_week', { ascending: false }).limit(1).maybeSingle(),
     getDesks(sb),
-    sb.from('teams').select('id,title,short_title,deadline_on,deadline_label,urgent,team_roles(name,filled,sort)').order('deadline_on', { nullsFirst: false }).limit(2),
+    // Soonest deadline first, but never one that has passed: a team with a 2020 deadline would hold the slot forever (#28).
+    sb.from('teams').select('id,title,short_title,deadline_on,deadline_label,urgent,team_roles(name,filled,sort)')
+      .or(`deadline_on.is.null,deadline_on.gte.${istDate()}`).order('deadline_on', { nullsFirst: false }).limit(2),
     sb.from('teams').select('id', { count: 'exact', head: true }),
     sb.from('places').select('*').not('home_sort', 'is', null).order('home_sort').limit(3),
     getSocietyStrip(sb),
@@ -926,6 +928,12 @@ export async function toggleHeart(sb: DB, placeId: number) {
 
 export async function recommendPlace(sb: DB, i: { userId: string; category: string; name: string; whereLabel: string; priceLabel: string; distanceKm?: number | null; imagePath?: string | null }) {
   must(await sb.from('places').insert({ author_id: i.userId, category: i.category, name: i.name, where_label: i.whereLabel, price_label: i.priceLabel, distance_km: i.distanceKm ?? null, image_path: i.imagePath ?? null, sort: 50 }));
+}
+/** Deletes a place: your own, or any as a moderator (RLS decides). */
+export async function deletePlace(sb: DB, id: number) {
+  const { data, error } = await sb.from('places').delete().eq('id', id).select('id');
+  if (error) throw new Error(error.message);
+  if (!data?.length) throw new Error('You can only delete places you added.');
 }
 
 // ── Profile ───────────────────────────────────────────────────────────────

@@ -4,6 +4,7 @@ import { Icon } from '@/components/Icon';
 import { Halftone, SectionRule, Tag } from '@/components/ui';
 import { Heart } from '@/components/Toggles';
 import { RecommendPlace } from '@/components/RecommendPlace';
+import { PlaceRemove } from '@/components/PlaceRemove';
 
 export const metadata = { title: 'Kahan chalein?' };
 const FILTERS: [string, string, string][] = [['all', 'Everything', 't-neutral'], ['campus', 'On campus', 't-accent2'], ['nearby', 'Khaana nearby', 't-accent'], ['delhi', 'Events in Delhi', 't-accent'], ['chill', 'Chill spots', 't-neutral'], ['cheap', 'Under ₹100', 't-neutral']];
@@ -40,6 +41,7 @@ export default async function KahanPage({ searchParams }: { searchParams: Promis
                 <div style={{ fontSize: 13.5, color: 'var(--color-neutral-700)', marginTop: 4 }}>{p.where_label}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8, fontSize: 13.5 }}>
                   <span style={{ fontWeight: 600 }}>{p.price_label}</span><Heart placeId={p.id} hearted={d.myHearts.has(p.id)} count={p.hearts} />
+                  <PlaceRemove placeId={p.id} authorId={p.author_id} />
                 </div>
               </div>
             ))}
@@ -60,6 +62,7 @@ export default async function KahanPage({ searchParams }: { searchParams: Promis
                 <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
                   {p.recs > 0 ? <Tag>{p.recs} recs</Tag> : p.tags[0] && <Tag>{p.tags[0]}</Tag>}
                   {(p.recs > 0 ? p.tags : p.tags.slice(1)).map((t) => <Tag key={t} tone="accent">{t}</Tag>)}
+                  <PlaceRemove placeId={p.id} authorId={p.author_id} />
                 </div>
               </div>
             ))}
@@ -77,7 +80,7 @@ export default async function KahanPage({ searchParams }: { searchParams: Promis
                   <div style={{ font: '600 28px var(--font-heading)', color: i === 0 ? 'var(--color-accent-2-700)' : 'var(--color-text)' }}>{p.event_on && dayNum(p.event_on + 'T12:00:00+05:30')}</div>
                   <div style={{ fontSize: 11, letterSpacing: '.1em', color: 'var(--color-neutral-700)' }}>{p.event_on && weekdayCaps(p.event_on + 'T12:00:00+05:30')}</div>
                 </div>
-                <div><div style={{ font: '600 18px/1.3 var(--font-heading)' }}>{p.name}</div><div style={{ fontSize: 13.5, color: 'var(--color-neutral-700)', marginTop: 3 }}>{p.where_label}</div></div>
+                <div><div style={{ font: '600 18px/1.3 var(--font-heading)' }}>{p.name}</div><div style={{ fontSize: 13.5, color: 'var(--color-neutral-700)', marginTop: 3 }}>{p.where_label} <PlaceRemove placeId={p.id} authorId={p.author_id} /></div></div>
                 {p.metro_minutes && <div style={{ fontSize: 13, color: 'var(--color-neutral-700)', display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="train-simple" size={17} color="var(--color-accent)" />~{p.metro_minutes} min</div>}
               </div>
             ))}
@@ -91,7 +94,7 @@ export default async function KahanPage({ searchParams }: { searchParams: Promis
               {chill.map((p) => (
                 <div key={p.id} style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
                   <Icon name={p.icon ?? 'map-pin'} size={26} color="var(--color-accent)" />
-                  <div><div style={{ font: '600 18px var(--font-heading)' }}>{p.name}</div><div style={{ fontSize: 13.5, color: 'var(--color-neutral-700)' }}>{p.where_label}</div></div>
+                  <div><div style={{ font: '600 18px var(--font-heading)' }}>{p.name}</div><div style={{ fontSize: 13.5, color: 'var(--color-neutral-700)' }}>{p.where_label} <PlaceRemove placeId={p.id} authorId={p.author_id} /></div></div>
                 </div>
               ))}
             </div>
