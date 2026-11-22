@@ -1115,6 +1115,7 @@ export type Database = {
           reviewed_by: string | null
           status: string
           thread_id: number | null
+          wiki_talk_id: number | null
         }
         Insert: {
           created_at?: string
@@ -1128,6 +1129,7 @@ export type Database = {
           reviewed_by?: string | null
           status?: string
           thread_id?: number | null
+          wiki_talk_id?: number | null
         }
         Update: {
           created_at?: string
@@ -1141,6 +1143,7 @@ export type Database = {
           reviewed_by?: string | null
           status?: string
           thread_id?: number | null
+          wiki_talk_id?: number | null
         }
         Relationships: [
           {
@@ -1176,6 +1179,13 @@ export type Database = {
             columns: ["thread_id"]
             isOneToOne: false
             referencedRelation: "threads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_wiki_talk_id_fkey"
+            columns: ["wiki_talk_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_talk"
             referencedColumns: ["id"]
           },
         ]

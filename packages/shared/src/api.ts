@@ -442,7 +442,7 @@ export const REPORT_REASONS: [ReportReason, string][] = [
   ['spam', 'Spam or ads'], ['harassment', 'Harassment or hate'], ['misinformation', 'False or misleading'],
   ['inappropriate', 'Inappropriate content'], ['other', 'Something else'],
 ];
-export type ReportTarget = { threadId: number } | { replyId: number } | { loungeMessageId: number };
+export type ReportTarget = { threadId: number } | { replyId: number } | { loungeMessageId: number } | { wikiTalkId: number };
 
 /** Returns false when you had already reported this. */
 export async function reportContent(sb: DB, i: { userId: string; target: ReportTarget; reason: ReportReason; details?: string }) {
@@ -452,6 +452,7 @@ export async function reportContent(sb: DB, i: { userId: string; target: ReportT
     thread_id: 'threadId' in t ? t.threadId : null,
     reply_id: 'replyId' in t ? t.replyId : null,
     lounge_message_id: 'loungeMessageId' in t ? t.loungeMessageId : null,
+    wiki_talk_id: 'wikiTalkId' in t ? t.wikiTalkId : null,
   });
   if (error?.code === '23505') return false;
   if (error) throw new Error(error.message);
@@ -460,31 +461,35 @@ export async function reportContent(sb: DB, i: { userId: string; target: ReportT
 
 export interface OpenReport {
   key: string; count: number; reasons: string[]; details: string[]; first_at: string; ids: number[];
-  kind: 'thread' | 'reply' | 'lounge'; title: string; body: string; route: string; author: PersonLite | null;
+  kind: 'thread' | 'reply' | 'lounge' | 'talk'; title: string; body: string; route: string; author: PersonLite | null;
 }
 export async function getOpenReports(sb: DB): Promise<OpenReport[]> {
   const rows = must(await sb.from('reports').select(
-    `id,reason,details,created_at,thread_id,reply_id,lounge_message_id,` +
+    `id,reason,details,created_at,thread_id,reply_id,lounge_message_id,wiki_talk_id,` +
     `thread:threads(id,title,body,author:profiles!threads_author_id_fkey(${PERSON})),` +
     `reply:replies(id,body,thread_id,author:profiles!replies_author_id_fkey(${PERSON})),` +
-    `message:lounge_messages(id,body,room_slug,author:profiles!lounge_messages_author_id_fkey(${PERSON}))`,
+    `message:lounge_messages(id,body,room_slug,author:profiles!lounge_messages_author_id_fkey(${PERSON})),` +
+    `talk:wiki_talk(id,body,article:wiki_articles(slug,title),author:profiles!wiki_talk_author_id_fkey(${PERSON}))`,
   ).eq('status', 'open').order('created_at')) as unknown as {
     id: number; reason: string; details: string | null; created_at: string;
-    thread_id: number | null; reply_id: number | null; lounge_message_id: number | null;
+    thread_id: number | null; reply_id: number | null; lounge_message_id: number | null; wiki_talk_id: number | null;
     thread: { id: number; title: string; body: string; author: PersonLite } | null;
     reply: { id: number; body: string; thread_id: number; author: PersonLite } | null;
     message: { id: number; body: string; room_slug: string; author: PersonLite } | null;
+    talk: { id: number; body: string; article: { slug: string; title: string } | null; author: PersonLite } | null;
   }[];
   const groups = new Map<string, OpenReport>();
   for (const r of rows) {
-    const key = r.thread_id ? `t${r.thread_id}` : r.reply_id ? `r${r.reply_id}` : `m${r.lounge_message_id}`;
+    const key = r.thread_id ? `t${r.thread_id}` : r.reply_id ? `r${r.reply_id}` : r.wiki_talk_id ? `w${r.wiki_talk_id}` : `m${r.lounge_message_id}`;
     let g = groups.get(key);
     if (!g) {
       g = r.thread
         ? { kind: 'thread', title: r.thread.title, body: r.thread.body, route: `/t/${r.thread.id}`, author: r.thread.author } as OpenReport
         : r.reply
           ? { kind: 'reply', title: 'Reply', body: r.reply.body, route: `/t/${r.reply.thread_id}`, author: r.reply.author } as OpenReport
-          : { kind: 'lounge', title: `Lounge · #${r.message?.room_slug ?? ''}`, body: r.message?.body ?? '', route: '/lounge', author: r.message?.author ?? null } as OpenReport;
+          : r.wiki_talk_id
+            ? { kind: 'talk', title: `Wiki talk · ${r.talk?.article?.title ?? ''}`, body: r.talk?.body ?? '', route: `/wiki/${r.talk?.article?.slug ?? ''}?tab=talk`, author: r.talk?.author ?? null } as OpenReport
+            : { kind: 'lounge', title: `Lounge · #${r.message?.room_slug ?? ''}`, body: r.message?.body ?? '', route: '/lounge', author: r.message?.author ?? null } as OpenReport;
       Object.assign(g, { key, count: 0, reasons: [], details: [], first_at: r.created_at, ids: [] });
       groups.set(key, g);
     }
@@ -740,6 +745,16 @@ export async function uploadImage(sb: DB, userId: string, file: Blob | ArrayBuff
 
 export async function postWikiTalk(sb: DB, articleId: number, userId: string, body: string) {
   must(await sb.from('wiki_talk').insert({ article_id: articleId, author_id: userId, body }));
+}
+/** Deletes a talk post: your own, or any as a moderator (RLS decides). */
+export async function deleteWikiTalk(sb: DB, id: number) {
+  const { data, error } = await sb.from('wiki_talk').delete().eq('id', id).select('id');
+  if (error) throw new Error(error.message);
+  if (!data?.length) throw new Error('You can only delete your own talk posts.');
+}
+/** What the moderation queue calls the reported thing: "Remove thread", "Remove comment"… */
+export function reportedNoun(kind: OpenReport['kind']) {
+  return kind === 'lounge' ? 'message' : kind === 'talk' ? 'comment' : kind;
 }
 
 // ── Library ───────────────────────────────────────────────────────────────

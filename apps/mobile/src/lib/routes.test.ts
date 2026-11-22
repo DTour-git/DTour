@@ -8,6 +8,7 @@ describe('appRoute', () => {
     ['/b/coe-sem-3/12', '/thread/12'],
     ['/b/academics', '/board/academics'],
     ['/wiki/how-to-get-a-9-cgpa-at-dtu', '/wiki/how-to-get-a-9-cgpa-at-dtu'],
+    ['/wiki/how-to-get-a-9-cgpa-at-dtu?tab=talk', '/wiki/how-to-get-a-9-cgpa-at-dtu'],
     ['/library/subject/CO201', '/library/CO201'],
     ['/u/aarav.k', '/u/aarav.k'],
     ['/lounge?room=global', '/lounge?room=global'],

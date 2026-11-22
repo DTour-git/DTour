@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, TextInput, View } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import {
-  REPORT_REASONS, agoLong, colors, fonts, getModQueue, getOpenReports, plain, resolveReport, reviewArticle, reviewRevision,
+  REPORT_REASONS, agoLong, colors, fonts, getModQueue, getOpenReports, plain, reportedNoun, resolveReport, reviewArticle, reviewRevision,
 } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
 import { useMe } from '@/lib/auth';
@@ -47,9 +47,9 @@ export default function Mod() {
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>{r.reasons.map((x) => <Tag key={x} tone="accent2">{REASON[x] ?? x}</Tag>)}</View>
             <T size={14.5} lh={1.5} style={{ marginTop: 8, padding: 10, backgroundColor: colors.surface }} numberOfLines={6}>{r.body || 'No text'}</T>
             {r.details.map((d, i) => <T key={i} size={13.5} i color={colors.neutral800} style={{ marginTop: 6 }}>“{d}”</T>)}
-            <Buttons busy={busy === r.key} no="Keep it up" yes={`Remove ${r.kind === 'lounge' ? 'message' : r.kind}`}
+            <Buttons busy={busy === r.key} no="Keep it up" yes={`Remove ${reportedNoun(r.kind)}`}
               onNo={() => act(r.key, () => resolveReport(supabase, r.ids[0], false))}
-              onYes={() => confirmRemove(r.key, r.kind === 'lounge' ? 'message' : r.kind, () => resolveReport(supabase, r.ids[0], true))} />
+              onYes={() => confirmRemove(r.key, reportedNoun(r.kind), () => resolveReport(supabase, r.ids[0], true))} />
           </View>
         ))}
         {data && !data.reports.length && <Empty>No open reports.</Empty>}
