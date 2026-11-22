@@ -28,7 +28,7 @@ Environment files are gitignored. Copy the examples and fill them in from the Su
 
 - **Project:** ref `megohwzcghnbfdzsaypz` (the team project). The original `pvtgvraqbgncrexnkoof` is no longer used.
 - **Schema:** `supabase/migrations`. Apply it with `supabase db push`.
-- **Demo content:** `supabase/seed.sql` holds all the copy from the prototypes. Every seeded row is flagged `is_demo`. To remove it before launch, run `select public.dtour_clear_demo();` in the SQL editor.
+- **Demo content:** `supabase/seed.sql` holds all the copy from the prototypes. Every seeded row is flagged `is_demo`. To remove it before launch, run `select public.dtour_clear_demo();` in the SQL editor. It also deletes the dev test accounts (`@dtour.invalid`) in case `supabase/dev/fixtures.sql` was ever applied there.
 - **Counters:** reply counts, scores, karma, downloads and RSVPs are kept current by triggers. Karma is +10 per upvote received and +25 for an accepted answer.
 - **Search:** the server pre-filters with a subsequence regex (`public.search`), and the client re-ranks results fzf-style (`packages/shared/src/fuzzy.ts`).
 - **Realtime:** Lounge messages use Postgres changes. "N online" counts come from a presence channel shared by the website and the app.
