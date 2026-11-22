@@ -51,3 +51,18 @@ test.describe('visitor', () => {
     await expect(dialog.getByText(/DSA end-sem/).first()).toBeVisible();
   });
 });
+
+test('the typeface is served by DTour itself, not Google Fonts', async ({ page }) => {
+  const google: string[] = [];
+  page.on('request', (r) => {
+    if (/fonts\.(googleapis|gstatic)\.com/.test(r.url())) google.push(r.url());
+  });
+  await page.goto('/');
+  await page.evaluate(() => document.fonts.ready);
+  const loaded = await page.evaluate(() =>
+    [...document.fonts].filter((f) => f.family.includes('sourceSerif4') && f.status === 'loaded').map((f) => `${f.weight} ${f.style}`),
+  );
+  expect(loaded.length).toBeGreaterThan(0);
+  expect(await page.evaluate(() => getComputedStyle(document.body).fontFamily)).toContain('sourceSerif4');
+  expect(google).toEqual([]);
+});
