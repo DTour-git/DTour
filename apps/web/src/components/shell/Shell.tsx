@@ -5,14 +5,22 @@ import { usePathname, useRouter } from 'next/navigation';
 import type { ProfileRow } from '@dtour/shared';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 
-export interface OnlineUser { id: string; handle: string; board: string | null; society: string | null }
+export interface OnlineUser {
+  id: string;
+  handle: string;
+  board: string | null;
+  society: string | null;
+}
 
 interface ShellCtx {
   /** Signed-in profile, or null for a visitor reading without an account. */
   me: ProfileRow | null;
   /** Returns the profile, or sends a visitor to sign in and returns null. Call at the start of any write. */
   requireMe: () => ProfileRow | null;
+  /** Signed-in students online, with names and boards. Empty for visitors (#41). */
   online: OnlineUser[];
+  /** How many students are online, for everyone, visitors included. */
+  onlineCount: number;
   setPresenceBoard: (slug: string | null) => void;
   searchOpen: boolean;
   openSearch: (q?: string) => void;
@@ -36,36 +44,67 @@ export function Shell({ me, children }: { me: ProfileRow | null; children: React
   const router = useRouter();
   const pathname = usePathname();
   const [online, setOnline] = useState<OnlineUser[]>([]);
+  const [onlineCount, setOnlineCount] = useState(0);
   const [searchOpen, setSearchOpen] = useState(false);
   const [initialQuery, setInitialQuery] = useState('');
   const [loungeOpen, setLoungeOpen] = useState(false);
   const [loungeRoom, setLoungeRoom] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const channelRef = useRef<ReturnType<ReturnType<typeof supabaseBrowser>['channel']> | null>(null);
+  const countRef = useRef<ReturnType<ReturnType<typeof supabaseBrowser>['channel']> | null>(null);
   const boardRef = useRef<string | null>(null);
 
-  // Realtime presence: who's on DTour right now, and which board they're reading.
+  // Realtime presence (#41). Who's online and which board they're reading is on
+  // a private channel only signed-in students can join (RLS on realtime.messages).
+  // Each student also leaves an anonymous entry (no id, no handle) on a public
+  // channel, so visitors still see how many people are here.
   useEffect(() => {
     const sb = supabaseBrowser();
-    const ch = sb.channel('presence:dtour', { config: { presence: { key: me?.id ?? `visitor-${Math.random().toString(36).slice(2)}` } } });
-    channelRef.current = ch;
-    const sync = () => {
-      const state = ch.presenceState<OnlineUser>();
-      const users = Object.values(state).map((list) => list[0]).filter(Boolean);
-      setOnline(users);
-    };
-    ch.on('presence', { event: 'sync' }, sync)
+    let cancelled = false;
+    const count = sb.channel('presence:dtour:count', { config: { presence: { key: `anon-${Math.random().toString(36).slice(2)}` } } });
+    countRef.current = count;
+    count
+      .on('presence', { event: 'sync' }, () => setOnlineCount(Object.keys(count.presenceState()).length))
       .subscribe(async (status) => {
-        // Visitors watch the count; only members are counted.
-        if (status === 'SUBSCRIBED' && me) await ch.track({ id: me.id, handle: me.handle, board: boardRef.current, society: null });
+        if (status === 'SUBSCRIBED' && me) await count.track({ board: boardRef.current });
       });
-    return () => { sb.removeChannel(ch); };
+
+    let named: ReturnType<typeof sb.channel> | null = null;
+    if (me) {
+      (async () => {
+        await sb.realtime.setAuth(); // the private channel checks the student's JWT
+        if (cancelled) return;
+        const ch = sb.channel('presence:dtour', { config: { private: true, presence: { key: me.id } } });
+        named = ch;
+        channelRef.current = ch;
+        ch.on('presence', { event: 'sync' }, () => {
+          setOnline(
+            Object.values(ch.presenceState<OnlineUser>())
+              .map((list) => list[0])
+              .filter(Boolean),
+          );
+        }).subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') await ch.track({ id: me.id, handle: me.handle, board: boardRef.current, society: null });
+        });
+      })();
+    }
+    return () => {
+      cancelled = true;
+      sb.removeChannel(count);
+      if (named) sb.removeChannel(named);
+      channelRef.current = null;
+    };
   }, [me?.id, me?.handle]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const setPresenceBoard = useCallback((slug: string | null) => {
-    boardRef.current = slug;
-    if (me) channelRef.current?.track({ id: me.id, handle: me.handle, board: slug, society: null });
-  }, [me]);
+  const setPresenceBoard = useCallback(
+    (slug: string | null) => {
+      boardRef.current = slug;
+      if (!me) return;
+      countRef.current?.track({ board: slug });
+      channelRef.current?.track({ id: me.id, handle: me.handle, board: slug, society: null });
+    },
+    [me],
+  );
 
   // `/` (when not typing) or ⌘K / Ctrl+K opens the search palette.
   useEffect(() => {
@@ -92,17 +131,40 @@ export function Shell({ me, children }: { me: ProfileRow | null; children: React
     return me;
   }, [me, router, pathname]);
 
-  const value = useMemo<ShellCtx>(() => ({
-    me, requireMe, online, setPresenceBoard, searchOpen,
-    openSearch: (q = '') => { setInitialQuery(q); setSearchOpen(true); },
-    closeSearch: () => setSearchOpen(false),
-    initialQuery, loungeOpen, setLoungeOpen, loungeRoom, openLounge: (room: string) => { setLoungeRoom(room); setLoungeOpen(true); }, toast,
-  }), [me, requireMe, online, setPresenceBoard, searchOpen, initialQuery, loungeOpen, loungeRoom, toast]);
+  const value = useMemo<ShellCtx>(
+    () => ({
+      me,
+      requireMe,
+      online: me ? online : [],
+      onlineCount,
+      setPresenceBoard,
+      searchOpen,
+      openSearch: (q = '') => {
+        setInitialQuery(q);
+        setSearchOpen(true);
+      },
+      closeSearch: () => setSearchOpen(false),
+      initialQuery,
+      loungeOpen,
+      setLoungeOpen,
+      loungeRoom,
+      openLounge: (room: string) => {
+        setLoungeRoom(room);
+        setLoungeOpen(true);
+      },
+      toast,
+    }),
+    [me, requireMe, online, onlineCount, setPresenceBoard, searchOpen, initialQuery, loungeOpen, loungeRoom, toast],
+  );
 
   return (
     <Ctx.Provider value={value}>
       {children}
-      {toastMsg && <div className="toast" role="status">{toastMsg}</div>}
+      {toastMsg && (
+        <div className="toast" role="status">
+          {toastMsg}
+        </div>
+      )}
     </Ctx.Provider>
   );
 }
@@ -120,5 +182,10 @@ export function PresenceBoard({ slug }: { slug: string }) {
 export function OnlineCount({ board, suffix = '' }: { board?: string; suffix?: string }) {
   const { online } = useShell();
   const n = board ? online.filter((u) => u.board === board).length : online.length;
-  return <>{n.toLocaleString('en-US')}{suffix}</>;
+  return (
+    <>
+      {n.toLocaleString('en-US')}
+      {suffix}
+    </>
+  );
 }
