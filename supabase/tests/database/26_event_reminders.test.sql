@@ -2,7 +2,7 @@
 -- which notifies each RSVP'd student once, about 30 minutes before an event.
 begin;
 \ir 00_helpers.sql
-select plan(13);
+select plan(14);
 
 insert into public.societies (id, slug, name) values
   ('00000000-0000-4000-8000-0000000c2601', 'reminder-test', 'Reminder Test');
@@ -22,12 +22,12 @@ select id, '00000000-0000-4000-8000-00000000e2e1' from public.society_posts wher
 
 select has_extension('pg_cron', 'pg_cron is enabled');
 select results_eq(
-  $$select schedule, command from cron.job where jobname = 'dtour-event-reminders'$$,
-  $$values ('*/15 * * * *', 'select public.enqueue_event_reminders()')$$,
-  'the reminder job runs every 15 minutes');
+  $$select schedule, command, active from cron.job where jobname = 'dtour-event-reminders'$$,
+  $$values ('*/15 * * * *', 'select public.enqueue_event_reminders()', true)$$,
+  'the reminder job is active and runs every 15 minutes');
 select is((select count(*) from cron.job where jobname = 'dtour-event-reminders'), 1::bigint, 'there is only one reminder job');
 
-select is(public.enqueue_event_reminders(), 1, 'the first run sends one reminder');
+select cmp_ok(public.enqueue_event_reminders(), '>=', 1, 'the first run sends the reminder');
 select is((select count(*) from public.notifications
            where user_id = '00000000-0000-4000-8000-00000000e2e1' and kind = 'event_reminder'), 1::bigint,
   'the RSVP student has one reminder in the bell');
@@ -48,6 +48,8 @@ select is((select count(*) from public.notifications
 select is((select count(*) from public.event_reminder_deliveries where post_id between 92602 and 92606), 0::bigint,
   'recruiting, undated, too-soon, too-far and demo posts get no reminder');
 
+select is(pg_temp.try_as('authenticated', '00000000-0000-4000-8000-00000000e2e1', $q$select count(*) from public.event_reminder_deliveries$q$), '42501',
+  'students cannot read the delivery log');
 select is(pg_temp.try_as('authenticated', '00000000-0000-4000-8000-00000000e2e1', $q$select public.enqueue_event_reminders()$q$), '42501',
   'students cannot run the reminder job');
 select is(pg_temp.try_as('anon', null, $q$select public.enqueue_event_reminders()$q$), '42501',

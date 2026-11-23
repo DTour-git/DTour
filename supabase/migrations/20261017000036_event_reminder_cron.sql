@@ -5,3 +5,6 @@
 -- migration is replayed.
 create extension if not exists pg_cron with schema pg_catalog;
 select cron.schedule('dtour-event-reminders', '*/15 * * * *', 'select public.enqueue_event_reminders()');
+
+-- Internal bookkeeping for the job: nobody signed in or anonymous needs to touch it.
+revoke all on public.event_reminder_deliveries from public, anon, authenticated;
