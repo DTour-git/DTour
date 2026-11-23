@@ -33,7 +33,10 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.search = `?next=${encodeURIComponent(path + request.nextUrl.search)}`;
-    return NextResponse.redirect(url);
+    const redirect = NextResponse.redirect(url);
+    // Keep any cookie the Auth client just cleared or refreshed (a revoked session's dead cookie).
+    response.cookies.getAll().forEach((c) => redirect.cookies.set(c));
+    return redirect;
   }
   return response;
 }
