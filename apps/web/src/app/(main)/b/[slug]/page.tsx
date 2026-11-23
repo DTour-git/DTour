@@ -11,6 +11,13 @@ import { boardHref } from '@/lib/routes';
 
 const TABS: [FeedTab, string][] = [['hot', 'Hot'], ['new', 'New'], ['top', 'Top this week']];
 
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const { sb } = await currentUser();
+  const { data } = await sb.from('boards').select('name,description').eq('slug', slug).maybeSingle();
+  return { title: data?.name ?? 'Board', description: data?.description ?? undefined };
+}
+
 export default async function BoardPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ tab?: string; n?: string }> }) {
   const [{ slug }, { tab: raw, n: rawN }] = await Promise.all([params, searchParams]);
   const limit = Math.min(Math.max(Number(rawN) || PAGE_SIZE, PAGE_SIZE), 400);

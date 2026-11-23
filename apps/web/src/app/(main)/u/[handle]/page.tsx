@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { agoLong, compact, currentHandle, flair, getDrafts, getProfile, getSaved, n, yearLabel } from '@dtour/shared';
 import { currentUser } from '@/lib/supabase-server';
+import { NOINDEX } from '@/lib/seo';
 import { Icon } from '@/components/Icon';
 import { Avatar, CmykNum, Seal, Tag } from '@/components/ui';
 import { ThreadRow } from '@/components/ThreadRow';
@@ -12,7 +13,9 @@ const BAR = ['var(--color-accent-2)', 'var(--color-accent)', 'var(--color-neutra
 
 export async function generateMetadata({ params }: { params: Promise<{ handle: string }> }) {
   const { handle } = await params;
-  return { title: `@${handle}` };
+  const { sb } = await currentUser();
+  const { data } = await sb.from('profiles').select('bio,is_demo').eq('handle', handle).maybeSingle();
+  return { title: `@${handle}`, description: data?.bio ?? undefined, ...(data?.is_demo && NOINDEX) };
 }
 
 export default async function ProfilePage({ params, searchParams }: { params: Promise<{ handle: string }>; searchParams: Promise<{ tab?: string }> }) {

@@ -5,7 +5,7 @@ import { Icon } from '@/components/Icon';
 import { Halftone } from '@/components/ui';
 import { Rsvp } from '@/components/Toggles';
 
-export const metadata = { title: 'Society board' };
+export const metadata = { title: 'Society board', description: 'Events, recruitments, workshops and talks from DTU societies.' };
 const FILTERS: [string | null, string, string][] = [[null, 'All', 't-neutral'], ['event', 'Events', 't-accent2'], ['recruiting', 'Recruitments', 't-accent2'], ['workshop', 'Workshops', 't-accent'], ['talk', 'Talks & lectures', 't-accent']];
 
 export default async function SocietiesPage({ searchParams }: { searchParams: Promise<{ kind?: string }> }) {
