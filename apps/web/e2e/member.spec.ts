@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { cleanup, signIn } from './helpers';
+import { adminInsert, cleanup, signIn } from './helpers';
 
 const marker = `e2e reply ${Date.now()}`;
 const revisionMarker = `e2e wiki image ${Date.now()}`;
@@ -19,6 +19,26 @@ test.describe('member', () => {
     await page.getByPlaceholder('Add a reply…').fill(marker);
     await page.getByRole('button', { name: 'Reply', exact: true }).click();
     await expect(page.getByText(marker)).toBeVisible();
+  });
+
+  test('a signed-in student sees their reply vote after reload', async ({ page }) => {
+    // Signed-in thread pages run an extra query (the member's reply votes); this covers it end to end.
+    const voteMarker = `e2e reply vote ${Date.now()}`;
+    await adminInsert('replies', { thread_id: 3, author_id: '00000000-0000-4000-8000-00000000e2e1', body: voteMarker });
+    await signIn(page, 'e2e.student');
+    await page.goto('/b/campus-buzz/3');
+
+    const reply = page.getByText(voteMarker, { exact: true }).locator('xpath=ancestor::div[.//button[@aria-pressed]][1]');
+    const vote = reply.locator('button[aria-pressed]').first();
+    await expect(vote).toHaveAttribute('aria-pressed', 'false');
+    await expect(vote).toHaveText('0');
+    await vote.click();
+    await expect(vote).toHaveAttribute('aria-pressed', 'true');
+    await expect(vote).toHaveText('1');
+
+    await page.reload();
+    await expect(vote).toHaveAttribute('aria-pressed', 'true');
+    await expect(vote).toHaveText('1');
   });
 
   test('the moderator sees the moderation queue', async ({ page }) => {

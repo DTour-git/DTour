@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hotness, matchesSkills, nextHandleChange, sortReplies, type ReplyNode, type TeamCard } from './api';
+import { getBoard, hotness, matchesSkills, nextHandleChange, sortReplies, type ReplyNode, type TeamCard } from './api';
 
 const ago = (h: number) => new Date(Date.now() - h * 3600e3).toISOString();
 
@@ -67,5 +67,20 @@ describe('matchesSkills', () => {
     expect(matchesSkills(team, ['frontend'])).toBe(true);
     expect(matchesSkills(team, ['ML'])).toBe(false);
     expect(matchesSkills(team, [])).toBe(false);
+  });
+});
+
+describe('getBoard', () => {
+  const fake = (tables: Record<string, unknown[]>) =>
+    ({ from: (t: string) => ({ select: async () => ({ data: tables[t] ?? [], error: null }) }) }) as unknown as Parameters<
+      typeof getBoard
+    >[0];
+
+  it('returns null for an unknown board', async () => {
+    await expect(getBoard(fake({}), 'nope')).resolves.toBeNull();
+  });
+  it('throws a clear error when the board has no category', async () => {
+    const boards = [{ id: 'b1', slug: 'x', category_id: 9, parent_id: null, sort: 0 }];
+    await expect(getBoard(fake({ boards }), 'x')).rejects.toThrow(/Category 9 for board x not found/);
   });
 });
