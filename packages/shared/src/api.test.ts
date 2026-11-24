@@ -79,8 +79,28 @@ describe('similarThreads', () => {
     const { sb, rpc } = fakeDb({
       error: null,
       data: [
-        { kind: 'wiki', id: 2, slug: 'endsem-plan', title: 'End-sem plan', board_name: null, score: null, reply_count: null, editor_count: 4, rank: 0.9 },
-        { kind: 'thread', id: 7, slug: null, title: 'DSA end-sem: which units?', board_name: 'COE · 3rd sem', score: 12, reply_count: 5, editor_count: null, rank: 0.7 },
+        {
+          kind: 'wiki',
+          id: 2,
+          slug: 'endsem-plan',
+          title: 'End-sem plan',
+          board_name: null,
+          score: null,
+          reply_count: null,
+          editor_count: 4,
+          rank: 0.9,
+        },
+        {
+          kind: 'thread',
+          id: 7,
+          slug: null,
+          title: 'DSA end-sem: which units?',
+          board_name: 'COE · 3rd sem',
+          score: 12,
+          reply_count: 5,
+          editor_count: null,
+          rank: 0.7,
+        },
       ],
     });
     expect(await similarThreads(sb, 'DSA endsem units', 2)).toEqual([

@@ -68,8 +68,12 @@ export function Composer({ me, boards, societies, subjects, initialType, initial
   const board = boards.find((b) => b.id === boardId);
 
   useEffect(() => {
-    const t = setTimeout(async () => setSimilar(title.trim().length > 3 ? await similarThreads(supabaseBrowser(), title) : []), 250);
-    return () => clearTimeout(t);
+    let live = true; // a slow answer for an older title must not overwrite a newer one
+    const t = setTimeout(async () => {
+      const found = title.trim().length > 3 ? await similarThreads(supabaseBrowser(), title).catch(() => []) : [];
+      if (live) setSimilar(found);
+    }, 250);
+    return () => { live = false; clearTimeout(t); };
   }, [title]);
 
   const suggested = useMemo(() => {
