@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compact, dateline, daysBetween, deadlineText, fileSize, flair, initials, n, ordinalSem, weekOfSem, yearLabel } from './format';
+import { compact, dateline, daysBetween, deadlineText, fileSize, flair, fromIstInput, istInput, initials, n, ordinalSem, weekOfSem, yearLabel } from './format';
 
 describe('numbers', () => {
   it('n adds thousands separators', () => {
@@ -59,5 +59,17 @@ describe('dates', () => {
     expect(deadlineText('2026-10-10', null, now)).toBe('Closed');
     expect(deadlineText(null, 'Trials Nov 2', now)).toBe('Trials Nov 2');
     expect(deadlineText(null, null, now)).toBe('Rolling');
+  });
+});
+
+describe('IST form values', () => {
+  it('round-trips a time entered in IST', () => {
+    expect(fromIstInput('2026-11-24T14:30')).toBe('2026-11-24T09:00:00.000Z');
+    expect(istInput('2026-11-24T09:00:00.000Z')).toBe('2026-11-24T14:30');
+    expect(istInput(fromIstInput('2026-12-31 23:45')!)).toBe('2026-12-31T23:45');
+  });
+  it('rejects text that is not a date and time', () => {
+    expect(fromIstInput('tomorrow')).toBeNull();
+    expect(fromIstInput('2026-13-40 10:00')).toBeNull();
   });
 });

@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, TextInput, View } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import {
-  REPORT_REASONS, agoLong, colors, fonts, getModQueue, getOpenReports, plain, reportedNoun, resolveReport, reviewArticle, reviewRevision,
+  REPORT_REASONS, agoLong, colors, fonts, getCampusAdmin, getModQueue, getOpenReports, plain, reportedNoun, resolveReport, reviewArticle, reviewRevision,
 } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
 import { useMe } from '@/lib/auth';
 import { useData } from '@/lib/useData';
 import { appRoute } from '@/lib/routes';
 import { T } from '@/components/T';
+import { CampusAdmin } from '@/components/CampusAdmin';
 import { AppBar, PrimaryBtn, Screen, Tag, rowRule } from '@/components/ui';
 
 const REASON = Object.fromEntries(REPORT_REASONS);
@@ -18,8 +19,8 @@ export default function Mod() {
   const me = useMe();
   const router = useRouter();
   const { data, refreshing, refresh, reload } = useData(async () => {
-    const [queue, reports] = await Promise.all([getModQueue(supabase), getOpenReports(supabase)]);
-    return { ...queue, reports };
+    const [queue, reports, campus] = await Promise.all([getModQueue(supabase), getOpenReports(supabase), getCampusAdmin(supabase)]);
+    return { ...queue, reports, campus };
   });
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
@@ -88,6 +89,8 @@ export default function Mod() {
           );
         })}
         {data && !data.revisions.length && <Empty>No edits waiting.</Empty>}
+
+        {data && <CampusAdmin data={data.campus} isAdmin={me.role === 'admin'} reload={reload} />}
       </ScrollView>
     </Screen>
   );

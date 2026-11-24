@@ -97,6 +97,18 @@ export function istDate(date = new Date()): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(date);
 }
 
+/** An ISO timestamp as "YYYY-MM-DDTHH:mm" in IST, the value of a datetime-local input. */
+export function istInput(iso: string | Date): string {
+  return new Date(new Date(iso).getTime() + 330 * MIN).toISOString().slice(0, 16);
+}
+
+/** "YYYY-MM-DDTHH:mm" (or with a space) typed in IST back to an ISO timestamp, or null if it isn't one. */
+export function fromIstInput(s: string): string | null {
+  const m = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})$/.exec(s.trim());
+  const d = m ? new Date(`${m[1]}T${m[2]}:00+05:30`) : null;
+  return d && !Number.isNaN(d.getTime()) ? d.toISOString() : null;
+}
+
 export function daysBetween(fromIsoDate: string, toIsoDate: string): number {
   return Math.round((Date.parse(toIsoDate) - Date.parse(fromIsoDate)) / DAY);
 }
