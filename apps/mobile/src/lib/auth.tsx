@@ -4,6 +4,7 @@ import type { Session } from '@supabase/supabase-js';
 import type { ProfileRow } from '@dtour/shared';
 import { supabase } from './supabase';
 import { unregisterPush } from './push';
+import { setMonitoringUser } from './monitoring';
 
 interface AuthCtx {
   ready: boolean;
@@ -45,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<ProfileRow | null>(null);
 
   const load = useCallback(async (s: Session | null) => {
+    setMonitoringUser(s?.user.id ?? null);
     if (!s) { setProfile(null); return; }
     const { data, error } = await supabase.from('profiles').select('*').eq('id', s.user.id).maybeSingle();
     setProfile(data);

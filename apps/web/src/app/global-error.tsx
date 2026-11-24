@@ -1,7 +1,11 @@
 'use client';
 
+import { useEffect } from 'react';
+import { reportError } from '@/lib/monitoring';
+
 // Last-resort error screen when even the root layout fails.
-export default function GlobalError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  useEffect(() => { reportError(error); }, [error]);
   return (
     <html lang="en">
       <body style={{ margin: 0, minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#f3f2f2', color: '#201e1d', fontFamily: 'Georgia, serif' }}>

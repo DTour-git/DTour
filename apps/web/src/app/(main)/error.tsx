@@ -3,9 +3,10 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { Icon } from '@/components/Icon';
+import { reportError } from '@/lib/monitoring';
 
 export default function MainError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  useEffect(() => { console.error(error); }, [error]);
+  useEffect(() => { console.error(error); reportError(error); }, [error]);
   return (
     <div className="px" style={{ paddingTop: 72, paddingBottom: 96, maxWidth: 680 }}>
       <div className="kicker" style={{ color: 'var(--color-accent-2-700)' }}>Something went wrong</div>

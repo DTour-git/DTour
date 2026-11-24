@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { usePathname, useRouter } from 'next/navigation';
 import type { ProfileRow } from '@dtour/shared';
 import { supabaseBrowser } from '@/lib/supabase-browser';
+import { setMonitoringUser } from '@/lib/monitoring';
 
 export interface OnlineUser {
   id: string;
@@ -53,6 +54,8 @@ export function Shell({ me, children }: { me: ProfileRow | null; children: React
   const channelRef = useRef<ReturnType<ReturnType<typeof supabaseBrowser>['channel']> | null>(null);
   const countRef = useRef<ReturnType<ReturnType<typeof supabaseBrowser>['channel']> | null>(null);
   const boardRef = useRef<string | null>(null);
+
+  useEffect(() => { setMonitoringUser(me?.id ?? null); }, [me?.id]);
 
   // Realtime presence (#41). Who's online and which board they're reading is on
   // a private channel only signed-in students can join (RLS on realtime.messages).

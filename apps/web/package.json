@@ -13,6 +13,7 @@
   "dependencies": {
     "@dtour/shared": "*",
     "@phosphor-icons/react": "^2.1.10",
+    "@sentry/nextjs": "^11.17.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.118.0",
     "katex": "^0.19.1",
