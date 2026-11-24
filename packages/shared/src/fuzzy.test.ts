@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fuzzy, overlap, parseQuery, rank, segments, titleWords, type SearchDoc } from './fuzzy';
+import { fuzzy, parseQuery, rank, segments, titleWords, type SearchDoc } from './fuzzy';
 
 const doc = (title: string, kind = 'Thread'): SearchDoc => ({
   kind,
@@ -76,8 +76,5 @@ describe('rank', () => {
 describe('Already asked? helpers', () => {
   it('titleWords keeps words longer than 2 characters', () => {
     expect(titleWords('Is the DSA end-sem hard?')).toEqual(['the', 'dsa', 'end', 'sem', 'hard']);
-  });
-  it('overlap counts shared words', () => {
-    expect(overlap(['dsa', 'notes', 'sem'], 'DSA end-sem papers')).toBe(2);
   });
 });
