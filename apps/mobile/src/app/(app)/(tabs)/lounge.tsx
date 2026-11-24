@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { chatTime, colors, deleteLoungeMessage, editLoungeMessage, fonts, getLoungeMessage, getLoungeMessages, getLoungeRooms, sendLoungeMessage, unreadCounts, type LoungeMessage, type ReportTarget } from '@dtour/shared';
+import { chatTime, colors, deleteLoungeMessage, editLoungeMessage, fonts, getLoungeMessage, getLoungeMessages, getLoungeRooms, isRateLimited, sendLoungeMessage, unreadCounts, type LoungeMessage, type ReportTarget } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
 import { useMe, useRequireMe } from '@/lib/auth';
 import { useData } from '@/lib/useData';
@@ -76,7 +76,7 @@ export default function Lounge() {
     const temp: LoungeMessage = { id: -Date.now(), room_slug: room, body, created_at: new Date().toISOString(), promoted_thread_id: null, pending: true,
       author: { id: me.id, handle: me.handle, display_name: me.display_name, branch_code: me.branch_code, grad_year: me.grad_year, tint: me.tint as never, karma: me.karma }, society: null };
     setMsgs((m) => [...m, temp]);
-    try { await sendLoungeMessage(supabase, room, me.id, body); } catch { setMsgs((m) => m.filter((x) => x.id !== temp.id)); setDraft(body); }
+    try { await sendLoungeMessage(supabase, room, me.id, body); } catch (e) { setMsgs((m) => m.filter((x) => x.id !== temp.id)); setDraft(body); if (isRateLimited(e)) Alert.alert((e as Error).message); }
   };
 
   const openMenu = (m: LoungeMessage) => {

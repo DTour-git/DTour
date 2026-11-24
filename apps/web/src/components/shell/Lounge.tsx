@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { boardPicker, chatTime, deleteLoungeMessage, editLoungeMessage, getLoungeMessage, getLoungeMessages, promoteLoungeMessage, sendLoungeMessage, titleFromMessage, type LoungeMessage } from '@dtour/shared';
+import { boardPicker, chatTime, deleteLoungeMessage, editLoungeMessage, getLoungeMessage, getLoungeMessages, isRateLimited, promoteLoungeMessage, sendLoungeMessage, titleFromMessage, type LoungeMessage } from '@dtour/shared';
 import { useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Icon } from '../Icon';
@@ -92,7 +92,7 @@ function Drawer({ rooms, onClose }: { rooms: Room[]; onClose: () => void }) {
     };
     setMsgs((m) => [...m, temp]);
     try { await sendLoungeMessage(supabaseBrowser(), room, me.id, body); }
-    catch { setMsgs((m) => m.filter((x) => x.id !== temp.id)); setDraft(body); toast('Message not sent — try again.'); }
+    catch (e) { setMsgs((m) => m.filter((x) => x.id !== temp.id)); setDraft(body); toast(isRateLimited(e) ? (e as Error).message : 'Message not sent — try again.'); }
   };
 
   const saveEdit = async () => {

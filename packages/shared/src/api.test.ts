@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hotness, matchesSkills, nextHandleChange, sortReplies, type ReplyNode, type TeamCard } from './api';
+import { hotness, isRateLimited, matchesSkills, nextHandleChange, sortReplies, type ReplyNode, type TeamCard } from './api';
 
 const ago = (h: number) => new Date(Date.now() - h * 3600e3).toISOString();
 
@@ -67,5 +67,13 @@ describe('matchesSkills', () => {
     expect(matchesSkills(team, ['frontend'])).toBe(true);
     expect(matchesSkills(team, ['ML'])).toBe(false);
     expect(matchesSkills(team, [])).toBe(false);
+  });
+});
+
+describe('isRateLimited', () => {
+  it('recognises the database rate-limit message only', () => {
+    expect(isRateLimited(new Error('Slow down a little — try again in a minute.'))).toBe(true);
+    expect(isRateLimited(new Error('permission denied'))).toBe(false);
+    expect(isRateLimited('Slow down a little')).toBe(false);
   });
 });

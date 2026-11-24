@@ -55,6 +55,9 @@ function must<R extends { data: unknown; error: { message: string } | null }>(r:
   return r.data as Ok<R>;
 }
 
+/** True for the database's "Slow down a little — try again in …" error (SQLSTATE DT429, see the rate_limits migration). */
+export const isRateLimited = (e: unknown) => e instanceof Error && e.message.startsWith('Slow down a little');
+
 // ── Session & config ──────────────────────────────────────────────────────
 export interface Me { userId: string; email: string | null; profile: ProfileRow }
 

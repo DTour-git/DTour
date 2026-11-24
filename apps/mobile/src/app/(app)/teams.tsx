@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ago, colors, deadlineText, flair, getTeams, matchesSkills, reviewTeamRequest, toggleTeamRequest, type TeamCard, type TeamRequest } from '@dtour/shared';
+import { ago, colors, deadlineText, flair, getTeams, isRateLimited, matchesSkills, reviewTeamRequest, toggleTeamRequest, type TeamCard, type TeamRequest } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
 import { useMe, useRequireMe } from '@/lib/auth';
 import { useData } from '@/lib/useData';
@@ -43,7 +43,7 @@ export default function Teams() {
     if (!data || !requireMe()) return;
     const r = new Set(data.myRequests); if (r.has(id)) r.delete(id); else r.add(id);
     setData({ ...data, myRequests: r });
-    await toggleTeamRequest(supabase, id).catch(refresh);
+    await toggleTeamRequest(supabase, id).catch((e) => { refresh(); if (isRateLimited(e)) Alert.alert((e as Error).message); });
   };
 
   return (
