@@ -4,6 +4,9 @@ begin;
 \ir 00_helpers.sql
 select plan(21);
 
+-- Start from empty budgets: earlier browser tests may have left ledger rows for these accounts (rolled back with this file).
+delete from public.rate_limit_hits where user_id in ('00000000-0000-4000-8000-00000000e2e1', '00000000-0000-4000-8000-00000000e2e2');
+
 -- How many of n runs of sql succeed for that user, and the first error message when one does not.
 create function pg_temp.ok_count(uid uuid, q text, n int) returns bigint language sql as $$
   select count(*) filter (where pg_temp.try_as('authenticated', uid, q) = 'ok') from generate_series(1, n)
@@ -39,6 +42,7 @@ select is(pg_temp.try_as('authenticated', '00000000-0000-4000-8000-00000000e2e1'
 select is(pg_temp.ok_count('00000000-0000-4000-8000-00000000e2e2', $$insert into public.lounge_messages (room_slug, author_id, body) values ((select slug from public.lounge_rooms limit 1), '00000000-0000-4000-8000-00000000e2e2', 'hi')$$, 15), 15::bigint,
   'a moderator is not limited');
 -- So are server-side writes, even with a member's claims still set on the connection.
+select set_config('request.jwt.claims', pg_temp.claims('00000000-0000-4000-8000-00000000e2e1'), true);
 insert into public.lounge_messages (room_slug, author_id, body)
 select (select slug from public.lounge_rooms limit 1), '00000000-0000-4000-8000-00000000e2e1'::uuid, 'server side' from generate_series(1, 12);
 select is((select count(*) from public.lounge_messages where body = 'server side'), 12::bigint, 'writes as postgres are not limited');
