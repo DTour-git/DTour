@@ -29,7 +29,7 @@ select is(pg_temp.count_as('authenticated', '00000000-0000-4000-8000-00000000e2e
 select is(pg_temp.count_as('authenticated', '00000000-0000-4000-8000-00000000e2e1',
   'with d as (delete from public.reply_votes where reply_id = 91011 returning 1) select count(*) from d'), 0::bigint, 'cannot delete another member''s reply vote');
 select is(pg_temp.count_as('authenticated', '00000000-0000-4000-8000-00000000e2e1',
-  $q$with u as (update public.drafts set title = 'hijacked' returning 1) select count(*) from u$q$), 0::bigint, 'cannot edit another member''s draft');
+  $q$with u as (update public.drafts set title = 'hijacked' where title = 'private draft' returning 1) select count(*) from u$q$), 0::bigint, 'cannot edit another member''s draft');
 select is(pg_temp.count_as('authenticated', '00000000-0000-4000-8000-00000000e2e1',
   $q$with u as (update public.notifications set read_at = now() where text = 'x' returning 1) select count(*) from u$q$), 0::bigint, 'cannot mark another member''s notification read');
 select is(pg_temp.try_as('authenticated', '00000000-0000-4000-8000-00000000e2e1',

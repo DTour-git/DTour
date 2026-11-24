@@ -11,6 +11,8 @@ const MODERATOR = '00000000-0000-4000-8000-00000000e2e2';
 
 test.afterAll(async () => {
   await cleanup('threads', `title=like.${encodeURIComponent('e2e flow %')}`);
+  // Triggers also wrote activity rows (thread posted, answer accepted) that would now link to nothing.
+  await cleanup('activities', `title=like.${encodeURIComponent('%e2e flow %')}`);
 });
 
 /** Opens a thread from its board page, the way a student would find it. */
@@ -51,6 +53,7 @@ for (const [type, label] of [
     await page.getByRole('button', { name: 'Delete' }).click();
     await expect(page).toHaveURL(/\/b\/campus-buzz$/);
     await page.goto('/b/campus-buzz?tab=new');
+    await expect(page.getByRole('link', { name: 'Post here' })).toBeVisible(); // the board has rendered
     await expect(page.getByRole('link', { name: title })).toHaveCount(0);
   });
 }
@@ -62,23 +65,35 @@ test('a student can vote on, save and accept an answer on a thread', async ({ pa
   const threadId = await openFromBoard(page, title);
   await adminInsert('replies', { thread_id: threadId, author_id: MODERATOR, body: `${prefix} an answer` });
   await page.reload();
-  await expect(page.getByText(`${prefix} an answer`)).toBeVisible();
+  await expect(page.getByRole('main').getByText(`${prefix} an answer`)).toBeVisible();
+
+  // The votes update the page at once, so wait for the server call and reload to see what was stored.
+  const saved = (rpc: string) => page.waitForResponse((r) => r.url().includes(`/rpc/${rpc}`) && r.ok());
 
   // Thread vote: up, then back to zero.
   const up = page.getByRole('button', { name: 'Upvote' });
   const score = up.locator('xpath=following-sibling::span[1]');
   await expect(score).toHaveText('0');
+  let done = saved('set_thread_vote');
   await up.click();
+  await done;
+  await page.reload();
   await expect(up).toHaveAttribute('aria-pressed', 'true');
   await expect(score).toHaveText('1');
+  done = saved('set_thread_vote');
   await up.click();
+  await done;
+  await page.reload();
   await expect(up).toHaveAttribute('aria-pressed', 'false');
   await expect(score).toHaveText('0');
 
   // Reply vote: the only button named by a bare number is the reply's.
   const replyVote = page.getByRole('button', { name: /^\d+$/ });
   await expect(replyVote).toHaveText('0');
+  done = saved('set_reply_vote');
   await replyVote.click();
+  await done;
+  await page.reload();
   await expect(replyVote).toHaveAttribute('aria-pressed', 'true');
   await expect(replyVote).toHaveText('1');
 

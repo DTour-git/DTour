@@ -5,8 +5,8 @@ begin;
 select plan(11);
 
 -- A rename rewrites @mentions of the old handle in threads, but not longer handles that share its prefix.
-update public.profiles set handle_changed_at = null where id = '00000000-0000-4000-8000-00000000e2e1';
-delete from public.handle_history where user_id = '00000000-0000-4000-8000-00000000e2e1';
+update public.profiles set handle_changed_at = null where id in ('00000000-0000-4000-8000-00000000e2e1', '00000000-0000-4000-8000-00000000e2e2');
+delete from public.handle_history where user_id in ('00000000-0000-4000-8000-00000000e2e1', '00000000-0000-4000-8000-00000000e2e2');
 insert into public.threads (id, board_id, author_id, title, body)
 overriding system value values (91501, '00000000-0000-4000-8000-000000000201', '00000000-0000-4000-8000-00000000e2e2', 'Mention rewrite test', 'ping @e2e.student, not @e2e.student_x');
 

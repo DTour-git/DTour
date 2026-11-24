@@ -20,6 +20,8 @@ test.afterAll(async () => {
   await cleanup('teams', `title${like('e2e flow %')}`);
   await cleanup('society_posts', `title${like('e2e flow %')}`);
   await cleanup('lounge_messages', `body${like('e2e flow %')}`);
+  // Triggers also wrote activity rows (replies, wiki edits) that would now link to nothing.
+  await cleanup('activities', `title${like('%e2e flow %')}`);
 });
 
 /** Switches accounts in the same browser. */
@@ -63,7 +65,7 @@ test('a reported reply shows up in the moderation queue and the moderator can re
 
   await signIn(page, 'e2e.student', '/b/campus-buzz/3');
   // The nearest block around the reply text that holds its Report button.
-  const reply = page.getByText(body).locator('xpath=ancestor::div[.//button[normalize-space()="Report"]][1]');
+  const reply = page.getByRole('main').getByText(body).locator('xpath=ancestor::div[.//button[normalize-space()="Report"]][1]');
   await reply.getByRole('button', { name: 'Report' }).click();
   const dialog = page.getByRole('dialog', { name: 'Report this post' });
   await dialog.getByLabel('Spam or ads').check();
@@ -73,12 +75,13 @@ test('a reported reply shows up in the moderation queue and the moderator can re
   await switchTo(page, 'e2e.moderator');
   await page.goto('/mod');
   const report = page.locator('.row-rule').filter({ hasText: body });
-  await expect(report.getByText('Spam or ads')).toBeVisible();
+  await expect(report.getByText('Spam or ads', { exact: true })).toBeVisible();
   page.once('dialog', (d) => d.accept());
   await report.getByRole('button', { name: /^Remove/ }).click();
   await expect(report).toHaveCount(0);
 
   await page.goto('/b/campus-buzz/3');
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible(); // the thread has rendered
   await expect(page.getByText(body)).toHaveCount(0);
 });
 
@@ -124,15 +127,22 @@ test('RSVPing to a society event toggles and the count follows', async ({ page }
   });
 
   await signIn(page, 'e2e.student', '/societies');
-  const post = page.getByText(title, { exact: true }).locator('..');
+  const post = page.getByRole('main').getByText(title, { exact: true }).locator('..');
   const rsvp = post.getByRole('button', { name: /RSVP|Going/ });
   await expect(post.getByText('0 going')).toBeVisible();
-  await rsvp.click();
-  await expect(rsvp).toHaveAttribute('aria-pressed', 'true');
-  await expect(post.getByText('1 going')).toBeVisible();
-  await rsvp.click();
-  await expect(rsvp).toHaveAttribute('aria-pressed', 'false');
-  await expect(post.getByText('0 going')).toBeVisible();
+
+  // The button updates the page at once, so wait for the server call and reload to see what was stored.
+  for (const [pressed, count] of [
+    ['true', '1 going'],
+    ['false', '0 going'],
+  ]) {
+    const done = page.waitForResponse((r) => r.url().includes('/rpc/toggle_rsvp') && r.ok());
+    await rsvp.click();
+    await done;
+    await page.reload();
+    await expect(rsvp).toHaveAttribute('aria-pressed', pressed);
+    await expect(post.getByText(count)).toBeVisible();
+  }
 });
 
 test('a student can send, edit and delete a Lounge message', async ({ page }) => {
@@ -147,21 +157,33 @@ test('a student can send, edit and delete a Lounge message', async ({ page }) =>
   await message.getByRole('button', { name: 'Edit' }).click();
   // While editing, the text lives in an input, so `message` no longer matches; use the drawer.
   await lounge.getByLabel('Edit message').fill(`${text} edited`);
+  const edited = page.waitForResponse((r) => r.request().method() === 'PATCH' && r.url().includes('/lounge_messages') && r.ok());
   await lounge.getByRole('button', { name: 'Save' }).click();
+  await edited;
   await expect(lounge.getByText(`${text} edited`)).toBeVisible();
 
+  // Reopen the Lounge to see what was stored.
+  await page.goto('/lounge');
+  await expect(lounge.getByText(`${text} edited`)).toBeVisible();
+
+  const deleted = page.waitForResponse((r) => r.request().method() === 'DELETE' && r.url().includes('/lounge_messages') && r.ok());
   page.once('dialog', (d) => d.accept());
   await lounge
     .locator('.lounge-msg')
     .filter({ hasText: `${text} edited` })
     .getByRole('button', { name: 'Delete' })
     .click();
+  await deleted;
+  await page.goto('/lounge');
+  await expect(lounge.getByLabel('Message', { exact: true })).toBeVisible(); // the Lounge has loaded
   await expect(lounge.getByText(text)).toHaveCount(0);
 });
 
 test("the notification bell shows another account's reply", async ({ page }) => {
   const title = `${prefix} bell`;
   const reply = `${prefix} hello`;
+  // Start from an empty bell, so older unread rows from the tests above can't make it busy.
+  await cleanup('notifications', `user_id=eq.${STUDENT}`);
   await adminInsert('threads', { board_id: CAMPUS_BUZZ, author_id: STUDENT, title, body: 'Waiting for a reply.' });
   await signIn(page, 'e2e.student', '/b/campus-buzz?tab=new');
   await page.getByRole('link', { name: title }).first().click();
