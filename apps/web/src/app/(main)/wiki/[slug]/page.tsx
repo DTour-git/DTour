@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { agoLong, flair, getArticle, headings, mediaImageUrl, myPendingEdits, parse } from '@dtour/shared';
 import { currentUser } from '@/lib/supabase-server';
-import { NOINDEX } from '@/lib/seo';
+import { NOINDEX, OPEN_GRAPH } from '@/lib/seo';
 import { Icon } from '@/components/Icon';
 import { Avatar, H6 } from '@/components/ui';
 import { Markdown } from '@/components/Markdown';
@@ -15,12 +15,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { sb } = await currentUser();
   const { data } = await sb.from('wiki_articles').select('title,dek,cover_path,status,is_demo').eq('slug', slug).maybeSingle();
   if (!data) return { title: 'Wiki' };
-  // Setting openGraph replaces the site default, so a page without a cover sets none and keeps the default image.
+  // Setting openGraph replaces the site default (image included), so a page without a cover sets none.
   const cover = mediaImageUrl(data.cover_path, process.env.NEXT_PUBLIC_SUPABASE_URL);
   return {
     title: data.title,
     description: data.dek ?? undefined,
-    ...(cover && { openGraph: { images: [cover] } }),
+    ...(cover && { openGraph: { ...OPEN_GRAPH, images: [{ url: cover, alt: data.title }] } }),
     ...((data.is_demo || data.status !== 'published') && NOINDEX),
   };
 }

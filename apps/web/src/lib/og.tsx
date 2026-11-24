@@ -5,13 +5,14 @@ import { ImageResponse } from 'next/og';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
-/** The Broadsheet share card: logo and wordmark, an optional kicker (e.g. the board) and the title, in Source Serif 4. */
-export async function ogImage(title: string, kicker?: string) {
+const DEFAULT_TITLE = 'The campus, all in one place.';
+
+async function render(title: string, kicker?: string) {
   const dir = join(process.cwd(), 'src/app');
   const [font, icon] = await Promise.all([readFile(join(dir, 'fonts/SourceSerif4-SemiBold.ttf')), readFile(join(dir, 'icon.svg'))]);
   const mark = `data:image/svg+xml;base64,${icon.toString('base64')}`;
   const text = title.length > 140 ? `${title.slice(0, 139)}…` : title;
-  return new ImageResponse(
+  const image = new ImageResponse(
     <div
       style={{
         display: 'flex',
@@ -41,4 +42,18 @@ export async function ogImage(title: string, kicker?: string) {
     </div>,
     { ...size, fonts: [{ name: 'Source Serif 4', data: font, weight: 600, style: 'normal' }] },
   );
+  // ImageResponse renders lazily; reading it here makes a render failure surface inside ogImage's try.
+  return new Response(await image.arrayBuffer(), { headers: image.headers });
+}
+
+/**
+ * The Broadsheet share card: logo and wordmark, an optional kicker (e.g. the board) and the title, in Source Serif 4.
+ * A title the renderer can't draw offline (emoji, Devanagari: it would fetch fonts from the internet) gets the default card.
+ */
+export async function ogImage(title: string, kicker?: string) {
+  try {
+    return await render(title, kicker);
+  } catch {
+    return render(DEFAULT_TITLE);
+  }
 }

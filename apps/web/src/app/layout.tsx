@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
-import { SITE_URL } from '@/lib/seo';
+import { OPEN_GRAPH, SITE_URL } from '@/lib/seo';
 import './globals.css';
 
 // Source Serif 4, self-hosted (see fonts/README.md): the build no longer
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: { default: 'DTour — The campus, all in one place.', template: '%s · DTour' },
   description: 'News, boards, notes, societies, teams and the Lounge — for DTU students.',
-  openGraph: { siteName: 'DTour', type: 'website' },
+  openGraph: OPEN_GRAPH,
   twitter: { card: 'summary_large_image' },
 };
 

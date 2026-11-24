@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { agoLong, getThread, n, plain, sortReplies } from '@dtour/shared';
+import { agoLong, getThread, n, sortReplies } from '@dtour/shared';
 import { currentUser } from '@/lib/supabase-server';
-import { NOINDEX } from '@/lib/seo';
+import { NOINDEX, preview } from '@/lib/seo';
 import { Icon } from '@/components/Icon';
 import { Avatar, FlairTag, H6, Seal, Tag } from '@/components/ui';
 import { Markdown } from '@/components/Markdown';
@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const { sb } = await currentUser();
   const { data } = await sb.from('threads').select('title,standfirst,body,is_demo').eq('id', Number(id)).maybeSingle();
   if (!data) return { title: 'Thread' };
-  return { title: data.title, description: plain(data.standfirst || data.body, 160), ...(data.is_demo && NOINDEX) };
+  return { title: data.title, description: preview(data.standfirst || data.body), ...(data.is_demo && NOINDEX) };
 }
 
 export default async function ThreadPage({ params, searchParams }: {
