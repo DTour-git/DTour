@@ -33,6 +33,9 @@ jobs:
           cache: npm
       - run: npm ci
 
+      - name: Formatting (Prettier)
+        run: npm run format:check
+
       - name: Typecheck (shared, web, mobile)
         run: npm run typecheck --workspaces --if-present
 
