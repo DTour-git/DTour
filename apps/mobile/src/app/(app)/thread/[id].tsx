@@ -222,7 +222,11 @@ export default function Thread() {
           <T size={25} w={600} lh={1.14} style={{ marginVertical: 10 }}>
             {t.title}
           </T>
-          <Pressable disabled={!t.author.id} onPress={() => router.push(`/u/${t.author.handle}`)} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Pressable
+            disabled={!t.author.id}
+            onPress={() => router.push(`/u/${t.author.handle}`)}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+          >
             <Avatar person={t.author} size={26} />
             <T size={12.5} w={600}>
               {atHandle(t.author)}

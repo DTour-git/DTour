@@ -1,7 +1,11 @@
 // Type stub for per-icon deep imports (phosphor-react-native/src/icons/*): their raw .tsx source
 // doesn't typecheck under strict settings. Generated from src/components/Icon.tsx.
 import type React from 'react';
-type PhosphorIcon = (props: { size?: number; color?: string; weight?: 'thin' | 'light' | 'regular' | 'bold' | 'fill' | 'duotone' }) => React.ReactElement;
+type PhosphorIcon = (props: {
+  size?: number;
+  color?: string;
+  weight?: 'thin' | 'light' | 'regular' | 'bold' | 'fill' | 'duotone';
+}) => React.ReactElement;
 export declare const ArrowBendDownRightIcon: PhosphorIcon;
 export declare const ArrowFatDownIcon: PhosphorIcon;
 export declare const ArrowFatUpIcon: PhosphorIcon;

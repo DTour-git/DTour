@@ -22,28 +22,85 @@ export type ConfigRow = Tables['app_config']['Row'];
 
 // ── View models ───────────────────────────────────────────────────────────
 export interface PersonLite {
-  id: string; handle: string; display_name: string | null; branch_code: string | null;
-  grad_year: number | null; tint: Tint; karma: number;
+  id: string;
+  handle: string;
+  display_name: string | null;
+  branch_code: string | null;
+  grad_year: number | null;
+  tint: Tint;
+  karma: number;
 }
-export interface SocietyLite { id: string; slug: string; name: string; short_name: string | null; icon: string; tint: string; verified: boolean }
-export interface BoardLite { id: string; slug: string; name: string; short_name: string | null; category_id: number; verified_only: boolean; parent_id: string | null }
-export interface Attachment { name: string; size?: string; subject?: string; library_item_id?: number }
+export interface SocietyLite {
+  id: string;
+  slug: string;
+  name: string;
+  short_name: string | null;
+  icon: string;
+  tint: string;
+  verified: boolean;
+}
+export interface BoardLite {
+  id: string;
+  slug: string;
+  name: string;
+  short_name: string | null;
+  category_id: number;
+  verified_only: boolean;
+  parent_id: string | null;
+}
+export interface Attachment {
+  name: string;
+  size?: string;
+  subject?: string;
+  library_item_id?: number;
+}
 
 export interface ThreadCard {
-  id: number; title: string; body: string; standfirst: string | null; kind: string;
-  score: number; reply_count: number; created_at: string; tags: string[];
-  attachment: Attachment | null; image_label: string | null; image_path: string | null;
-  accepted_reply_id: number | null; board: BoardLite; author: PersonLite; society: SocietyLite | null;
-  edited_at: string | null; poll_pct?: number | null;
+  id: number;
+  title: string;
+  body: string;
+  standfirst: string | null;
+  kind: string;
+  score: number;
+  reply_count: number;
+  created_at: string;
+  tags: string[];
+  attachment: Attachment | null;
+  image_label: string | null;
+  image_path: string | null;
+  accepted_reply_id: number | null;
+  board: BoardLite;
+  author: PersonLite;
+  society: SocietyLite | null;
+  edited_at: string | null;
+  poll_pct?: number | null;
 }
 
 export interface ReplyNode {
-  id: number; thread_id: number; parent_id: number | null; body: string; score: number; created_at: string;
-  edited_at: string | null; deleted_at: string | null; author: PersonLite; society: SocietyLite | null; children: ReplyNode[]; myVote: number;
+  id: number;
+  thread_id: number;
+  parent_id: number | null;
+  body: string;
+  score: number;
+  created_at: string;
+  edited_at: string | null;
+  deleted_at: string | null;
+  author: PersonLite;
+  society: SocietyLite | null;
+  children: ReplyNode[];
+  myVote: number;
 }
 
 /** Stands in for a deleted account: their posts stay with a null author (on delete set null). */
-export const DELETED_PERSON: PersonLite = { id: '', handle: '[deleted user]', display_name: '[deleted user]', branch_code: null, grad_year: null, tint: 'neutral', karma: 0 };
+export const DELETED_PERSON: PersonLite = {
+  id: '',
+  handle: '[deleted user]',
+  display_name: '[deleted user]',
+  branch_code: null,
+  grad_year: null,
+  tint: 'neutral',
+  karma: 0,
+};
 function withAuthor<T>(row: T, key: 'author' | 'editor' = 'author'): T {
   const r = row as Record<string, unknown> | null;
   return r && !r[key] ? ({ ...r, [key]: DELETED_PERSON } as T) : row;
@@ -65,7 +122,11 @@ function must<R extends { data: unknown; error: { message: string } | null }>(r:
 }
 
 // ── Session & config ──────────────────────────────────────────────────────
-export interface Me { userId: string; email: string | null; profile: ProfileRow }
+export interface Me {
+  userId: string;
+  email: string | null;
+  profile: ProfileRow;
+}
 
 // getClaims() verifies the JWT locally with the project's cached signing keys,
 // saving the Auth round trip getUser() makes (it falls back to getUser() without WebCrypto).
@@ -86,9 +147,10 @@ export async function getConfig(sb: DB): Promise<ConfigRow | null> {
 export async function getExamCountdown(sb: DB, profile: ProfileRow | null) {
   const today = istDate();
   const rows = must(await sb.from('exam_windows').select('*').gte('starts_on', today).order('starts_on'));
-  const pick = rows.find((w) => w.branch_code === profile?.branch_code && w.semester === profile?.semester)
-    ?? rows.find((w) => w.branch_code === profile?.branch_code && w.semester == null)
-    ?? rows.find((w) => w.branch_code == null);
+  const pick =
+    rows.find((w) => w.branch_code === profile?.branch_code && w.semester === profile?.semester) ??
+    rows.find((w) => w.branch_code === profile?.branch_code && w.semester == null) ??
+    rows.find((w) => w.branch_code == null);
   if (!pick) return null;
   return { label: pick.label, days: daysUntil(pick.starts_on), semester: profile?.semester ?? null };
 }
@@ -100,7 +162,9 @@ export async function updateProfile(sb: DB, id: string, patch: Tables['profiles'
 // Same rule as the profiles.handle check constraint.
 export const HANDLE_RE = /^[a-z0-9][a-z0-9._]{2,23}$/;
 export const HANDLE_COOLDOWN_DAYS = 7;
-export function normalizeHandle(raw: string) { return raw.trim().replace(/^@/, '').toLowerCase(); }
+export function normalizeHandle(raw: string) {
+  return raw.trim().replace(/^@/, '').toLowerCase();
+}
 const HANDLE_RULE = 'Handles are 3–24 characters: lowercase letters, numbers, dots and underscores, starting with a letter or number.';
 /** Returns a message explaining what's wrong with the handle's format, or null if it's valid. */
 export function handleProblem(raw: string): string | null {
@@ -117,11 +181,16 @@ export async function handleStatus(sb: DB, raw: string): Promise<HandleStatus> {
 export function handleStatusMessage(status: HandleStatus, raw: string): string | null {
   const h = normalizeHandle(raw);
   switch (status) {
-    case 'invalid': return HANDLE_RULE;
-    case 'reserved': return `@${h} is reserved. Try another.`;
-    case 'taken': return `@${h} is taken. Try another.`;
-    case 'held': return `@${h} was someone’s handle recently and is held for them. Try another.`;
-    default: return null;
+    case 'invalid':
+      return HANDLE_RULE;
+    case 'reserved':
+      return `@${h} is reserved. Try another.`;
+    case 'taken':
+      return `@${h} is taken. Try another.`;
+    case 'held':
+      return `@${h} was someone’s handle recently and is held for them. Try another.`;
+    default:
+      return null;
   }
 }
 export async function handleAvailable(sb: DB, handle: string, _myId?: string) {
@@ -171,9 +240,17 @@ export function hotness(t: { score: number; reply_count: number; created_at: str
   return (t.score + t.reply_count * 0.5) / Math.pow(hours + 2, 1.5);
 }
 
-export async function listThreads(sb: DB, opts: {
-  tab?: FeedTab; categoryId?: number; boardIds?: string[]; limit?: number; excludeNews?: boolean; branch?: string | null;
-}) {
+export async function listThreads(
+  sb: DB,
+  opts: {
+    tab?: FeedTab;
+    categoryId?: number;
+    boardIds?: string[];
+    limit?: number;
+    excludeNews?: boolean;
+    branch?: string | null;
+  },
+) {
   let q = sb.from('threads').select(`${THREAD_SELECT},poll_options(votes)`);
   if (opts.excludeNews) q = q.neq('kind', 'news');
   if (opts.categoryId) q = q.eq('board.category_id', opts.categoryId);
@@ -185,22 +262,30 @@ export async function listThreads(sb: DB, opts: {
     q = q.or(`tags.cs.{${opts.branch}},title.ilike.%${opts.branch}%`).order('score', { ascending: false });
   } else q = q.order('score', { ascending: false }).order('created_at', { ascending: false });
   const limit = opts.limit ?? 20;
-  let rows = withPollPct(must(await q.limit(tab === 'hot' ? Math.max(limit, 40) : limit)) as unknown as ThreadCard[]).map((t) => withAuthor(t));
+  let rows = withPollPct(must(await q.limit(tab === 'hot' ? Math.max(limit, 40) : limit)) as unknown as ThreadCard[]).map((t) =>
+    withAuthor(t),
+  );
   if (tab === 'hot') rows = rows.sort((a, b) => hotness(b) - hotness(a)).slice(0, limit);
   return rows;
 }
 
 // ── Today ─────────────────────────────────────────────────────────────────
 export interface TimelineItem {
-  id: number; starts_at: string; ends_at: string | null; title: string; short_title: string | null;
-  sub: string | null; thread_id: number | null; society_post_id: number | null;
+  id: number;
+  starts_at: string;
+  ends_at: string | null;
+  title: string;
+  short_title: string | null;
+  sub: string | null;
+  thread_id: number | null;
+  society_post_id: number | null;
   state: 'past' | 'now' | 'next';
 }
 
 export async function getTimeline(sb: DB): Promise<TimelineItem[]> {
   const today = istDate();
   const start = new Date(`${today}T00:00:00+05:30`);
-  const end = new Date(start.getTime() + 27 * 3600e3);   // through 3 am, so "12 am" belongs to today
+  const end = new Date(start.getTime() + 27 * 3600e3); // through 3 am, so "12 am" belongs to today
   // Ask for the fallback (latest five) at the same time, rather than after finding today empty.
   const [todays, latest] = await Promise.all([
     sb.from('campus_events').select('*').gte('starts_at', start.toISOString()).lt('starts_at', end.toISOString()).order('starts_at'),
@@ -210,7 +295,8 @@ export async function getTimeline(sb: DB): Promise<TimelineItem[]> {
   if (!rows.length) rows = must(latest).reverse();
   const now = Date.now();
   return rows.map((r) => {
-    const s = Date.parse(r.starts_at), e = r.ends_at ? Date.parse(r.ends_at) : s + 30 * 60e3;
+    const s = Date.parse(r.starts_at),
+      e = r.ends_at ? Date.parse(r.ends_at) : s + 30 * 60e3;
     return { ...r, state: now >= s && now < e ? 'now' : now >= e ? 'past' : 'next' } as TimelineItem;
   });
 }
@@ -220,11 +306,21 @@ export async function getToday(sb: DB, tab: FeedTab = 'hot', branch: string | nu
     sb.from('threads').select(THREAD_SELECT).eq('kind', 'news').order('created_at', { ascending: false }).limit(1).maybeSingle(),
     getTimeline(sb),
     listThreads(sb, { tab, excludeNews: true, limit: 1, branch }),
-    sb.from('wiki_articles').select('id,slug,title,editor_count,checked_at,cover_label,cover_path').eq('status', 'published').order('views_week', { ascending: false }).limit(1).maybeSingle(),
+    sb
+      .from('wiki_articles')
+      .select('id,slug,title,editor_count,checked_at,cover_label,cover_path')
+      .eq('status', 'published')
+      .order('views_week', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
     getDesks(sb),
     // Soonest deadline first, but never one that has passed: a team with a 2020 deadline would hold the slot forever (#28).
-    sb.from('teams').select('id,title,short_title,deadline_on,deadline_label,urgent,team_roles(name,filled,sort)')
-      .or(`deadline_on.is.null,deadline_on.gte.${istDate()}`).order('deadline_on', { nullsFirst: false }).limit(2),
+    sb
+      .from('teams')
+      .select('id,title,short_title,deadline_on,deadline_label,urgent,team_roles(name,filled,sort)')
+      .or(`deadline_on.is.null,deadline_on.gte.${istDate()}`)
+      .order('deadline_on', { nullsFirst: false })
+      .limit(2),
     sb.from('teams').select('id', { count: 'exact', head: true }),
     sb.from('places').select('*').not('home_sort', 'is', null).order('home_sort').limit(3),
     getSocietyStrip(sb),
@@ -257,7 +353,9 @@ export async function getDesks(sb: DB) {
 }
 
 async function getSocietyStrip(sb: DB) {
-  const rows = must(await sb.from('society_posts').select(`*,society:societies(${SOCIETY})`).order('created_at', { ascending: false }).limit(30));
+  const rows = must(
+    await sb.from('society_posts').select(`*,society:societies(${SOCIETY})`).order('created_at', { ascending: false }).limit(30),
+  );
   const out: typeof rows = [];
   for (const k of ['event', 'recruiting', 'workshop', 'talk']) {
     const r = rows.find((x) => x.kind === k);
@@ -326,13 +424,13 @@ export async function getBoard(sb: DB, slug: string, tab: FeedTab = 'hot', limit
   if (!board) return null;
   const desc = (id: string): string[] => all.filter((b) => b.parent_id === id).flatMap((b) => [b.id, ...desc(b.id)]);
   const ids = [board.id, ...desc(board.id)];
-  const [threads, path] = await Promise.all([
-    listThreads(sb, { tab, boardIds: ids, limit: limit + 1 }),
-    boardAncestors(sb, board.id, all),
-  ]);
+  const [threads, path] = await Promise.all([listThreads(sb, { tab, boardIds: ids, limit: limit + 1 }), boardAncestors(sb, board.id, all)]);
   return {
-    board, threads: threads.slice(0, limit), hasMore: threads.length > limit,
-    category: must(cats).find((c) => c.id === board.category_id) as CategoryRow & { tone: Tone }, path,
+    board,
+    threads: threads.slice(0, limit),
+    hasMore: threads.length > limit,
+    category: must(cats).find((c) => c.id === board.category_id) as CategoryRow & { tone: Tone },
+    path,
     children: all.filter((b) => b.parent_id === board.id).sort((a, b) => a.sort - b.sort),
   };
 }
@@ -342,7 +440,10 @@ async function boardAncestors(sb: DB, id: string, all?: BoardRow[]) {
   const byId = new Map(boards.map((b) => [b.id, b]));
   const out: BoardRow[] = [];
   let b = byId.get(id);
-  while (b) { out.unshift(b); b = b.parent_id ? byId.get(b.parent_id) : undefined; }
+  while (b) {
+    out.unshift(b);
+    b = b.parent_id ? byId.get(b.parent_id) : undefined;
+  }
   return out;
 }
 
@@ -357,28 +458,52 @@ export async function getThread(sb: DB, id: number, userId: string | null) {
   // "Related in Library" has to wait, because it needs the thread's attachment.
   const [threadRes, replies, myVote, saved, replyVotes, boards, joinedBoards, poll, myPoll, wiki, lounge] = await Promise.all([
     sb.from('threads').select(THREAD_SELECT).eq('id', id).maybeSingle(),
-    sb.from('replies').select(`id,thread_id,parent_id,body,score,created_at,edited_at,deleted_at,author:profiles!replies_author_id_fkey(${PERSON}),society:societies(${SOCIETY})`).eq('thread_id', id).order('created_at'),
+    sb
+      .from('replies')
+      .select(
+        `id,thread_id,parent_id,body,score,created_at,edited_at,deleted_at,author:profiles!replies_author_id_fkey(${PERSON}),society:societies(${SOCIETY})`,
+      )
+      .eq('thread_id', id)
+      .order('created_at'),
     userId ? sb.from('thread_votes').select('value').eq('thread_id', id).eq('user_id', userId).maybeSingle() : null,
     userId ? sb.from('saves').select('thread_id').eq('thread_id', id).eq('user_id', userId).maybeSingle() : null,
-    userId ? sb.from('reply_votes').select('reply_id,value,replies!inner(thread_id)').eq('user_id', userId).eq('replies.thread_id', id) : null,
+    userId
+      ? sb.from('reply_votes').select('reply_id,value,replies!inner(thread_id)').eq('user_id', userId).eq('replies.thread_id', id)
+      : null,
     sb.from('boards').select('*'),
     userId ? sb.from('board_members').select('board_id').eq('user_id', userId) : null,
     sb.from('poll_options').select('*').eq('thread_id', id).order('sort'),
     userId ? sb.from('poll_votes').select('option_id').eq('thread_id', id).eq('user_id', userId).maybeSingle() : null,
-    sb.from('wiki_articles').select('slug,title,editor_count,checked_at').eq('status', 'published').order('views_week', { ascending: false }).limit(1).maybeSingle(),
+    sb
+      .from('wiki_articles')
+      .select('slug,title,editor_count,checked_at')
+      .eq('status', 'published')
+      .order('views_week', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
     sb.from('lounge_messages').select('id,room_slug').eq('promoted_thread_id', id).maybeSingle(),
   ]);
   const thread = withAuthor(must(threadRes) as unknown as ThreadCard | null);
   if (!thread) return null;
   const related = thread.attachment?.subject
-    ? await sb.from('library_items').select('id,title,kind,format,subject_code').eq('subject_code', thread.attachment.subject).neq('id', thread.attachment.library_item_id ?? -1).order('downloads_week', { ascending: false }).limit(3)
+    ? await sb
+        .from('library_items')
+        .select('id,title,kind,format,subject_code')
+        .eq('subject_code', thread.attachment.subject)
+        .neq('id', thread.attachment.library_item_id ?? -1)
+        .order('downloads_week', { ascending: false })
+        .limit(3)
     : null;
   const all = must(boards);
   const path = await boardAncestors(sb, thread.board.id, all);
   const board = all.find((b) => b.id === thread.board.id);
   if (!board) throw new Error(`Board ${thread.board.id} not found`);
   const rv = new Map((replyVotes ? must(replyVotes) : []).map((r) => [r.reply_id, r.value]));
-  const flat = (must(replies) as unknown as Omit<ReplyNode, 'children' | 'myVote'>[]).map((r) => ({ ...withAuthor(r), children: [] as ReplyNode[], myVote: rv.get(r.id) ?? 0 }));
+  const flat = (must(replies) as unknown as Omit<ReplyNode, 'children' | 'myVote'>[]).map((r) => ({
+    ...withAuthor(r),
+    children: [] as ReplyNode[],
+    myVote: rv.get(r.id) ?? 0,
+  }));
   const byId = new Map(flat.map((r) => [r.id, r]));
   const roots: ReplyNode[] = [];
   for (const r of flat) (r.parent_id && byId.get(r.parent_id) ? byId.get(r.parent_id)!.children : roots).push(r);
@@ -425,11 +550,23 @@ export async function setSaved(sb: DB, threadId: number, userId: string, save: b
 export async function acceptReply(sb: DB, threadId: number, replyId: number | null) {
   must(await sb.rpc('accept_reply', { p_thread: threadId, p_reply: replyId as number }));
 }
-export async function postReply(sb: DB, input: { threadId: number; userId: string; body: string; parentId?: number | null; societyId?: string | null }) {
-  return must(await sb.from('replies').insert({
-    thread_id: input.threadId, author_id: input.userId, body: input.body.trim(),
-    parent_id: input.parentId ?? null, society_id: input.societyId ?? null,
-  }).select('id').single());
+export async function postReply(
+  sb: DB,
+  input: { threadId: number; userId: string; body: string; parentId?: number | null; societyId?: string | null },
+) {
+  return must(
+    await sb
+      .from('replies')
+      .insert({
+        thread_id: input.threadId,
+        author_id: input.userId,
+        body: input.body.trim(),
+        parent_id: input.parentId ?? null,
+        society_id: input.societyId ?? null,
+      })
+      .select('id')
+      .single(),
+  );
 }
 
 // ── Editing and deleting your own posts ───────────────────────────────────
@@ -450,8 +587,11 @@ export async function deleteReply(sb: DB, id: number) {
 // ── Reports ───────────────────────────────────────────────────────────────
 export type ReportReason = 'spam' | 'harassment' | 'misinformation' | 'inappropriate' | 'other';
 export const REPORT_REASONS: [ReportReason, string][] = [
-  ['spam', 'Spam or ads'], ['harassment', 'Harassment or hate'], ['misinformation', 'False or misleading'],
-  ['inappropriate', 'Inappropriate content'], ['other', 'Something else'],
+  ['spam', 'Spam or ads'],
+  ['harassment', 'Harassment or hate'],
+  ['misinformation', 'False or misleading'],
+  ['inappropriate', 'Inappropriate content'],
+  ['other', 'Something else'],
 ];
 export type ReportTarget = { threadId: number } | { replyId: number } | { loungeMessageId: number } | { wikiTalkId: number };
 
@@ -459,7 +599,9 @@ export type ReportTarget = { threadId: number } | { replyId: number } | { lounge
 export async function reportContent(sb: DB, i: { userId: string; target: ReportTarget; reason: ReportReason; details?: string }) {
   const t = i.target;
   const { error } = await sb.from('reports').insert({
-    reporter_id: i.userId, reason: i.reason, details: i.details?.trim() || null,
+    reporter_id: i.userId,
+    reason: i.reason,
+    details: i.details?.trim() || null,
     thread_id: 'threadId' in t ? t.threadId : null,
     reply_id: 'replyId' in t ? t.replyId : null,
     lounge_message_id: 'loungeMessageId' in t ? t.loungeMessageId : null,
@@ -471,19 +613,40 @@ export async function reportContent(sb: DB, i: { userId: string; target: ReportT
 }
 
 export interface OpenReport {
-  key: string; count: number; reasons: string[]; details: string[]; first_at: string; ids: number[];
-  kind: 'thread' | 'reply' | 'lounge' | 'talk'; title: string; body: string; route: string; author: PersonLite | null;
+  key: string;
+  count: number;
+  reasons: string[];
+  details: string[];
+  first_at: string;
+  ids: number[];
+  kind: 'thread' | 'reply' | 'lounge' | 'talk';
+  title: string;
+  body: string;
+  route: string;
+  author: PersonLite | null;
 }
 export async function getOpenReports(sb: DB): Promise<OpenReport[]> {
-  const rows = must(await sb.from('reports').select(
-    `id,reason,details,created_at,thread_id,reply_id,lounge_message_id,wiki_talk_id,` +
-    `thread:threads(id,title,body,author:profiles!threads_author_id_fkey(${PERSON})),` +
-    `reply:replies(id,body,thread_id,author:profiles!replies_author_id_fkey(${PERSON})),` +
-    `message:lounge_messages(id,body,room_slug,author:profiles!lounge_messages_author_id_fkey(${PERSON})),` +
-    `talk:wiki_talk(id,body,article:wiki_articles(slug,title),author:profiles!wiki_talk_author_id_fkey(${PERSON}))`,
-  ).eq('status', 'open').order('created_at')) as unknown as {
-    id: number; reason: string; details: string | null; created_at: string;
-    thread_id: number | null; reply_id: number | null; lounge_message_id: number | null; wiki_talk_id: number | null;
+  const rows = must(
+    await sb
+      .from('reports')
+      .select(
+        `id,reason,details,created_at,thread_id,reply_id,lounge_message_id,wiki_talk_id,` +
+          `thread:threads(id,title,body,author:profiles!threads_author_id_fkey(${PERSON})),` +
+          `reply:replies(id,body,thread_id,author:profiles!replies_author_id_fkey(${PERSON})),` +
+          `message:lounge_messages(id,body,room_slug,author:profiles!lounge_messages_author_id_fkey(${PERSON})),` +
+          `talk:wiki_talk(id,body,article:wiki_articles(slug,title),author:profiles!wiki_talk_author_id_fkey(${PERSON}))`,
+      )
+      .eq('status', 'open')
+      .order('created_at'),
+  ) as unknown as {
+    id: number;
+    reason: string;
+    details: string | null;
+    created_at: string;
+    thread_id: number | null;
+    reply_id: number | null;
+    lounge_message_id: number | null;
+    wiki_talk_id: number | null;
     thread: { id: number; title: string; body: string; author: PersonLite } | null;
     reply: { id: number; body: string; thread_id: number; author: PersonLite } | null;
     message: { id: number; body: string; room_slug: string; author: PersonLite } | null;
@@ -491,20 +654,51 @@ export async function getOpenReports(sb: DB): Promise<OpenReport[]> {
   }[];
   const groups = new Map<string, OpenReport>();
   for (const r of rows) {
-    const key = r.thread_id ? `t${r.thread_id}` : r.reply_id ? `r${r.reply_id}` : r.wiki_talk_id ? `w${r.wiki_talk_id}` : `m${r.lounge_message_id}`;
+    const key = r.thread_id
+      ? `t${r.thread_id}`
+      : r.reply_id
+        ? `r${r.reply_id}`
+        : r.wiki_talk_id
+          ? `w${r.wiki_talk_id}`
+          : `m${r.lounge_message_id}`;
     let g = groups.get(key);
     if (!g) {
       g = r.thread
-        ? { kind: 'thread', title: r.thread.title, body: r.thread.body, route: `/t/${r.thread.id}`, author: r.thread.author ?? DELETED_PERSON } as OpenReport
+        ? ({
+            kind: 'thread',
+            title: r.thread.title,
+            body: r.thread.body,
+            route: `/t/${r.thread.id}`,
+            author: r.thread.author ?? DELETED_PERSON,
+          } as OpenReport)
         : r.reply
-          ? { kind: 'reply', title: 'Reply', body: r.reply.body, route: `/t/${r.reply.thread_id}`, author: r.reply.author ?? DELETED_PERSON } as OpenReport
+          ? ({
+              kind: 'reply',
+              title: 'Reply',
+              body: r.reply.body,
+              route: `/t/${r.reply.thread_id}`,
+              author: r.reply.author ?? DELETED_PERSON,
+            } as OpenReport)
           : r.wiki_talk_id
-            ? { kind: 'talk', title: `Wiki talk · ${r.talk?.article?.title ?? ''}`, body: r.talk?.body ?? '', route: `/wiki/${r.talk?.article?.slug ?? ''}?tab=talk`, author: r.talk ? r.talk.author ?? DELETED_PERSON : null } as OpenReport
-            : { kind: 'lounge', title: `Lounge · #${r.message?.room_slug ?? ''}`, body: r.message?.body ?? '', route: '/lounge', author: r.message ? r.message.author ?? DELETED_PERSON : null } as OpenReport;
+            ? ({
+                kind: 'talk',
+                title: `Wiki talk · ${r.talk?.article?.title ?? ''}`,
+                body: r.talk?.body ?? '',
+                route: `/wiki/${r.talk?.article?.slug ?? ''}?tab=talk`,
+                author: r.talk ? (r.talk.author ?? DELETED_PERSON) : null,
+              } as OpenReport)
+            : ({
+                kind: 'lounge',
+                title: `Lounge · #${r.message?.room_slug ?? ''}`,
+                body: r.message?.body ?? '',
+                route: '/lounge',
+                author: r.message ? (r.message.author ?? DELETED_PERSON) : null,
+              } as OpenReport);
       Object.assign(g, { key, count: 0, reasons: [], details: [], first_at: r.created_at, ids: [] });
       groups.set(key, g);
     }
-    g.count++; g.ids.push(r.id);
+    g.count++;
+    g.ids.push(r.id);
     if (!g.reasons.includes(r.reason)) g.reasons.push(r.reason);
     if (r.details) g.details.push(r.details);
   }
@@ -530,30 +724,73 @@ export type PostType = 'thread' | 'question' | 'article' | 'team' | 'poll' | 'ev
 export async function similarThreads(sb: DB, title: string, limit = 3) {
   const words = titleWords(title);
   if (!words.length) return [];
-  const ors = words.slice(0, 6).map((w) => `title.ilike.%${w.replace(/[%,()]/g, '')}%`).join(',');
+  const ors = words
+    .slice(0, 6)
+    .map((w) => `title.ilike.%${w.replace(/[%,()]/g, '')}%`)
+    .join(',');
   const [t, a] = await Promise.all([
     sb.from('threads').select('id,title,score,reply_count,board:boards(name,short_name)').or(ors).limit(20),
     sb.from('wiki_articles').select('slug,title,editor_count').eq('status', 'published').or(ors).limit(10),
   ]);
   type Sim = { title: string; sub: string; route: string; n: number };
   const out: Sim[] = [
-    ...(must(t) as unknown as { id: number; title: string; score: number; reply_count: number; board: { name: string; short_name: string | null } }[])
-      .map((x) => ({ title: x.title, sub: `${x.board.short_name ?? x.board.name} · ${x.score} votes · ${x.reply_count} replies`, route: `/t/${x.id}`, n: overlap(words, x.title) })),
-    ...must(a).map((x) => ({ title: x.title, sub: `Wiki · ${x.editor_count} editors`, route: `/wiki/${x.slug}`, n: overlap(words, x.title) })),
+    ...(
+      must(t) as unknown as {
+        id: number;
+        title: string;
+        score: number;
+        reply_count: number;
+        board: { name: string; short_name: string | null };
+      }[]
+    ).map((x) => ({
+      title: x.title,
+      sub: `${x.board.short_name ?? x.board.name} · ${x.score} votes · ${x.reply_count} replies`,
+      route: `/t/${x.id}`,
+      n: overlap(words, x.title),
+    })),
+    ...must(a).map((x) => ({
+      title: x.title,
+      sub: `Wiki · ${x.editor_count} editors`,
+      route: `/wiki/${x.slug}`,
+      n: overlap(words, x.title),
+    })),
   ];
-  return out.filter((x) => x.n).sort((x, y) => y.n - x.n).slice(0, limit);
+  return out
+    .filter((x) => x.n)
+    .sort((x, y) => y.n - x.n)
+    .slice(0, limit);
 }
 
 export interface NewThreadInput {
-  userId: string; boardId: string; kind: 'thread' | 'question' | 'poll'; title: string; body: string;
-  tags: string[]; pollOptions?: string[]; pollDays?: number; societyId?: string | null; notifyOnReply?: boolean;
+  userId: string;
+  boardId: string;
+  kind: 'thread' | 'question' | 'poll';
+  title: string;
+  body: string;
+  tags: string[];
+  pollOptions?: string[];
+  pollDays?: number;
+  societyId?: string | null;
+  notifyOnReply?: boolean;
 }
 export async function createThread(sb: DB, i: NewThreadInput) {
-  const row = must(await sb.from('threads').insert({
-    board_id: i.boardId, author_id: i.userId, kind: i.kind, title: i.title.trim(), body: i.body,
-    tags: i.tags, society_id: i.societyId ?? null, notify_on_reply: i.notifyOnReply ?? true,
-    poll_closes_at: i.kind === 'poll' ? new Date(Date.now() + (i.pollDays ?? 3) * 864e5).toISOString() : null,
-  }).select('id').single());
+  const row = must(
+    await sb
+      .from('threads')
+      .insert({
+        board_id: i.boardId,
+        author_id: i.userId,
+        kind: i.kind,
+        title: i.title.trim(),
+        body: i.body,
+        tags: i.tags,
+        society_id: i.societyId ?? null,
+        notify_on_reply: i.notifyOnReply ?? true,
+        poll_closes_at: i.kind === 'poll' ? new Date(Date.now() + (i.pollDays ?? 3) * 864e5).toISOString() : null,
+      })
+      .select('id')
+      .single(),
+  );
   if (i.kind === 'poll' && i.pollOptions?.length) {
     must(await sb.from('poll_options').insert(i.pollOptions.filter(Boolean).map((label, k) => ({ thread_id: row.id, label, sort: k }))));
   }
@@ -565,37 +802,131 @@ export async function isModerator(sb: DB) {
 }
 
 /** New guides go to the moderation queue (moderators publish directly). Returns the slug. */
-export async function createWikiArticle(sb: DB, i: { userId: string; title: string; body: string; dek?: string; categoryId?: number | null; boardId?: string | null; coverPath?: string | null }) {
+export async function createWikiArticle(
+  sb: DB,
+  i: {
+    userId: string;
+    title: string;
+    body: string;
+    dek?: string;
+    categoryId?: number | null;
+    boardId?: string | null;
+    coverPath?: string | null;
+  },
+) {
   const mod = await isModerator(sb);
-  const base = i.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
+  const base = i.title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 60);
   const slug = `${base}-${Math.random().toString(36).slice(2, 6)}`;
   const words = i.body.split(/\s+/).filter(Boolean).length;
-  const row = must(await sb.from('wiki_articles').insert({
-    slug, title: i.title.trim(), body: i.body, dek: i.dek ?? null, cover_path: i.coverPath ?? null, category_id: i.categoryId ?? null,
-    board_id: i.boardId ?? null, started_by: i.userId, read_minutes: Math.max(1, Math.round(words / 220)),
-    status: mod ? 'published' : 'pending',
-  }).select('id,slug').single());
-  must(await sb.from('wiki_revisions').insert({ article_id: row.id, editor_id: i.userId, summary: 'started the article', delta_words: words, body: i.body, status: mod ? 'published' : 'suggested' }));
+  const row = must(
+    await sb
+      .from('wiki_articles')
+      .insert({
+        slug,
+        title: i.title.trim(),
+        body: i.body,
+        dek: i.dek ?? null,
+        cover_path: i.coverPath ?? null,
+        category_id: i.categoryId ?? null,
+        board_id: i.boardId ?? null,
+        started_by: i.userId,
+        read_minutes: Math.max(1, Math.round(words / 220)),
+        status: mod ? 'published' : 'pending',
+      })
+      .select('id,slug')
+      .single(),
+  );
+  must(
+    await sb.from('wiki_revisions').insert({
+      article_id: row.id,
+      editor_id: i.userId,
+      summary: 'started the article',
+      delta_words: words,
+      body: i.body,
+      status: mod ? 'published' : 'suggested',
+    }),
+  );
   return row.slug;
 }
 
-export async function createTeam(sb: DB, i: { userId: string; category: string; eventName: string; title: string; description: string; deadlineOn: string | null; roles: { name: string; filled: boolean }[] }) {
-  const row = must(await sb.from('teams').insert({
-    owner_id: i.userId, category: i.category, event_name: i.eventName, title: i.title, description: i.description,
-    deadline_on: i.deadlineOn,
-  }).select('id').single());
-  if (i.roles.length) must(await sb.from('team_roles').insert(i.roles.map((r, k) => ({ team_id: row.id, name: r.name, filled: r.filled, filled_by: r.filled ? i.userId : null, sort: k }))));
+export async function createTeam(
+  sb: DB,
+  i: {
+    userId: string;
+    category: string;
+    eventName: string;
+    title: string;
+    description: string;
+    deadlineOn: string | null;
+    roles: { name: string; filled: boolean }[];
+  },
+) {
+  const row = must(
+    await sb
+      .from('teams')
+      .insert({
+        owner_id: i.userId,
+        category: i.category,
+        event_name: i.eventName,
+        title: i.title,
+        description: i.description,
+        deadline_on: i.deadlineOn,
+      })
+      .select('id')
+      .single(),
+  );
+  if (i.roles.length)
+    must(
+      await sb
+        .from('team_roles')
+        .insert(
+          i.roles.map((r, k) => ({ team_id: row.id, name: r.name, filled: r.filled, filled_by: r.filled ? i.userId : null, sort: k })),
+        ),
+    );
   await sb.from('team_members').insert({ team_id: row.id, user_id: i.userId });
   return row.id;
 }
 
-export async function createSocietyPost(sb: DB, i: { userId: string; societyId: string; kind: string; title: string; body: string; whenLabel: string; whereLabel: string; startsAt?: string | null; applyUrl?: string | null; posterPath?: string | null }) {
+export async function createSocietyPost(
+  sb: DB,
+  i: {
+    userId: string;
+    societyId: string;
+    kind: string;
+    title: string;
+    body: string;
+    whenLabel: string;
+    whereLabel: string;
+    startsAt?: string | null;
+    applyUrl?: string | null;
+    posterPath?: string | null;
+  },
+) {
   const applyUrl = i.applyUrl?.trim() || null;
   if (applyUrl && !/^https?:\/\//i.test(applyUrl)) throw new Error('Application link must start with https:// or http://.');
-  return must(await sb.from('society_posts').insert({
-    society_id: i.societyId, author_id: i.userId, kind: i.kind, title: i.title, body: i.body,
-    when_label: i.whenLabel, short_when: i.whenLabel, where_label: i.whereLabel || null, starts_at: i.startsAt ?? null, apply_url: applyUrl, poster_path: i.posterPath ?? null,
-  }).select('id').single()).id;
+  return must(
+    await sb
+      .from('society_posts')
+      .insert({
+        society_id: i.societyId,
+        author_id: i.userId,
+        kind: i.kind,
+        title: i.title,
+        body: i.body,
+        when_label: i.whenLabel,
+        short_when: i.whenLabel,
+        where_label: i.whereLabel || null,
+        starts_at: i.startsAt ?? null,
+        apply_url: applyUrl,
+        poster_path: i.posterPath ?? null,
+      })
+      .select('id')
+      .single(),
+  ).id;
 }
 
 export async function myPostingSocieties(sb: DB, userId: string) {
@@ -603,8 +934,19 @@ export async function myPostingSocieties(sb: DB, userId: string) {
   return (rows as unknown as { society: SocietyLite }[]).map((r) => r.society);
 }
 
-export async function saveDraft(sb: DB, d: { id?: string; userId: string; kind: string; boardId: string | null; title: string; body: string; payload?: Record<string, unknown> }) {
-  const row = { user_id: d.userId, kind: d.kind, board_id: d.boardId, title: d.title, body: d.body, payload: (d.payload ?? {}) as never, updated_at: new Date().toISOString() };
+export async function saveDraft(
+  sb: DB,
+  d: { id?: string; userId: string; kind: string; boardId: string | null; title: string; body: string; payload?: Record<string, unknown> },
+) {
+  const row = {
+    user_id: d.userId,
+    kind: d.kind,
+    board_id: d.boardId,
+    title: d.title,
+    body: d.body,
+    payload: (d.payload ?? {}) as never,
+    updated_at: new Date().toISOString(),
+  };
   if (d.id) return must(await sb.from('drafts').update(row).eq('id', d.id).select('id').single()).id;
   return must(await sb.from('drafts').insert(row).select('id').single()).id;
 }
@@ -619,7 +961,10 @@ export async function boardPicker(sb: DB) {
   const path = (b: BoardRow) => {
     const names: string[] = [];
     let cur: BoardRow | undefined = b;
-    while (cur) { names.unshift(cur.short_name ?? cur.name); cur = cur.parent_id ? byId.get(cur.parent_id) : undefined; }
+    while (cur) {
+      names.unshift(cur.short_name ?? cur.name);
+      cur = cur.parent_id ? byId.get(cur.parent_id) : undefined;
+    }
     return names;
   };
   const categories = must(cats);
@@ -633,7 +978,11 @@ export async function boardPicker(sb: DB) {
 export async function getWikiIndex(sb: DB) {
   const [cats, arts, editors] = await Promise.all([
     sb.from('wiki_categories').select('*').order('id'),
-    sb.from('wiki_articles').select('id,slug,title,category_id,editor_count,read_minutes,checked_at,cover_label,cover_path,views_week').eq('status', 'published').order('views_week', { ascending: false }),
+    sb
+      .from('wiki_articles')
+      .select('id,slug,title,category_id,editor_count,read_minutes,checked_at,cover_label,cover_path,views_week')
+      .eq('status', 'published')
+      .order('views_week', { ascending: false }),
     sb.from('wiki_revisions').select('editor_id'),
   ]);
   const articles = must(arts);
@@ -642,17 +991,45 @@ export async function getWikiIndex(sb: DB) {
     articles,
     mostRead: articles[0] ?? null,
     articleCount: articles.length,
-    editorCount: Math.max(new Set(must(editors).map((e) => e.editor_id)).size, articles.reduce((s, a) => s + a.editor_count, 0)),
+    editorCount: Math.max(
+      new Set(must(editors).map((e) => e.editor_id)).size,
+      articles.reduce((s, a) => s + a.editor_count, 0),
+    ),
   };
 }
 
 export async function getArticle(sb: DB, slug: string, userId: string | null) {
-  const a = must(await sb.from('wiki_articles').select(`*,starter:profiles!wiki_articles_started_by_fkey(${PERSON}),checker:profiles!wiki_articles_checked_by_fkey(${PERSON}),board:boards(slug,name)`).eq('slug', slug).maybeSingle());
+  const a = must(
+    await sb
+      .from('wiki_articles')
+      .select(
+        `*,starter:profiles!wiki_articles_started_by_fkey(${PERSON}),checker:profiles!wiki_articles_checked_by_fkey(${PERSON}),board:boards(slug,name)`,
+      )
+      .eq('slug', slug)
+      .maybeSingle(),
+  );
   if (!a) return null;
   const [revs, more, talk, fb] = await Promise.all([
-    sb.from('wiki_revisions').select(`id,summary,delta_words,created_at,editor:profiles!wiki_revisions_editor_id_fkey(${PERSON})`).eq('article_id', a.id).eq('status', 'published').order('created_at', { ascending: false }).limit(20),
-    sb.from('wiki_articles').select('slug,title').eq('status', 'published').neq('id', a.id).order('views_week', { ascending: false }).limit(4),
-    sb.from('wiki_talk').select(`id,body,created_at,author:profiles!wiki_talk_author_id_fkey(${PERSON})`).eq('article_id', a.id).order('created_at', { ascending: false }).limit(20),
+    sb
+      .from('wiki_revisions')
+      .select(`id,summary,delta_words,created_at,editor:profiles!wiki_revisions_editor_id_fkey(${PERSON})`)
+      .eq('article_id', a.id)
+      .eq('status', 'published')
+      .order('created_at', { ascending: false })
+      .limit(20),
+    sb
+      .from('wiki_articles')
+      .select('slug,title')
+      .eq('status', 'published')
+      .neq('id', a.id)
+      .order('views_week', { ascending: false })
+      .limit(4),
+    sb
+      .from('wiki_talk')
+      .select(`id,body,created_at,author:profiles!wiki_talk_author_id_fkey(${PERSON})`)
+      .eq('article_id', a.id)
+      .order('created_at', { ascending: false })
+      .limit(20),
     userId ? sb.from('wiki_feedback').select('useful').eq('article_id', a.id).eq('user_id', userId).maybeSingle() : null,
   ]);
   type Rev = { id: number; summary: string; delta_words: number | null; created_at: string; editor: PersonLite };
@@ -680,26 +1057,59 @@ export async function setWikiFeedback(sb: DB, articleId: number, userId: string,
 export async function suggestWikiEdit(sb: DB, i: { articleId: number; userId: string; summary: string; body: string; oldBody: string }) {
   const mod = await isModerator(sb);
   const delta = i.body.split(/\s+/).filter(Boolean).length - i.oldBody.split(/\s+/).filter(Boolean).length;
-  must(await sb.from('wiki_revisions').insert({ article_id: i.articleId, editor_id: i.userId, summary: i.summary, body: i.body, delta_words: delta, status: mod ? 'published' : 'suggested' }));
+  must(
+    await sb.from('wiki_revisions').insert({
+      article_id: i.articleId,
+      editor_id: i.userId,
+      summary: i.summary,
+      body: i.body,
+      delta_words: delta,
+      status: mod ? 'published' : 'suggested',
+    }),
+  );
   return mod;
 }
 
 // ── Moderation ────────────────────────────────────────────────────────────
 export interface PendingRevision {
-  id: number; summary: string; delta_words: number | null; body: string | null; created_at: string;
-  editor: PersonLite; article: { id: number; slug: string; title: string; body: string; status: string };
+  id: number;
+  summary: string;
+  delta_words: number | null;
+  body: string | null;
+  created_at: string;
+  editor: PersonLite;
+  article: { id: number; slug: string; title: string; body: string; status: string };
 }
 export interface PendingArticle {
-  id: number; slug: string; title: string; dek: string | null; body: string; created_at: string; starter: PersonLite | null;
+  id: number;
+  slug: string;
+  title: string;
+  dek: string | null;
+  body: string;
+  created_at: string;
+  starter: PersonLite | null;
 }
 
 export async function getModQueue(sb: DB) {
   const [revs, arts] = await Promise.all([
-    sb.from('wiki_revisions').select(`id,summary,delta_words,body,created_at,editor:profiles!wiki_revisions_editor_id_fkey(${PERSON}),article:wiki_articles!inner(id,slug,title,body,status)`)
-      .eq('status', 'suggested').eq('article.status', 'published').order('created_at'),
-    sb.from('wiki_articles').select(`id,slug,title,dek,body,created_at,starter:profiles!wiki_articles_started_by_fkey(${PERSON})`).eq('status', 'pending').order('created_at'),
+    sb
+      .from('wiki_revisions')
+      .select(
+        `id,summary,delta_words,body,created_at,editor:profiles!wiki_revisions_editor_id_fkey(${PERSON}),article:wiki_articles!inner(id,slug,title,body,status)`,
+      )
+      .eq('status', 'suggested')
+      .eq('article.status', 'published')
+      .order('created_at'),
+    sb
+      .from('wiki_articles')
+      .select(`id,slug,title,dek,body,created_at,starter:profiles!wiki_articles_started_by_fkey(${PERSON})`)
+      .eq('status', 'pending')
+      .order('created_at'),
   ]);
-  return { revisions: (must(revs) as unknown as PendingRevision[]).map((r) => withAuthor(r, 'editor')), articles: must(arts) as unknown as PendingArticle[] };
+  return {
+    revisions: (must(revs) as unknown as PendingRevision[]).map((r) => withAuthor(r, 'editor')),
+    articles: must(arts) as unknown as PendingArticle[],
+  };
 }
 export async function reviewRevision(sb: DB, id: number, approve: boolean, note?: string) {
   must(await sb.rpc('review_wiki_revision', { p_revision: id, p_approve: approve, p_note: note }));
@@ -708,16 +1118,36 @@ export async function reviewArticle(sb: DB, id: number, approve: boolean, note?:
   must(await sb.rpc('review_wiki_article', { p_article: id, p_approve: approve, p_note: note }));
 }
 export async function myPendingEdits(sb: DB, articleId: number, userId: string) {
-  return must(await sb.from('wiki_revisions').select('id,summary,created_at,status').eq('article_id', articleId).eq('editor_id', userId).eq('status', 'suggested'));
+  return must(
+    await sb
+      .from('wiki_revisions')
+      .select('id,summary,created_at,status')
+      .eq('article_id', articleId)
+      .eq('editor_id', userId)
+      .eq('status', 'suggested'),
+  );
 }
 
 // ── Notifications ─────────────────────────────────────────────────────────
 export interface NotificationRow {
-  id: number; kind: string; count: number; text: string; snippet: string | null; route: string; read_at: string | null; created_at: string;
+  id: number;
+  kind: string;
+  count: number;
+  text: string;
+  snippet: string | null;
+  route: string;
+  read_at: string | null;
+  created_at: string;
   actor: PersonLite | null;
 }
 export async function getNotifications(sb: DB, limit = 40) {
-  const rows = must(await sb.from('notifications').select(`id,kind,count,text,snippet,route,read_at,created_at,actor:profiles!notifications_actor_id_fkey(${PERSON})`).order('created_at', { ascending: false }).limit(limit));
+  const rows = must(
+    await sb
+      .from('notifications')
+      .select(`id,kind,count,text,snippet,route,read_at,created_at,actor:profiles!notifications_actor_id_fkey(${PERSON})`)
+      .order('created_at', { ascending: false })
+      .limit(limit),
+  );
   return rows as unknown as NotificationRow[];
 }
 export async function unreadNotificationCount(sb: DB) {
@@ -728,19 +1158,32 @@ export async function markNotificationsRead(sb: DB) {
   must(await sb.rpc('mark_notifications_read'));
 }
 export const NOTIFICATION_ICON: Record<string, string> = {
-  mention: 'at', reply: 'chat-circle', comment: 'chats', upvote: 'arrow-fat-up', accepted: 'check-circle', team_request: 'users-three', wiki_review: 'shield-check',
+  mention: 'at',
+  reply: 'chat-circle',
+  comment: 'chats',
+  upvote: 'arrow-fat-up',
+  accepted: 'check-circle',
+  team_request: 'users-three',
+  wiki_review: 'shield-check',
 };
 
 // ── Images ────────────────────────────────────────────────────────────────
 export const IMAGE_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/heic', 'image/heif'];
 const LIBRARY_FILE_MIMES: Record<string, string> = {
-  pdf: 'application/pdf', zip: 'application/zip', doc: 'application/msword',
+  pdf: 'application/pdf',
+  zip: 'application/zip',
+  doc: 'application/msword',
   docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  ppt: 'application/vnd.ms-powerpoint', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
+  ppt: 'application/vnd.ms-powerpoint',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
 };
 export const LIBRARY_MIME_TYPES = [...new Set(Object.values(LIBRARY_FILE_MIMES))];
-export const LIBRARY_FILE_ACCEPT = Object.keys(LIBRARY_FILE_MIMES).map((ext) => `.${ext}`).join(',');
+export const LIBRARY_FILE_ACCEPT = Object.keys(LIBRARY_FILE_MIMES)
+  .map((ext) => `.${ext}`)
+  .join(',');
 
 /** Upload an image to the public media bucket; returns its URL for ![](…) markdown. */
 export async function uploadImage(sb: DB, userId: string, file: Blob | ArrayBuffer, fileName: string, contentType: string) {
@@ -773,15 +1216,34 @@ export async function getLibrary(sb: DB, branch: string, semester: number) {
   const [branches, subjects, top] = await Promise.all([
     sb.from('branches').select('*').order('sort'),
     sb.from('subjects').select('*').eq('branch_code', branch).eq('semester', semester).order('sort'),
-    sb.from('library_items').select(`id,title,kind,subject_code,downloads_week,downloads,uploader:profiles!library_items_uploader_id_fkey(handle),subject:subjects!inner(branch_code,semester)`)
-      .eq('subject.branch_code', branch).eq('subject.semester', semester).order('downloads_week', { ascending: false }).limit(3),
+    sb
+      .from('library_items')
+      .select(
+        `id,title,kind,subject_code,downloads_week,downloads,uploader:profiles!library_items_uploader_id_fkey(handle),subject:subjects!inner(branch_code,semester)`,
+      )
+      .eq('subject.branch_code', branch)
+      .eq('subject.semester', semester)
+      .order('downloads_week', { ascending: false })
+      .limit(3),
   ]);
   const subs = must(subjects);
   return {
     branches: must(branches),
     subjects: subs,
-    top: must(top) as unknown as { id: number; title: string; kind: string; subject_code: string; downloads_week: number; downloads: number; uploader: { handle: string } | null }[],
-    totals: subs.reduce((t, s) => ({ notes: t.notes + s.notes_count, pyqs: t.pyqs + s.pyq_count, labs: t.labs + s.lab_count }), { notes: 0, pyqs: 0, labs: 0 }),
+    top: must(top) as unknown as {
+      id: number;
+      title: string;
+      kind: string;
+      subject_code: string;
+      downloads_week: number;
+      downloads: number;
+      uploader: { handle: string } | null;
+    }[],
+    totals: subs.reduce((t, s) => ({ notes: t.notes + s.notes_count, pyqs: t.pyqs + s.pyq_count, labs: t.labs + s.lab_count }), {
+      notes: 0,
+      pyqs: 0,
+      labs: 0,
+    }),
   };
 }
 
@@ -789,8 +1251,17 @@ export async function getSubject(sb: DB, code: string) {
   const subject = must(await sb.from('subjects').select('*').eq('code', code).maybeSingle());
   if (!subject) return null;
   const [items, threads, branch] = await Promise.all([
-    sb.from('library_items').select(`*,uploader:profiles!library_items_uploader_id_fkey(handle)`).eq('subject_code', code).order('downloads', { ascending: false }),
-    sb.from('threads').select(THREAD_SELECT).or(`attachment->>subject.eq.${code},tags.cs.{${code}}`).order('score', { ascending: false }).limit(10),
+    sb
+      .from('library_items')
+      .select(`*,uploader:profiles!library_items_uploader_id_fkey(handle)`)
+      .eq('subject_code', code)
+      .order('downloads', { ascending: false }),
+    sb
+      .from('threads')
+      .select(THREAD_SELECT)
+      .or(`attachment->>subject.eq.${code},tags.cs.{${code}}`)
+      .order('score', { ascending: false })
+      .limit(10),
     sb.from('branches').select('*').eq('code', subject.branch_code).single(),
   ]);
   return {
@@ -814,10 +1285,19 @@ export async function downloadItem(sb: DB, itemId: number): Promise<string | nul
   return data?.signedUrl ?? null;
 }
 
-export async function uploadLibraryItem(sb: DB, i: {
-  userId: string; subjectCode: string; kind: 'notes' | 'pyq' | 'lab' | 'slides'; title: string;
-  file: Blob | ArrayBuffer; fileName: string; contentType: string; size: number;
-}) {
+export async function uploadLibraryItem(
+  sb: DB,
+  i: {
+    userId: string;
+    subjectCode: string;
+    kind: 'notes' | 'pyq' | 'lab' | 'slides';
+    title: string;
+    file: Blob | ArrayBuffer;
+    fileName: string;
+    contentType: string;
+    size: number;
+  },
+) {
   const ext = (i.fileName.split('.').pop() ?? 'bin').toLowerCase();
   let contentType = i.contentType.trim().toLowerCase();
   if (!contentType || contentType === 'application/octet-stream') contentType = LIBRARY_FILE_MIMES[ext] ?? '';
@@ -826,22 +1306,57 @@ export async function uploadLibraryItem(sb: DB, i: {
   const path = `${i.userId}/${i.subjectCode}/${Date.now()}-${i.fileName.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
   const up = await sb.storage.from('library').upload(path, i.file, { contentType, upsert: false });
   if (up.error) throw new Error(up.error.message);
-  const format = ({ pdf: 'PDF', ppt: 'PPT', pptx: 'PPT', zip: 'ZIP', doc: 'DOC', docx: 'DOC', png: 'Image', jpg: 'Image', jpeg: 'Image' } as Record<string, string>)[ext] ?? ext.toUpperCase();
-  return must(await sb.from('library_items').insert({
-    subject_code: i.subjectCode, kind: i.kind, title: i.title, format, size_bytes: i.size, storage_path: path, uploader_id: i.userId,
-  }).select('id').single()).id;
+  const format =
+    (
+      { pdf: 'PDF', ppt: 'PPT', pptx: 'PPT', zip: 'ZIP', doc: 'DOC', docx: 'DOC', png: 'Image', jpg: 'Image', jpeg: 'Image' } as Record<
+        string,
+        string
+      >
+    )[ext] ?? ext.toUpperCase();
+  return must(
+    await sb
+      .from('library_items')
+      .insert({
+        subject_code: i.subjectCode,
+        kind: i.kind,
+        title: i.title,
+        format,
+        size_bytes: i.size,
+        storage_path: path,
+        uploader_id: i.userId,
+      })
+      .select('id')
+      .single(),
+  ).id;
 }
 
 // ── Societies ─────────────────────────────────────────────────────────────
 export interface SocietyPost {
-  id: number; kind: string; title: string; body: string | null; when_label: string; short_when: string | null;
-  where_label: string | null; starts_at: string | null; rsvp_count: number; rsvp_word: string; apply_url: string | null;
-  meta_note: string | null; featured: boolean; poster_label: string | null; poster_path: string | null;
-  created_at: string; society: SocietyLite;
+  id: number;
+  kind: string;
+  title: string;
+  body: string | null;
+  when_label: string;
+  short_when: string | null;
+  where_label: string | null;
+  starts_at: string | null;
+  rsvp_count: number;
+  rsvp_word: string;
+  apply_url: string | null;
+  meta_note: string | null;
+  featured: boolean;
+  poster_label: string | null;
+  poster_path: string | null;
+  created_at: string;
+  society: SocietyLite;
 }
 
 export async function getSocietyBoard(sb: DB, userId: string | null, kind?: string | null) {
-  let q = sb.from('society_posts').select(`*,society:societies(${SOCIETY})`).order('featured', { ascending: false }).order('created_at', { ascending: false });
+  let q = sb
+    .from('society_posts')
+    .select(`*,society:societies(${SOCIETY})`)
+    .order('featured', { ascending: false })
+    .order('created_at', { ascending: false });
   if (kind) q = q.eq('kind', kind);
   const [posts, mine, count] = await Promise.all([
     q.limit(60),
@@ -861,23 +1376,50 @@ export async function toggleRsvp(sb: DB, postId: number) {
 
 // ── Team Up ───────────────────────────────────────────────────────────────
 export interface TeamCard {
-  id: number; category: string; event_name: string; event_short: string | null; event_tone: 'accent' | 'accent2' | 'neutral';
-  title: string; short_title: string | null; description: string | null; deadline_label: string | null; deadline_on: string | null;
-  urgent: boolean; extra_members: number; owner_id: string;
+  id: number;
+  category: string;
+  event_name: string;
+  event_short: string | null;
+  event_tone: 'accent' | 'accent2' | 'neutral';
+  title: string;
+  short_title: string | null;
+  description: string | null;
+  deadline_label: string | null;
+  deadline_on: string | null;
+  urgent: boolean;
+  extra_members: number;
+  owner_id: string;
   team_roles: { id: number; name: string; filled: boolean; sort: number }[];
   team_members: { user: PersonLite }[];
 }
-export interface TeamRequest { team_id: number; created_at: string; user: PersonLite & { skills: string[] } }
+export interface TeamRequest {
+  team_id: number;
+  created_at: string;
+  user: PersonLite & { skills: string[] };
+}
 
 export async function getTeams(sb: DB, userId: string | null) {
   const [teams, mine, deadlines, looking, incoming] = await Promise.all([
-    sb.from('teams').select(`*,team_roles(id,name,filled,sort),team_members(user:profiles(${PERSON}))`).order('created_at', { ascending: false }),
+    sb
+      .from('teams')
+      .select(`*,team_roles(id,name,filled,sort),team_members(user:profiles(${PERSON}))`)
+      .order('created_at', { ascending: false }),
     userId ? sb.from('team_requests').select('team_id,status').eq('user_id', userId) : null,
     sb.from('deadlines').select('*').gte('on_date', istDate()).order('on_date').limit(5),
-    sb.from('profiles').select(`${PERSON},skills,semester`).eq('open_to_teams', true).neq('id', userId ?? '00000000-0000-0000-0000-000000000000').order('created_at', { ascending: false }).limit(6),
+    sb
+      .from('profiles')
+      .select(`${PERSON},skills,semester`)
+      .eq('open_to_teams', true)
+      .neq('id', userId ?? '00000000-0000-0000-0000-000000000000')
+      .order('created_at', { ascending: false })
+      .limit(6),
     userId
-      ? sb.from('team_requests').select(`team_id,created_at,user:profiles!team_requests_user_id_fkey(${PERSON},skills),team:teams!inner(owner_id)`)
-        .eq('team.owner_id', userId).eq('status', 'pending').order('created_at')
+      ? sb
+          .from('team_requests')
+          .select(`team_id,created_at,user:profiles!team_requests_user_id_fkey(${PERSON},skills),team:teams!inner(owner_id)`)
+          .eq('team.owner_id', userId)
+          .eq('status', 'pending')
+          .order('created_at')
       : null,
   ]);
   const requests = new Map<number, TeamRequest[]>();
@@ -925,7 +1467,9 @@ export async function getPlaces(sb: DB, userId: string | null) {
   return {
     canteen: all.filter((p) => p.category === 'canteen').sort((a, b) => b.hearts - a.hearts),
     nearby: all.filter((p) => p.category === 'nearby'),
-    delhi: all.filter((p) => p.category === 'delhi' && (!p.event_on || p.event_on >= today)).sort((a, b) => (a.event_on ?? '').localeCompare(b.event_on ?? '')),
+    delhi: all
+      .filter((p) => p.category === 'delhi' && (!p.event_on || p.event_on >= today))
+      .sort((a, b) => (a.event_on ?? '').localeCompare(b.event_on ?? '')),
     chill: all.filter((p) => p.category === 'chill'),
     myHearts: new Set((mine ? must(mine) : []).map((r) => r.place_id)),
   };
@@ -935,8 +1479,30 @@ export async function toggleHeart(sb: DB, placeId: number) {
   return must(await sb.rpc('toggle_heart', { p_place: placeId }));
 }
 
-export async function recommendPlace(sb: DB, i: { userId: string; category: string; name: string; whereLabel: string; priceLabel: string; distanceKm?: number | null; imagePath?: string | null }) {
-  must(await sb.from('places').insert({ author_id: i.userId, category: i.category, name: i.name, where_label: i.whereLabel, price_label: i.priceLabel, distance_km: i.distanceKm ?? null, image_path: i.imagePath ?? null, sort: 50 }));
+export async function recommendPlace(
+  sb: DB,
+  i: {
+    userId: string;
+    category: string;
+    name: string;
+    whereLabel: string;
+    priceLabel: string;
+    distanceKm?: number | null;
+    imagePath?: string | null;
+  },
+) {
+  must(
+    await sb.from('places').insert({
+      author_id: i.userId,
+      category: i.category,
+      name: i.name,
+      where_label: i.whereLabel,
+      price_label: i.priceLabel,
+      distance_km: i.distanceKm ?? null,
+      image_path: i.imagePath ?? null,
+      sort: 50,
+    }),
+  );
 }
 /** Deletes a place: your own, or any as a moderator (RLS decides). */
 export async function deletePlace(sb: DB, id: number) {
@@ -956,8 +1522,18 @@ export async function getProfile(sb: DB, handle: string) {
     sb.from('society_members').select(`role,society:societies(${SOCIETY})`).eq('user_id', p.id),
     sb.from('badges').select('*').eq('user_id', p.id).order('created_at'),
     sb.from('threads').select(THREAD_SELECT).eq('author_id', p.id).order('created_at', { ascending: false }).limit(30),
-    sb.from('replies').select('id,body,score,created_at,thread:threads!replies_thread_id_fkey(id,title)').eq('author_id', p.id).order('created_at', { ascending: false }).limit(30),
-    sb.from('library_items').select('id,title,kind,subject_code,downloads,created_at').eq('uploader_id', p.id).order('created_at', { ascending: false }).limit(30),
+    sb
+      .from('replies')
+      .select('id,body,score,created_at,thread:threads!replies_thread_id_fkey(id,title)')
+      .eq('author_id', p.id)
+      .order('created_at', { ascending: false })
+      .limit(30),
+    sb
+      .from('library_items')
+      .select('id,title,kind,subject_code,downloads,created_at')
+      .eq('uploader_id', p.id)
+      .order('created_at', { ascending: false })
+      .limit(30),
   ]);
   return {
     profile: p,
@@ -967,14 +1543,30 @@ export async function getProfile(sb: DB, handle: string) {
     societies: must(socs) as unknown as { role: string; society: SocietyLite }[],
     badges: must(badges),
     threads: (must(threads) as unknown as ThreadCard[]).map((t) => withAuthor(t)),
-    replies: must(replies) as unknown as { id: number; body: string; score: number; created_at: string; thread: { id: number; title: string } }[],
+    replies: must(replies) as unknown as {
+      id: number;
+      body: string;
+      score: number;
+      created_at: string;
+      thread: { id: number; title: string };
+    }[],
     uploads: must(uploads),
   };
 }
 
 export async function getSaved(sb: DB, userId: string) {
-  const rows = must(await sb.from('saves').select(`thread:threads(${THREAD_SELECT})`).eq('user_id', userId).order('created_at', { ascending: false }).limit(50));
-  return (rows as unknown as { thread: ThreadCard }[]).map((r) => r.thread).filter(Boolean).map((t) => withAuthor(t));
+  const rows = must(
+    await sb
+      .from('saves')
+      .select(`thread:threads(${THREAD_SELECT})`)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(50),
+  );
+  return (rows as unknown as { thread: ThreadCard }[])
+    .map((r) => r.thread)
+    .filter(Boolean)
+    .map((t) => withAuthor(t));
 }
 export async function getDrafts(sb: DB) {
   return must(await sb.from('drafts').select('*').order('updated_at', { ascending: false }));
@@ -982,8 +1574,14 @@ export async function getDrafts(sb: DB) {
 
 // ── Lounge ────────────────────────────────────────────────────────────────
 export interface LoungeMessage {
-  id: number; room_slug: string; body: string; created_at: string; promoted_thread_id: number | null;
-  edited_at?: string | null; author: PersonLite; society: SocietyLite | null;
+  id: number;
+  room_slug: string;
+  body: string;
+  created_at: string;
+  promoted_thread_id: number | null;
+  edited_at?: string | null;
+  author: PersonLite;
+  society: SocietyLite | null;
   promoted?: { id: number; reply_count: number; board: { name: string } } | null;
   pending?: boolean;
 }
@@ -1022,10 +1620,16 @@ export async function deleteLoungeMessage(sb: DB, id: number) {
 }
 export async function unreadCounts(sb: DB, since: Record<string, string>) {
   const out: Record<string, number> = {};
-  await Promise.all(Object.entries(since).map(async ([room, iso]) => {
-    const { count } = await sb.from('lounge_messages').select('id', { count: 'exact', head: true }).eq('room_slug', room).gt('created_at', iso);
-    out[room] = count ?? 0;
-  }));
+  await Promise.all(
+    Object.entries(since).map(async ([room, iso]) => {
+      const { count } = await sb
+        .from('lounge_messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('room_slug', room)
+        .gt('created_at', iso);
+      out[room] = count ?? 0;
+    }),
+  );
   return out;
 }
 
