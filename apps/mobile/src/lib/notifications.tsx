@@ -6,7 +6,11 @@ import { useAuth } from './auth';
 import { appRoute } from './routes';
 import { loadNotifications, pushSupported, registerPush } from './push';
 
-const Ctx = createContext<{ unread: number; setUnread: (n: number) => void; version: number }>({ unread: 0, setUnread: () => {}, version: 0 });
+const Ctx = createContext<{ unread: number; setUnread: (n: number) => void; version: number }>({
+  unread: 0,
+  setUnread: () => {},
+  version: 0,
+});
 export const useNotifications = () => useContext(Ctx);
 
 function PushResponseListener() {
@@ -35,13 +39,17 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     unreadNotificationCount(supabase).then(setUnread);
     (async () => {
       await supabase.realtime.setAuth(session.access_token); // RLS needs the user's JWT on the socket
-      ch = supabase.channel(`notifications:${profile.id}`)
+      ch = supabase
+        .channel(`notifications:${profile.id}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile.id}` }, () => {
           unreadNotificationCount(supabase).then(setUnread);
           setVersion((v) => v + 1);
-        }).subscribe();
+        })
+        .subscribe();
     })();
-    return () => { if (ch) supabase.removeChannel(ch); };
+    return () => {
+      if (ch) supabase.removeChannel(ch);
+    };
   }, [profile?.id, session?.access_token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -50,8 +58,10 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     registerPush().catch(() => {});
   }, [profile, session]);
 
-  return <Ctx.Provider value={{ unread: profile ? unread : 0, setUnread, version }}>
-    {profile && pushSupported && <PushResponseListener />}
-    {children}
-  </Ctx.Provider>;
+  return (
+    <Ctx.Provider value={{ unread: profile ? unread : 0, setUnread, version }}>
+      {profile && pushSupported && <PushResponseListener />}
+      {children}
+    </Ctx.Provider>
+  );
 }

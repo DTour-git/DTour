@@ -2,17 +2,26 @@
 // subsequence match; +8 for a consecutive char, +6 at a word start, +1 otherwise;
 // small length penalty. Spaces in the query are ignored.
 
-export interface FuzzyMatch { score: number; hits: number[] }
+export interface FuzzyMatch {
+  score: number;
+  hits: number[];
+}
 
 const WORD_START = /[\s\-—:#@(]/;
 
 export function fuzzy(q: string, text: string): FuzzyMatch | null {
   if (!q) return { score: 0, hits: [] };
   const t = text.toLowerCase();
-  let qi = 0, score = 0, last = -2;
+  let qi = 0,
+    score = 0,
+    last = -2;
   const hits: number[] = [];
   for (let i = 0; i < t.length && qi < q.length; i++) {
-    if (q[qi] === ' ') { qi++; i--; continue; }
+    if (q[qi] === ' ') {
+      qi++;
+      i--;
+      continue;
+    }
     if (t[i] === q[qi]) {
       hits.push(i);
       score += (i === last + 1 ? 8 : 1) + (i === 0 || WORD_START.test(t[i - 1]) ? 6 : 0);
@@ -25,7 +34,10 @@ export function fuzzy(q: string, text: string): FuzzyMatch | null {
   return { score: score - text.length * 0.02, hits };
 }
 
-export interface Segment { text: string; hit: boolean }
+export interface Segment {
+  text: string;
+  hit: boolean;
+}
 
 /** Split text into highlighted / plain runs for rendering matched characters bold. */
 export function segments(text: string, hits: number[]): Segment[] {
@@ -34,7 +46,10 @@ export function segments(text: string, hits: number[]): Segment[] {
   let cur: Segment | null = null;
   for (let i = 0; i < text.length; i++) {
     const hit = set.has(i);
-    if (!cur || cur.hit !== hit) { cur = { text: '', hit }; out.push(cur); }
+    if (!cur || cur.hit !== hit) {
+      cur = { text: '', hit };
+      out.push(cur);
+    }
     cur.text += text[i];
   }
   return out;
@@ -45,27 +60,54 @@ export type SearchKind = (typeof SEARCH_KINDS)[number];
 
 /** Web palette scopes (mobile drops Articles and Societies). */
 export const WEB_SCOPES: Record<string, SearchKind | null> = {
-  All: null, Threads: 'Thread', Articles: 'Article', Library: 'Library', People: 'Person',
-  Boards: 'Board', Societies: 'Society', Places: 'Place',
+  All: null,
+  Threads: 'Thread',
+  Articles: 'Article',
+  Library: 'Library',
+  People: 'Person',
+  Boards: 'Board',
+  Societies: 'Society',
+  Places: 'Place',
 };
 export const MOBILE_SCOPES: Record<string, SearchKind | null> = {
-  All: null, Threads: 'Thread', Library: 'Library', People: 'Person', Boards: 'Board', Places: 'Place',
+  All: null,
+  Threads: 'Thread',
+  Library: 'Library',
+  People: 'Person',
+  Boards: 'Board',
+  Places: 'Place',
 };
 
 /** `@` people, `#` boards, `lib:` library — prefixes override the scope. */
 export function parseQuery(input: string, scopeKind: SearchKind | null): { q: string; kind: SearchKind | null } {
   let q = input.trim().toLowerCase();
   let kind = scopeKind;
-  if (q.startsWith('@')) { kind = 'Person'; q = q.slice(1); }
-  else if (q.startsWith('#')) { kind = 'Board'; q = q.slice(1); }
-  else if (q.startsWith('lib:')) { kind = 'Library'; q = q.slice(4).trim(); }
+  if (q.startsWith('@')) {
+    kind = 'Person';
+    q = q.slice(1);
+  } else if (q.startsWith('#')) {
+    kind = 'Board';
+    q = q.slice(1);
+  } else if (q.startsWith('lib:')) {
+    kind = 'Library';
+    q = q.slice(4).trim();
+  }
   return { q, kind };
 }
 
 export interface SearchDoc {
-  kind: string; icon: string; title: string; sub: string; body: string; route: string; popularity: number;
+  kind: string;
+  icon: string;
+  title: string;
+  sub: string;
+  body: string;
+  route: string;
+  popularity: number;
 }
-export interface RankedDoc extends SearchDoc { match: FuzzyMatch; segs: Segment[] }
+export interface RankedDoc extends SearchDoc {
+  match: FuzzyMatch;
+  segs: Segment[];
+}
 
 /** Client-side re-rank of server candidates. */
 export function rank(docs: SearchDoc[], q: string, limit = 40): RankedDoc[] {
@@ -80,5 +122,8 @@ export function rank(docs: SearchDoc[], q: string, limit = 40): RankedDoc[] {
 
 /** "Already asked?" — the words of a draft title worth searching for (matches the SQL in `similar_threads`). */
 export function titleWords(title: string): string[] {
-  return title.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2);
+  return title
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length > 2);
 }

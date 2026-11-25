@@ -9,7 +9,9 @@ export default function Loading() {
       {bar('min(560px, 90%)', 40, 14)}
       {bar('min(420px, 70%)', 18, 14)}
       <div className="grid-2" style={{ gap: 20, marginTop: 40 }}>
-        {[0, 1, 2, 3].map((i) => <div key={i} style={{ height: 120, borderRadius: 2, background: 'var(--color-surface)' }} />)}
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} style={{ height: 120, borderRadius: 2, background: 'var(--color-surface)' }} />
+        ))}
       </div>
     </div>
   );

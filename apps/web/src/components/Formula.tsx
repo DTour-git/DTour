@@ -21,11 +21,17 @@ function Typeset({ source, display }: { source: string; display: boolean }) {
   } catch {
     return <Raw source={source} display={display} />;
   }
-  return display
-    ? <div style={{ overflowX: 'auto', overflowY: 'hidden', margin: '0 0 15px' }} dangerouslySetInnerHTML={{ __html: html }} />
-    : <span dangerouslySetInnerHTML={{ __html: html }} />;
+  return display ? (
+    <div style={{ overflowX: 'auto', overflowY: 'hidden', margin: '0 0 15px' }} dangerouslySetInnerHTML={{ __html: html }} />
+  ) : (
+    <span dangerouslySetInnerHTML={{ __html: html }} />
+  );
 }
 
 export function Formula({ source, display = false }: { source: string; display?: boolean }) {
-  return <Suspense fallback={<Raw source={source} display={display} />}><Typeset source={source} display={display} /></Suspense>;
+  return (
+    <Suspense fallback={<Raw source={source} display={display} />}>
+      <Typeset source={source} display={display} />
+    </Suspense>
+  );
 }
