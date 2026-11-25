@@ -1,6 +1,8 @@
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import {
+  DELETED_PERSON,
+  atHandle,
   clock,
   colors,
   dayOfMonth,
@@ -58,7 +60,7 @@ export default function Today() {
         reply_count: number;
         image_label: string | null;
         image_path: string | null;
-        author: { handle: string };
+        author: { handle: string } | null;
         society: { verified: boolean } | null;
       } | null,
       timeline,
@@ -170,7 +172,7 @@ export default function Today() {
             <Halftone height={150} label={data.lead.image_label} src={data.lead.image_path} />
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8 }}>
               <T size={12.5} color={colors.neutral700}>
-                @{data.lead.author.handle}
+                {atHandle(data.lead.author ?? DELETED_PERSON)}
               </T>
               {data.lead.society?.verified && <Seal />}
               <T size={12.5} color={colors.neutral700}>

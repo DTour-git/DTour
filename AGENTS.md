@@ -75,6 +75,7 @@ CI (`.github/workflows/ci.yml`) runs two jobs on every PR and every push to `mai
   - **Production: `megohwzcghnbfdzsaypz`.** The real site. The CLI link (`supabase/.temp`) points here. Never write test data to it.
   - **Dev: `cqdqfmejbwvumbbclkfk`** (`dtour-dev`). Same migrations, demo seed and two test accounts. Use it for tests, experiments and agent work. Its keys go in a root `.env.dev` (copy `.env.dev.example`; ask a maintainer for the values). Every dev script refuses to run if a value in `.env.dev` points at production.
 - The old project `pvtgvraqbgncrexnkoof` is retired; don't use it.
+- **Error monitoring** is Sentry, off unless a DSN is set (`NEXT_PUBLIC_SENTRY_DSN` on web, `EXPO_PUBLIC_SENTRY_DSN` in the app; `*_SENTRY_ENVIRONMENT` is `development` or `production`). Events carry the user id only (`scrubEvent` in `packages/shared/src/monitoring.ts`). Source-map upload runs only when `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` and `SENTRY_PROJECT` are set as build env vars on the web host / EAS. Those are secrets: never in a file. Report errors through `reportError()` in each app's `monitoring.ts`.
 
 ## Architecture rules
 

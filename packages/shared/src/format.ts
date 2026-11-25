@@ -182,7 +182,7 @@ export function ordinalSem(semester: number): string {
 export function initials(handleOrName: string): string {
   const parts = handleOrName
     .replace(/^@/, '')
-    .split(/[\s._-]+/)
+    .split(/[\s._\-[\]]+/)
     .filter(Boolean);
   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
   return handleOrName.replace(/^@/, '').slice(0, 2).toUpperCase();

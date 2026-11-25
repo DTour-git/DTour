@@ -4,6 +4,7 @@ import { Redirect, useRouter } from 'expo-router';
 import {
   REPORT_REASONS,
   agoLong,
+  atHandle,
   colors,
   fonts,
   getCampusAdmin,
@@ -108,7 +109,7 @@ export default function Mod() {
                 {a.title}
               </T>
               <T size={12.5} color={colors.neutral700} style={{ marginTop: 2 }}>
-                by @{a.starter?.handle} · {agoLong(a.created_at)}
+                by {a.starter ? `@${a.starter.handle}` : '[deleted user]'} · {agoLong(a.created_at)}
               </T>
               <T size={14} lh={1.5} color={colors.neutral800} style={{ marginTop: 6 }} numberOfLines={5}>
                 {plain(a.body || '', 400)}
@@ -138,7 +139,7 @@ export default function Mod() {
               </Pressable>
               <T size={13.5} style={{ marginTop: 2 }}>
                 <T size={13.5} w={600}>
-                  @{r.editor.handle}
+                  {atHandle(r.editor)}
                 </T>{' '}
                 {r.summary}
               </T>

@@ -203,6 +203,7 @@ export function AuthorName({ author, society, asHandle }: { author: PersonLite; 
       </>
     );
   }
+  if (!author.id) return <span style={{ color: 'var(--color-neutral-700)' }}>{author.handle}</span>;
   return (
     <Link href={`/u/${author.handle}`} style={{ color: 'var(--color-text)', fontWeight: 600 }}>
       @{author.handle}

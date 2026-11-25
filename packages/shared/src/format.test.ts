@@ -50,6 +50,7 @@ describe('people', () => {
   });
   it('initials from handles', () => {
     expect(initials('aarav.k')).toBe('AK');
+    expect(initials('[deleted user]')).toBe('DU');
     expect(initials('segfault_sneha')).toBe('SS');
     expect(initials('@riya')).toBe('RI');
   });
