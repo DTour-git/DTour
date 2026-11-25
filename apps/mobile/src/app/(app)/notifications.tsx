@@ -48,33 +48,39 @@ export default function Notifications() {
               rowRule,
             ]}
           >
-            <View>
-              {n.actor ? <Avatar person={n.actor} size={36} /> : <Avatar person={{ handle: '?', tint: 'neutral' }} size={36} />}
-              <View
-                style={{
-                  position: 'absolute',
-                  right: -4,
-                  bottom: -4,
-                  width: 20,
-                  height: 20,
-                  borderRadius: 10,
-                  backgroundColor: colors.bg,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Icon
-                  name={NOTIFICATION_ICON[n.kind] ?? 'bell'}
-                  size={14}
-                  color={n.kind === 'upvote' || n.kind === 'accepted' ? colors.accent : colors.accent2}
-                />
+            {n.kind === 'badge' ? (
+              <Icon name="medal" size={36} color={colors.accent2} />
+            ) : (
+              <View>
+                {n.actor ? <Avatar person={n.actor} size={36} /> : <Avatar person={{ handle: '?', tint: 'neutral' }} size={36} />}
+                <View
+                  style={{
+                    position: 'absolute',
+                    right: -4,
+                    bottom: -4,
+                    width: 20,
+                    height: 20,
+                    borderRadius: 10,
+                    backgroundColor: colors.bg,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Icon
+                    name={NOTIFICATION_ICON[n.kind] ?? 'bell'}
+                    size={14}
+                    color={n.kind === 'upvote' || n.kind === 'accepted' ? colors.accent : colors.accent2}
+                  />
+                </View>
               </View>
-            </View>
+            )}
             <View style={{ flex: 1 }}>
               <T size={14.5} lh={1.4}>
-                <T size={14.5} w={600}>
-                  @{n.actor?.handle ?? 'someone'}
-                </T>{' '}
+                {n.kind !== 'badge' && (
+                  <T size={14.5} w={600}>
+                    @{n.actor?.handle ?? 'someone'}{' '}
+                  </T>
+                )}
                 {n.text}
               </T>
               {n.snippet ? (

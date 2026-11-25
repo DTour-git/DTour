@@ -241,6 +241,27 @@ export function ProfileView({ handle, isTab }: { handle: string; isTab?: boolean
           </T>
           <Tag tone={p.open_to_teams ? 'accent' : 'neutral'}>{p.open_to_teams ? 'On' : 'Off'}</Tag>
         </Pressable>
+        {data.badges.length > 0 && (
+          <View style={{ marginTop: 12, padding: 14, backgroundColor: colors.surface, borderRadius: 2 }}>
+            <T size={14} w={600}>
+              Badges
+            </T>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 10 }}>
+              {data.badges.map((b) => (
+                <View key={b.id} style={{ width: 72, alignItems: 'center', gap: 4 }}>
+                  <Icon
+                    name={b.icon}
+                    size={30}
+                    color={b.tone === 'accent2' ? colors.accent2 : b.tone === 'neutral' ? colors.neutral700 : colors.accent}
+                  />
+                  <T size={12.5} align="center">
+                    {b.label}
+                  </T>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}

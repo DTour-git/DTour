@@ -105,6 +105,7 @@ export type Database = {
           created_at: string
           icon: string
           id: number
+          kind: string | null
           label: string
           tone: string
           user_id: string
@@ -113,6 +114,7 @@ export type Database = {
           created_at?: string
           icon: string
           id?: never
+          kind?: string | null
           label: string
           tone?: string
           user_id: string
@@ -121,6 +123,7 @@ export type Database = {
           created_at?: string
           icon?: string
           id?: never
+          kind?: string | null
           label?: string
           tone?: string
           user_id?: string
@@ -2187,6 +2190,10 @@ export type Database = {
     Functions: {
       accept_reply: {
         Args: { p_reply: number; p_thread: number }
+        Returns: undefined
+      }
+      award_badge: {
+        Args: { p_kind: string; p_notify?: boolean; p_user: string }
         Returns: undefined
       }
       board_new_counts: {

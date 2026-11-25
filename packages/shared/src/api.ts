@@ -1141,6 +1141,7 @@ export const NOTIFICATION_ICON: Record<string, string> = {
   accepted: 'check-circle',
   team_request: 'users-three',
   wiki_review: 'shield-check',
+  badge: 'medal',
 };
 
 // ── Images ────────────────────────────────────────────────────────────────
