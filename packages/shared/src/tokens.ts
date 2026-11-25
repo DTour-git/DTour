@@ -8,20 +8,38 @@ export const colors = {
   accent: '#0088b0',
   accent2: '#d6006c',
   processYellow: '#edbb00',
-  divider: 'rgba(32,30,29,0.16)',   // color-mix(#201e1d 16%)
-  rule: 'rgba(32,30,29,0.08)',      // row separators, color-mix(text 8%)
+  divider: 'rgba(32,30,29,0.16)', // color-mix(#201e1d 16%)
+  rule: 'rgba(32,30,29,0.08)', // row separators, color-mix(text 8%)
   scrim: 'rgba(45,43,43,0.45)',
 
-  neutral100: '#f8f4f4', neutral200: '#eae7e7', neutral300: '#d7d3d3', neutral400: '#bab6b6',
-  neutral500: '#9b9797', neutral600: '#7d7979', neutral700: '#605d5d', neutral800: '#444141',
+  neutral100: '#f8f4f4',
+  neutral200: '#eae7e7',
+  neutral300: '#d7d3d3',
+  neutral400: '#bab6b6',
+  neutral500: '#9b9797',
+  neutral600: '#7d7979',
+  neutral700: '#605d5d',
+  neutral800: '#444141',
   neutral900: '#2d2b2b',
 
-  accent100: '#e9f8ff', accent200: '#cbeeff', accent300: '#99e0ff', accent400: '#62c5ee',
-  accent500: '#38a6cf', accent600: '#1186ac', accent700: '#006786', accent800: '#004961',
+  accent100: '#e9f8ff',
+  accent200: '#cbeeff',
+  accent300: '#99e0ff',
+  accent400: '#62c5ee',
+  accent500: '#38a6cf',
+  accent600: '#1186ac',
+  accent700: '#006786',
+  accent800: '#004961',
   accent900: '#0a303e',
 
-  accent2_100: '#fff1f4', accent2_200: '#ffdee6', accent2_300: '#ffc0d0', accent2_400: '#ff90b1',
-  accent2_500: '#ff458e', accent2_600: '#d82071', accent2_700: '#aa0b56', accent2_800: '#790e3d',
+  accent2_100: '#fff1f4',
+  accent2_200: '#ffdee6',
+  accent2_300: '#ffc0d0',
+  accent2_400: '#ff90b1',
+  accent2_500: '#ff458e',
+  accent2_600: '#d82071',
+  accent2_700: '#aa0b56',
+  accent2_800: '#790e3d',
   accent2_900: '#4b1528',
 } as const;
 
@@ -37,9 +55,9 @@ export const fonts = {
 /** Category / board tone → colours used for rules, tiles and numerals. */
 export type Tone = 'accent' | 'accent2' | 'ink';
 export const tone = {
-  accent:  { main: colors.accent,  tint: colors.accent100,   strong: colors.accent700,   heading: colors.accent800 },
+  accent: { main: colors.accent, tint: colors.accent100, strong: colors.accent700, heading: colors.accent800 },
   accent2: { main: colors.accent2, tint: colors.accent2_100, strong: colors.accent2_700, heading: colors.accent2_800 },
-  ink:     { main: colors.text,    tint: colors.surface,     strong: colors.text,        heading: colors.text },
+  ink: { main: colors.text, tint: colors.surface, strong: colors.text, heading: colors.text },
 } as const;
 
 /** Avatar tints used across the prototypes. */
