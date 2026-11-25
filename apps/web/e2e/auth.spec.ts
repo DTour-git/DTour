@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { signIn } from './helpers';
+import { signIn, signInClient } from './helpers';
 
 test('the OAuth callback redirects only to a local path', async ({ request }) => {
   for (const next of ['//example.invalid', '/\\example.invalid', '/\t/example.invalid', '/%2e//example.invalid']) {
@@ -53,4 +53,19 @@ test('auth redirects send an error code, not Supabase text', async ({ request })
 
   const confirm = await request.get('/auth/confirm', { maxRedirects: 0 });
   expect(confirm.headers().location).toBe(new URL('/login?error=link_expired', confirm.url()).href);
+});
+
+test('a revoked session is refused on members-only pages', async ({ page }) => {
+  await signIn(page, 'e2e.student');
+  await page.goto('/new');
+  await expect(page).not.toHaveURL(/\/login/);
+
+  // Revoke every session of the account; the browser's token is still unexpired.
+  await (await signInClient()).auth.signOut({ scope: 'global' });
+
+  await page.goto('/new');
+  await expect(page).toHaveURL(/\/login\?next=%2Fnew/);
+  // The dead session cookie is cleared, so public pages no longer show a signed-in member.
+  await page.goto('/');
+  await expect(page.getByRole('link', { name: 'Your profile' })).toHaveCount(0);
 });
