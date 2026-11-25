@@ -13,7 +13,10 @@ export function resolveLink(href: string | null | undefined): AppLink {
 }
 
 /** Opens a user-written link through `resolveLink`. Returns false (and opens nothing) when it is blocked. */
-export function openUserLink(href: string | null | undefined, io: { push: (route: Href) => void; openURL: (url: string) => unknown }): boolean {
+export function openUserLink(
+  href: string | null | undefined,
+  io: { push: (route: Href) => void; openURL: (url: string) => unknown },
+): boolean {
   const l = resolveLink(href);
   if (l.kind === 'app') io.push(l.route);
   else if (l.kind === 'browser') void Promise.resolve(io.openURL(l.url)).catch(() => {});

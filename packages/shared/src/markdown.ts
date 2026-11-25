@@ -29,8 +29,18 @@ export function inline(src: string): Inline[] {
   INLINE.lastIndex = 0;
   let m: RegExpExecArray | null;
   while ((m = INLINE.exec(src))) {
-    const s = m[0], i = m.index ?? 0;
-    if (s.startsWith('$') && (src[i - 1] === '$' || /\s/.test(s[s.length - 2]) || /[\d$]/.test(src[i + s.length] ?? '') || /^\$\d/.test(s) && /(?:^|[^\\\w])(?:and|or|for|to)\b/i.test(s))) { INLINE.lastIndex = i + 1; continue; }
+    const s = m[0],
+      i = m.index ?? 0;
+    if (
+      s.startsWith('$') &&
+      (src[i - 1] === '$' ||
+        /\s/.test(s[s.length - 2]) ||
+        /[\d$]/.test(src[i + s.length] ?? '') ||
+        (/^\$\d/.test(s) && /(?:^|[^\\\w])(?:and|or|for|to)\b/i.test(s)))
+    ) {
+      INLINE.lastIndex = i + 1;
+      continue;
+    }
     if (i > last) out.push(...splitMentions(src.slice(last, i)));
     if (s.startsWith('**')) out.push({ t: 'b', v: s.slice(2, -2) });
     else if (s.startsWith('`')) out.push({ t: 'code', v: s.slice(1, -1) });
@@ -69,7 +79,10 @@ export function splitMentions(src: string): Inline[] {
 }
 
 export function slugify(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 }
 
 export function parse(md: string, { allowImages = true }: { allowImages?: boolean } = {}): Block[] {
@@ -78,8 +91,14 @@ export function parse(md: string, { allowImages = true }: { allowImages?: boolea
   let para: string[] = [];
   let list: string[] = [];
   const flush = () => {
-    if (para.length) { blocks.push({ t: 'p', inl: inline(para.join(' ')) }); para = []; }
-    if (list.length) { blocks.push({ t: 'ul', items: list.map(inline) }); list = []; }
+    if (para.length) {
+      blocks.push({ t: 'p', inl: inline(para.join(' ')) });
+      para = [];
+    }
+    if (list.length) {
+      blocks.push({ t: 'ul', items: list.map(inline) });
+      list = [];
+    }
   };
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -93,17 +112,25 @@ export function parse(md: string, { allowImages = true }: { allowImages?: boolea
     }
     const display = /^\$\$((?:(?!\$\$).)+)\$\$$/.exec(trimmed);
     if (display && display[1].trim()) {
-      flush(); blocks.push({ t: 'math', v: display[1].trim() }); continue;
+      flush();
+      blocks.push({ t: 'math', v: display[1].trim() });
+      continue;
     }
     if (trimmed === '$$') {
       // The closing $$ must come before the next blank line or code fence.
       let end = i + 1;
       while (end < lines.length && lines[end].trim() && lines[end].trim() !== '$$' && !lines[end].trim().startsWith('```')) end++;
       if (end > i + 1 && lines[end]?.trim() === '$$') {
-        flush(); blocks.push({ t: 'math', v: lines.slice(i + 1, end).join('\n') }); i = end; continue;
+        flush();
+        blocks.push({ t: 'math', v: lines.slice(i + 1, end).join('\n') });
+        i = end;
+        continue;
       }
     }
-    if (!trimmed) { flush(); continue; }
+    if (!trimmed) {
+      flush();
+      continue;
+    }
     const img = /^!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)$/.exec(trimmed);
     if (img) {
       flush();
@@ -123,9 +150,17 @@ export function parse(md: string, { allowImages = true }: { allowImages?: boolea
       blocks.push({ t: 'senior', quote: q.trim(), by: by ? by.trim() : null });
       continue;
     }
-    if (trimmed.startsWith('>')) { flush(); blocks.push({ t: 'quote', inl: inline(trimmed.replace(/^>\s?/, '')) }); continue; }
+    if (trimmed.startsWith('>')) {
+      flush();
+      blocks.push({ t: 'quote', inl: inline(trimmed.replace(/^>\s?/, '')) });
+      continue;
+    }
     const li = /^[-*]\s+(.*)$/.exec(trimmed);
-    if (li) { if (para.length) flush(); list.push(li[1]); continue; }
+    if (li) {
+      if (para.length) flush();
+      list.push(li[1]);
+      continue;
+    }
     if (list.length) flush();
     para.push(trimmed);
   }
@@ -147,13 +182,28 @@ export function markdownExcerpt(md: string, max = 180): Inline[] {
   for (const block of parse(md)) {
     let parts: Inline[];
     switch (block.t) {
-      case 'p': case 'quote': parts = block.inl; break;
-      case 'h': parts = inline(block.text); break;
-      case 'ul': parts = block.items.flatMap((item, i) => i ? [{ t: 'text' as const, v: ' ' }, ...item] : item); break;
-      case 'senior': parts = inline(block.quote); break;
-      case 'code': parts = [{ t: 'code', v: block.v }]; break;
-      case 'math': parts = [{ t: 'math', v: block.v }]; break;
-      case 'img': parts = [{ t: 'text', v: block.alt }]; break;
+      case 'p':
+      case 'quote':
+        parts = block.inl;
+        break;
+      case 'h':
+        parts = inline(block.text);
+        break;
+      case 'ul':
+        parts = block.items.flatMap((item, i) => (i ? [{ t: 'text' as const, v: ' ' }, ...item] : item));
+        break;
+      case 'senior':
+        parts = inline(block.quote);
+        break;
+      case 'code':
+        parts = [{ t: 'code', v: block.v }];
+        break;
+      case 'math':
+        parts = [{ t: 'math', v: block.v }];
+        break;
+      case 'img':
+        parts = [{ t: 'text', v: block.alt }];
+        break;
     }
     if (pieces.length) pieces.push({ t: 'text', v: ' ' });
     pieces.push(...parts);
@@ -176,6 +226,11 @@ export function markdownExcerpt(md: string, max = 180): Inline[] {
 
 /** Plain-text excerpt for previews. */
 export function plain(md: string, max = 200): string {
-  const s = md.replace(/!\[[^\]]*\]\([^)]*\)/g, '').replace(/[#>*`$\[\]]/g, '').replace(/\(([^)]+)\)/g, '').replace(/\s+/g, ' ').trim();
+  const s = md
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+    .replace(/[#>*`$\[\]]/g, '')
+    .replace(/\(([^)]+)\)/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
   return s.length > max ? s.slice(0, max - 1) + '…' : s;
 }

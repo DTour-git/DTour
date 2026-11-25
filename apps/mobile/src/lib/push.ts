@@ -25,7 +25,8 @@ export async function registerPush(requestPermission = false) {
   if (!Notifications) return false;
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
-      name: 'DTour updates', importance: Notifications.AndroidImportance.DEFAULT,
+      name: 'DTour updates',
+      importance: Notifications.AndroidImportance.DEFAULT,
     });
   }
   let permission = await Notifications.getPermissionsAsync();
