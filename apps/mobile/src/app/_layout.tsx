@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Stack } from 'expo-router';
+import { ErrorBoundary as DefaultErrorBoundary, Stack, type ErrorBoundaryProps } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -14,8 +14,18 @@ import { colors } from '@dtour/shared';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { PresenceProvider } from '@/lib/presence';
 import { NotificationsProvider } from '@/lib/notifications';
+import { initMonitoring, reportError } from '@/lib/monitoring';
 
+initMonitoring();
 SplashScreen.preventAutoHideAsync();
+
+/** Expo Router's error screen, plus a report to error monitoring (#15). */
+export function ErrorBoundary(props: ErrorBoundaryProps) {
+  useEffect(() => {
+    reportError(props.error);
+  }, [props.error]);
+  return <DefaultErrorBoundary {...props} />;
+}
 
 function Root() {
   const { ready, session, profile } = useAuth();

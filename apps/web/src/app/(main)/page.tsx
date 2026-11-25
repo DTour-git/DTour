@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import {
   ago,
+  atHandle,
   clock,
+  DELETED_PERSON,
   dayOfMonth,
   deadlineText,
   getConfig,
@@ -84,7 +86,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
                 }}
               >
                 <span>
-                  Posted by <b style={{ color: 'var(--color-text)' }}>@{d.lead.author.handle}</b> {d.lead.society?.verified && <Seal />}
+                  Posted by <b style={{ color: 'var(--color-text)' }}>{atHandle(d.lead.author)}</b> {d.lead.society?.verified && <Seal />}
                 </span>
                 <span>{n(d.lead.reply_count)} replies</span>
                 <Link href={threadHref(d.lead)} style={{ marginLeft: 'auto', fontWeight: 600 }}>
@@ -214,7 +216,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
                   }}
                 >
                   <CategoryTag thread={f} />
-                  <b style={{ color: 'var(--color-text)' }}>@{f.author.handle}</b>
+                  <b style={{ color: 'var(--color-text)' }}>{atHandle(f.author)}</b>
                   <FlairTag person={f.author} />
                   {ago(f.created_at)}
                 </div>
@@ -460,12 +462,12 @@ async function AcceptedBy({ threadId }: { threadId: number }) {
     .select('accepted:replies!threads_accepted_fk(society:societies(name),author:profiles!replies_author_id_fkey(handle))')
     .eq('id', threadId)
     .single();
-  const a = (data as unknown as { accepted: { society: { name: string } | null; author: { handle: string } } | null })?.accepted;
+  const a = (data as unknown as { accepted: { society: { name: string } | null; author: { handle: string } | null } | null })?.accepted;
   if (!a) return null;
   return (
     <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
       <Icon name="check-circle" size={18} color="var(--color-accent)" />
-      Answered by {a.society?.name ?? `@${a.author.handle}`}
+      Answered by {a.society?.name ?? (a.author ? `@${a.author.handle}` : DELETED_PERSON.handle)}
     </span>
   );
 }

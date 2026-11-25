@@ -246,10 +246,12 @@ function Drawer({ rooms, onClose }: { rooms: Room[]; onClose: () => void }) {
                   <>
                     <b>{m.society.name}</b> {m.society.verified && <Seal size={14} />}
                   </>
-                ) : (
+                ) : m.author.id ? (
                   <Link href={`/u/${m.author.handle}`} className="title-link">
                     <b>{m.author.handle}</b>
                   </Link>
+                ) : (
+                  <b>{m.author.handle}</b>
                 )}{' '}
                 <span style={{ color: 'var(--color-neutral-700)' }}>
                   {chatTime(m.created_at)}

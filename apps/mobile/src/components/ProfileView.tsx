@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Alert, Pressable, RefreshControl, ScrollView, TextInput, View, Modal } from 'react-native';
+import { Alert, Platform, Pressable, RefreshControl, ScrollView, Share, TextInput, View, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
   agoLong,
   changeHandle,
   colors,
   currentHandle,
+  deleteMyAccount,
+  exportMyData,
   fonts,
   getDrafts,
   getProfile,
@@ -67,33 +69,82 @@ export function ProfileView({ handle, isTab }: { handle: string; isTab?: boolean
   const f = flair(p.branch_code, p.grad_year);
   const yl = yearLabel(p.semester);
 
-  const settings = () =>
-    Alert.alert('Settings', 'Signed in with your DTU account.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Enable phone alerts',
-        onPress: async () => {
-          try {
-            if (!me) return;
-            if (!pushSupported) {
-              Alert.alert(
-                'Not available in Expo Go',
-                'Phone alerts work in the installed DTour app. In-app notifications still work here.',
-              );
-              return;
+  // Android shows at most three alert buttons, so data and deletion live one step down.
+  const account = () =>
+    Alert.alert(
+      'Your data',
+      'Download your profile, threads, replies and votes, or delete your account.',
+      [
+        {
+          text: 'Download my data',
+          onPress: async () => {
+            try {
+              await Share.share({ message: await exportMyData(supabase), title: 'My DTour data' });
+            } catch (error) {
+              Alert.alert('Could not export', (error as Error).message);
             }
-            const enabled = await registerPush(true);
-            Alert.alert(
-              enabled ? 'Phone alerts enabled' : 'Permission not granted',
-              enabled ? 'You will receive DTour updates on this device.' : 'You can allow notifications in your phone settings.',
-            );
-          } catch (error) {
-            Alert.alert('Could not enable alerts', (error as Error).message);
-          }
+          },
         },
-      },
-      { text: 'Sign out', style: 'destructive', onPress: () => signOut() },
-    ]);
+        { text: 'Delete account', style: 'destructive', onPress: confirmDelete },
+        { text: 'Cancel', style: 'cancel' },
+      ],
+      { cancelable: true },
+    );
+  const confirmDelete = () =>
+    Alert.alert(
+      'Delete your account?',
+      'This cannot be undone. Removed: your profile, handle, karma, votes, saves, drafts, notifications and phone alerts. Stays: your threads, replies, Lounge messages and wiki edits, shown as "[deleted user]", and your library uploads.',
+      [
+        { text: 'Keep my account', style: 'cancel' },
+        {
+          text: 'Delete account',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteMyAccount(supabase);
+              await signOut({ scope: 'local' });
+              router.replace('/');
+            } catch (error) {
+              Alert.alert('Could not delete account', (error as Error).message);
+            }
+          },
+        },
+      ],
+    );
+
+  const settings = () =>
+    Alert.alert(
+      'Settings',
+      'Signed in with your DTU account.',
+      [
+        ...(Platform.OS === 'ios' ? [{ text: 'Cancel', style: 'cancel' as const }] : []),
+        {
+          text: 'Enable phone alerts',
+          onPress: async () => {
+            try {
+              if (!me) return;
+              if (!pushSupported) {
+                Alert.alert(
+                  'Not available in Expo Go',
+                  'Phone alerts work in the installed DTour app. In-app notifications still work here.',
+                );
+                return;
+              }
+              const enabled = await registerPush(true);
+              Alert.alert(
+                enabled ? 'Phone alerts enabled' : 'Permission not granted',
+                enabled ? 'You will receive DTour updates on this device.' : 'You can allow notifications in your phone settings.',
+              );
+            } catch (error) {
+              Alert.alert('Could not enable alerts', (error as Error).message);
+            }
+          },
+        },
+        { text: 'Download or delete my data…', onPress: account },
+        { text: 'Sign out', style: 'destructive', onPress: () => signOut() },
+      ],
+      { cancelable: true },
+    );
 
   return (
     <Screen>

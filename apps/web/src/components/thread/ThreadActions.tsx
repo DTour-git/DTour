@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import {
   acceptReply,
   ago,
@@ -19,7 +18,7 @@ import {
 } from '@dtour/shared';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Icon } from '../Icon';
-import { Avatar, FlairTag, Seal, Tag } from '../ui';
+import { Avatar, AuthorName, FlairTag, Seal, Tag } from '../ui';
 import { useShell } from '../shell/Shell';
 import { ReportDialog, linkBtn } from '../Manage';
 import { MentionText } from '../Markdown';
@@ -302,10 +301,8 @@ export function ReplyItem({
             </>
           ) : (
             <>
-              <Link href={`/u/${r.author.handle}`} style={{ color: 'var(--color-text)', fontWeight: 600 }}>
-                @{r.author.handle}
-              </Link>
-              {r.author.id === opId ? <Tag tone="accent2">OP</Tag> : <FlairTag person={r.author} />}
+              <AuthorName author={r.author} asHandle />
+              {!!opId && r.author.id === opId ? <Tag tone="accent2">OP</Tag> : <FlairTag person={r.author} />}
             </>
           )}
           <span>

@@ -4,7 +4,7 @@ import { agoLong, getThread, n, sortReplies } from '@dtour/shared';
 import { currentUser } from '@/lib/supabase-server';
 import { NOINDEX, preview } from '@/lib/seo';
 import { Icon } from '@/components/Icon';
-import { Avatar, FlairTag, H6, Seal, Tag } from '@/components/ui';
+import { Avatar, AuthorName, FlairTag, H6, Seal, Tag } from '@/components/ui';
 import { Markdown } from '@/components/Markdown';
 import { OnlineCount, PresenceBoard } from '@/components/shell/Shell';
 import { ThreadManage } from '@/components/Manage';
@@ -80,9 +80,7 @@ export default async function ThreadPage({
               style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--color-neutral-700)', flexWrap: 'wrap' }}
             >
               <Avatar person={t.author} society={t.kind === 'news' ? null : t.society} size={32} />
-              <Link href={`/u/${t.author.handle}`} style={{ color: 'var(--color-text)', fontWeight: 600 }}>
-                @{t.author.handle}
-              </Link>
+              <AuthorName author={t.author} asHandle />
               {t.society?.verified && <Seal />}
               <FlairTag person={t.author} />
               <span>{n(t.author.karma)} karma</span>
