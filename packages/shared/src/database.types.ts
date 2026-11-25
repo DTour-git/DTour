@@ -617,7 +617,7 @@ export type Database = {
       }
       lounge_messages: {
         Row: {
-          author_id: string
+          author_id: string | null
           body: string
           created_at: string
           edited_at: string | null
@@ -628,7 +628,7 @@ export type Database = {
           society_id: string | null
         }
         Insert: {
-          author_id: string
+          author_id?: string | null
           body: string
           created_at?: string
           edited_at?: string | null
@@ -639,7 +639,7 @@ export type Database = {
           society_id?: string | null
         }
         Update: {
-          author_id?: string
+          author_id?: string | null
           body?: string
           created_at?: string
           edited_at?: string | null
@@ -1192,7 +1192,7 @@ export type Database = {
       }
       replies: {
         Row: {
-          author_id: string
+          author_id: string | null
           body: string
           created_at: string
           deleted_at: string | null
@@ -1205,7 +1205,7 @@ export type Database = {
           thread_id: number
         }
         Insert: {
-          author_id: string
+          author_id?: string | null
           body: string
           created_at?: string
           deleted_at?: string | null
@@ -1218,7 +1218,7 @@ export type Database = {
           thread_id: number
         }
         Update: {
-          author_id?: string
+          author_id?: string | null
           body?: string
           created_at?: string
           deleted_at?: string | null
@@ -1779,7 +1779,7 @@ export type Database = {
         Row: {
           accepted_reply_id: number | null
           attachment: Json | null
-          author_id: string
+          author_id: string | null
           board_id: string
           body: string
           created_at: string
@@ -1803,7 +1803,7 @@ export type Database = {
         Insert: {
           accepted_reply_id?: number | null
           attachment?: Json | null
-          author_id: string
+          author_id?: string | null
           board_id: string
           body?: string
           created_at?: string
@@ -1827,7 +1827,7 @@ export type Database = {
         Update: {
           accepted_reply_id?: number | null
           attachment?: Json | null
-          author_id?: string
+          author_id?: string | null
           board_id?: string
           body?: string
           created_at?: string
@@ -2070,7 +2070,7 @@ export type Database = {
           body: string | null
           created_at: string
           delta_words: number | null
-          editor_id: string
+          editor_id: string | null
           id: number
           review_note: string | null
           reviewed_at: string | null
@@ -2084,7 +2084,7 @@ export type Database = {
           body?: string | null
           created_at?: string
           delta_words?: number | null
-          editor_id: string
+          editor_id?: string | null
           id?: never
           review_note?: string | null
           reviewed_at?: string | null
@@ -2098,7 +2098,7 @@ export type Database = {
           body?: string | null
           created_at?: string
           delta_words?: number | null
-          editor_id?: string
+          editor_id?: string | null
           id?: never
           review_note?: string | null
           reviewed_at?: string | null
@@ -2133,21 +2133,21 @@ export type Database = {
       wiki_talk: {
         Row: {
           article_id: number
-          author_id: string
+          author_id: string | null
           body: string
           created_at: string
           id: number
         }
         Insert: {
           article_id: number
-          author_id: string
+          author_id?: string | null
           body: string
           created_at?: string
           id?: never
         }
         Update: {
           article_id?: number
-          author_id?: string
+          author_id?: string | null
           body?: string
           created_at?: string
           id?: never
@@ -2199,8 +2199,10 @@ export type Database = {
       board_path: { Args: { p_board: string }; Returns: string }
       can_post_as: { Args: { p_society: string }; Returns: boolean }
       current_handle: { Args: { p_handle: string }; Returns: string }
+      delete_my_account: { Args: never; Returns: undefined }
       delete_reply: { Args: { p_reply: number }; Returns: undefined }
       dtour_clear_demo: { Args: never; Returns: undefined }
+      export_my_data: { Args: never; Returns: Json }
       fmt_n: { Args: { n: number }; Returns: string }
       fuzzy_pattern: { Args: { q: string }; Returns: string }
       handle_status: { Args: { p_handle: string }; Returns: string }

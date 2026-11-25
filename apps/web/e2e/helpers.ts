@@ -29,11 +29,14 @@ const admin = {
   'Content-Type': 'application/json',
 };
 
+/** Dev-project URL and secret-key headers, for tests that create their own accounts. */
+export const devAdmin = { url: env.DEV_SUPABASE_URL, headers: admin };
+
 async function signInToken(handle: string) {
   const res = await fetch(`${env.DEV_SUPABASE_URL}/auth/v1/admin/generate_link`, {
     method: 'POST',
     headers: admin,
-    body: JSON.stringify({ type: 'magiclink', email: `${handle}@dtour.invalid` }),
+    body: JSON.stringify({ type: 'magiclink', email: handle.includes('@') ? handle : `${handle}@dtour.invalid` }),
   });
   const body = await res.json();
   const hash = body.hashed_token ?? body.properties?.hashed_token;
