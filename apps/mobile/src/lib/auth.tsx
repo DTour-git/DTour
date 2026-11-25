@@ -45,7 +45,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<ProfileRow | null>(null);
 
   const load = useCallback(async (s: Session | null) => {
-    if (!s) { setProfile(null); return; }
+    if (!s) {
+      setProfile(null);
+      return;
+    }
     const { data, error } = await supabase.from('profiles').select('*').eq('id', s.user.id).maybeSingle();
     setProfile(data);
     // A saved sign-in whose account no longer exists (deleted, or the database was reset):

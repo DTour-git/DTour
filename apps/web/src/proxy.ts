@@ -9,21 +9,17 @@ const MEMBERS_ONLY = ['/new', '/onboarding', '/mod'];
 // to /login only for member pages.
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
-  const sb = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookieOptions: sessionCookieOptions,
-      cookies: {
-        getAll: () => request.cookies.getAll(),
-        setAll: (list) => {
-          list.forEach(({ name, value }) => request.cookies.set(name, value));
-          response = NextResponse.next({ request });
-          list.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
-        },
+  const sb = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, {
+    cookieOptions: sessionCookieOptions,
+    cookies: {
+      getAll: () => request.cookies.getAll(),
+      setAll: (list) => {
+        list.forEach(({ name, value }) => request.cookies.set(name, value));
+        response = NextResponse.next({ request });
+        list.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
       },
     },
-  );
+  });
   // getClaims() refreshes an expired session and verifies the JWT locally (no Auth round trip).
   const { data } = await sb.auth.getClaims();
   const path = request.nextUrl.pathname;
