@@ -1044,7 +1044,7 @@ export async function search(sb: DB, q: string, kind: SearchKind | null) {
 export async function deleteMyAccount(sb: DB) {
   must(await sb.rpc('delete_my_account'));
 }
-/** Everything DTour holds about the signed-in student, as JSON text ready to save. */
+/** The signed-in student's profile, threads, replies and votes, as JSON text ready to save. */
 export async function exportMyData(sb: DB) {
   return JSON.stringify(must(await sb.rpc('export_my_data')), null, 2);
 }

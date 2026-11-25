@@ -51,6 +51,54 @@ begin
   return null;
 end $$;
 
+-- A suggested edit by a departed student can still be approved: the activity
+-- row needs a user, and review_wiki_article matches a guide's first revision
+-- to its starter, both of which are now null.
+create or replace function public.tg_wiki_revision()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare a record;
+begin
+  if new.status <> 'published' or (tg_op = 'UPDATE' and old.status = 'published') then return null; end if;
+  update public.wiki_articles set
+    body = coalesce(new.body, body),
+    updated_at = now(),
+    editor_count = greatest(editor_count, (select count(distinct editor_id) from public.wiki_revisions where article_id = new.article_id and status = 'published'))
+  where id = new.article_id returning * into a;
+  if new.editor_id is not null and not exists (select 1 from public.profiles where id = new.editor_id and is_demo) then
+    insert into public.activities (user_id, kind, kicker, title, meta, route)
+    values (new.editor_id, 'wiki_edit', 'Edited wiki · ' || coalesce((select name from public.boards where id = a.board_id), 'Wiki'),
+            a.title || ' — ' || new.summary,
+            case when new.delta_words is not null then (case when new.delta_words >= 0 then '+' else '−' end) || abs(new.delta_words) || ' words' end,
+            '/wiki/' || a.slug);
+  end if;
+  return null;
+end $$;
+
+create or replace function public.review_wiki_article(p_article bigint, p_approve boolean, p_note text default null)
+returns void language plpgsql security definer set search_path = '' as $$
+declare a record;
+begin
+  if not public.is_moderator() then raise exception 'Only moderators can review articles'; end if;
+
+  -- The row lock makes a second, concurrent call wait and then find the guide
+  -- no longer pending.
+  update public.wiki_articles set status = case when p_approve then 'published' else 'rejected' end,
+    reviewed_by = auth.uid(), reviewed_at = now(), review_note = p_note
+  where id = p_article and status = 'pending'
+  returning id, started_by, body into a;
+  if not found then raise exception 'This guide is not waiting for review'; end if;
+
+  if p_approve then
+    -- Publishing the revision applies its body (tg_wiki_revision), so it has
+    -- to match the body the moderator approved.
+    update public.wiki_revisions set status = 'published', reviewed_by = auth.uid(), reviewed_at = now()
+    where id = (select r.id from public.wiki_revisions r
+                where r.article_id = a.id and r.editor_id is not distinct from a.started_by and r.status = 'suggested'
+                  and coalesce(r.body, a.body) = a.body
+                order by r.id limit 1);
+  end if;
+end $$;
+
 -- ── Delete my account ─────────────────────────────────────────────────────
 -- A client can't delete auth.users itself, so this runs as the function owner.
 create or replace function public.delete_my_account()
@@ -59,6 +107,9 @@ begin
   if auth.uid() is null then
     raise exception 'Sign in first' using errcode = '42501';
   end if;
+  -- Leave teams first: tg_team_member_left reopens the roles they filled, which
+  -- the cascade can't, because it clears team_roles.filled_by before it runs.
+  delete from public.team_members where user_id = auth.uid();
   delete from auth.users where id = auth.uid();
 end $$;
 revoke execute on function public.delete_my_account() from public, anon;

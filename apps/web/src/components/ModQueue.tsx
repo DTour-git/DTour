@@ -57,7 +57,7 @@ export function ModQueue({ articles, revisions, reports }: { articles: PendingAr
             <div key={a.id} className="row-rule" style={{ padding: '18px 0' }}>
               <div style={{ display: 'flex', gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
                 <span style={{ font: '600 20px/1.3 var(--font-heading)' }}>{a.title}</span>
-                <span style={{ fontSize: 13, color: 'var(--color-neutral-700)' }}>by @{a.starter?.handle} · {agoLong(a.created_at)}</span>
+                <span style={{ fontSize: 13, color: 'var(--color-neutral-700)' }}>by {a.starter ? `@${a.starter.handle}` : '[deleted user]'} · {agoLong(a.created_at)}</span>
               </div>
               {a.dek && <div style={{ fontStyle: 'italic', color: 'var(--color-neutral-800)', marginTop: 4 }}>{a.dek}</div>}
               <button className="btn btn-ghost" onClick={() => setOpen(open === k ? null : k)}>{open === k ? 'Hide' : 'Read'} the guide</button>

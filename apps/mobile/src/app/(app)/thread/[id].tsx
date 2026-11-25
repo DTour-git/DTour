@@ -222,7 +222,7 @@ export default function Thread() {
           <T size={25} w={600} lh={1.14} style={{ marginVertical: 10 }}>
             {t.title}
           </T>
-          <Pressable onPress={() => router.push(`/u/${t.author.handle}`)} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Pressable disabled={!t.author.id} onPress={() => router.push(`/u/${t.author.handle}`)} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Avatar person={t.author} size={26} />
             <T size={12.5} w={600}>
               {atHandle(t.author)}
@@ -438,7 +438,7 @@ function Reply({
           {atHandle(r.author)}
         </T>
       )}
-      {!r.society && (r.author.id === opId ? <Tag tone="accent2">OP</Tag> : <FlairTag person={r.author} />)}
+      {!r.society && (!!opId && r.author.id === opId ? <Tag tone="accent2">OP</Tag> : <FlairTag person={r.author} />)}
       <T size={12.5} color={colors.neutral700}>
         · {ago(r.created_at)}
         {r.edited_at && !deleted ? ' · edited' : ''}

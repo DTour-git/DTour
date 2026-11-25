@@ -60,7 +60,7 @@ export default function Mod() {
           return (
             <View key={a.id} style={[{ paddingVertical: 14 }, rowRule]}>
               <T size={16} w={600}>{a.title}</T>
-              <T size={12.5} color={colors.neutral700} style={{ marginTop: 2 }}>by @{a.starter?.handle} · {agoLong(a.created_at)}</T>
+              <T size={12.5} color={colors.neutral700} style={{ marginTop: 2 }}>by {a.starter ? `@${a.starter.handle}` : '[deleted user]'} · {agoLong(a.created_at)}</T>
               <T size={14} lh={1.5} color={colors.neutral800} style={{ marginTop: 6 }} numberOfLines={5}>{plain(a.body || '', 400)}</T>
               <Note value={notes[k] ?? ''} onChange={(v) => setNotes({ ...notes, [k]: v })} />
               <Buttons busy={busy === k} no="Reject" yes="Approve"

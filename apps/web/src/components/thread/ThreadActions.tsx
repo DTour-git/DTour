@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import {
   acceptReply,
   ago,
@@ -303,7 +302,7 @@ export function ReplyItem({
           ) : (
             <>
               <AuthorName author={r.author} asHandle />
-              {r.author.id === opId ? <Tag tone="accent2">OP</Tag> : <FlairTag person={r.author} />}
+              {!!opId && r.author.id === opId ? <Tag tone="accent2">OP</Tag> : <FlairTag person={r.author} />}
             </>
           )}
           <span>

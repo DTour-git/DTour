@@ -39,7 +39,7 @@ export function ProfileView({ handle, isTab }: { handle: string; isTab?: boolean
   const yl = yearLabel(p.semester);
 
   // Android shows at most three alert buttons, so data and deletion live one step down.
-  const account = () => Alert.alert('Your data', 'Download everything DTour holds about you, or delete your account.', [
+  const account = () => Alert.alert('Your data', 'Download your profile, threads, replies and votes, or delete your account.', [
     { text: 'Download my data', onPress: async () => {
       try { await Share.share({ message: await exportMyData(supabase), title: 'My DTour data' }); } catch (error) { Alert.alert('Could not export', (error as Error).message); }
     } },

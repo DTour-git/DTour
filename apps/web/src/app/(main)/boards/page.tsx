@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { agoLong, compact, flair, getBoardsIndex, getConfig, markBoardsSeen, n, type Tone } from '@dtour/shared';
+import { agoLong, atHandle, compact, flair, getBoardsIndex, getConfig, markBoardsSeen, n, type Tone } from '@dtour/shared';
 import { currentUser } from '@/lib/supabase-server';
 import { Icon } from '@/components/Icon';
 import { Avatar, CmykNum, Tag, TONE_CSS, pad2 } from '@/components/ui';
@@ -76,7 +76,7 @@ export default async function BoardsPage() {
                       <Avatar person={b.latest.author} society={b.latest.society} size={30} />
                       <div style={{ minWidth: 0, lineHeight: 1.3 }}>
                         <Link href={threadHref(b.latest)} className="title-link ellipsis" style={{ display: 'block', fontWeight: 600, fontSize: 14 }}>{b.latest.title}</Link>
-                        <div style={{ fontSize: 12.5, color: 'var(--color-neutral-700)' }}>@{b.latest.author.handle} · {agoLong(b.latest.created_at)}</div>
+                        <div style={{ fontSize: 12.5, color: 'var(--color-neutral-700)' }}>{atHandle(b.latest.author)} · {agoLong(b.latest.created_at)}</div>
                       </div>
                     </>
                   ) : <span style={{ fontSize: 13, color: 'var(--color-neutral-700)' }}>No threads yet</span>}

@@ -78,7 +78,8 @@ export function ProfileButtons({ profile }: { profile: ProfileRow }) {
       const sb = supabaseBrowser();
       await deleteMyAccount(sb);
       await sb.auth.signOut({ scope: 'local' });
-      window.location.assign('/login');
+      router.replace('/login');
+      router.refresh();
     } catch (e) { setError((e as Error).message); setBusy(false); }
   };
   return (

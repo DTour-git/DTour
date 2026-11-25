@@ -3,7 +3,7 @@
 -- student e2e1 votes on A's anonymised reply afterwards.
 begin;
 \ir 00_helpers.sql
-select plan(13);
+select plan(15);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
 values
@@ -18,6 +18,13 @@ insert into public.threads (id, board_id, author_id, title, body) overriding sys
 insert into public.replies (id, thread_id, author_id, body) overriding system value values
   (91411, 91401, '00000000-0000-4000-8000-0000000d014b', 'Stayer replies under the leaver thread'),
   (91412, 91402, '00000000-0000-4000-8000-0000000d014a', 'Leaver replies under the stayer thread');
+insert into public.wiki_revisions (id, article_id, editor_id, summary, body, status) overriding system value
+  select 91421, id, '00000000-0000-4000-8000-0000000d014a', 'leaver edit', 'Edited by someone who left.', 'suggested'
+  from public.wiki_articles where status = 'published' limit 1;
+insert into public.teams (id, owner_id, category, event_name, title) overriding system value
+  values (91431, '00000000-0000-4000-8000-0000000d014b', 'project', 'Test', 'Leaver team');
+insert into public.team_roles (team_id, name, filled_by, filled) values (91431, 'Design', '00000000-0000-4000-8000-0000000d014a', true);
+insert into public.team_members (team_id, user_id) values (91431, '00000000-0000-4000-8000-0000000d014a');
 insert into public.thread_votes (thread_id, user_id, value) values (91402, '00000000-0000-4000-8000-0000000d014a', 1);
 insert into public.reply_votes (reply_id, user_id, value) values (91412, '00000000-0000-4000-8000-0000000d014b', 1);
 insert into public.saves (user_id, thread_id) values ('00000000-0000-4000-8000-0000000d014a', 91402);
@@ -49,6 +56,9 @@ select is((select handle_status('leaver14')), 'available', 'the handle is releas
 select is(pg_temp.try_as('authenticated', '00000000-0000-4000-8000-00000000e2e1',
   $$insert into public.reply_votes (reply_id, user_id, value) values (91412, '00000000-0000-4000-8000-00000000e2e1', 1)$$), 'ok', 'a vote on their reply still works');
 select is((select score from public.replies where id = 91412), 2, 'its score is the sum of the votes');
+
+select is((select filled from public.team_roles where team_id = 91431), false, 'a team role they filled opens up again');
+select is(pg_temp.try_as('authenticated', '00000000-0000-4000-8000-00000000e2e2', 'select public.review_wiki_revision(91421, true)'), 'ok', 'a moderator can approve their suggested wiki edit');
 
 select * from finish();
 rollback;
