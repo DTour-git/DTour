@@ -42,6 +42,15 @@ export interface ReplyNode {
   edited_at: string | null; deleted_at: string | null; author: PersonLite; society: SocietyLite | null; children: ReplyNode[]; myVote: number;
 }
 
+/** Stands in for a deleted account: their posts stay with a null author (on delete set null). */
+export const DELETED_PERSON: PersonLite = { id: '', handle: '[deleted user]', display_name: '[deleted user]', branch_code: null, grad_year: null, tint: 'neutral', karma: 0 };
+function withAuthor<T>(row: T, key: 'author' | 'editor' = 'author'): T {
+  const r = row as Record<string, unknown> | null;
+  return r && !r[key] ? ({ ...r, [key]: DELETED_PERSON } as T) : row;
+}
+/** "@handle" for a person, or "[deleted user]" with no @. */
+export const atHandle = (p: { handle: string }) => (p.handle === DELETED_PERSON.handle ? p.handle : `@${p.handle}`);
+
 const PERSON = 'id,handle,display_name,branch_code,grad_year,tint,karma';
 const SOCIETY = 'id,slug,name,short_name,icon,tint,verified';
 const BOARD = 'id,slug,name,short_name,category_id,verified_only,parent_id';
@@ -176,7 +185,7 @@ export async function listThreads(sb: DB, opts: {
     q = q.or(`tags.cs.{${opts.branch}},title.ilike.%${opts.branch}%`).order('score', { ascending: false });
   } else q = q.order('score', { ascending: false }).order('created_at', { ascending: false });
   const limit = opts.limit ?? 20;
-  let rows = withPollPct(must(await q.limit(tab === 'hot' ? Math.max(limit, 40) : limit)) as unknown as ThreadCard[]);
+  let rows = withPollPct(must(await q.limit(tab === 'hot' ? Math.max(limit, 40) : limit)) as unknown as ThreadCard[]).map((t) => withAuthor(t));
   if (tab === 'hot') rows = rows.sort((a, b) => hotness(b) - hotness(a)).slice(0, limit);
   return rows;
 }
@@ -223,7 +232,7 @@ export async function getToday(sb: DB, tab: FeedTab = 'hot', branch: string | nu
     sb.from('societies').select('id', { count: 'exact', head: true }),
   ]);
   return {
-    lead: must(lead) as unknown as ThreadCard | null,
+    lead: withAuthor(must(lead) as unknown as ThreadCard | null),
     timeline,
     featured: feed[0] ?? null,
     guide: must(guide),
@@ -274,7 +283,7 @@ export async function getBoardsIndex(sb: DB) {
     sb.rpc('board_new_counts'),
   ]);
   const all = must(boards);
-  const threads = must(recent) as unknown as ThreadCard[];
+  const threads = (must(recent) as unknown as ThreadCard[]).map((t) => withAuthor(t));
   const nc = new Map((must(newCounts) ?? []).map((r) => [r.board_id, Number(r.n)]));
   const byId = new Map(all.map((b) => [b.id, b]));
   const rootOf = (id: string): string => {
@@ -359,7 +368,7 @@ export async function getThread(sb: DB, id: number, userId: string | null) {
     sb.from('wiki_articles').select('slug,title,editor_count,checked_at').eq('status', 'published').order('views_week', { ascending: false }).limit(1).maybeSingle(),
     sb.from('lounge_messages').select('id,room_slug').eq('promoted_thread_id', id).maybeSingle(),
   ]);
-  const thread = must(threadRes) as unknown as ThreadCard | null;
+  const thread = withAuthor(must(threadRes) as unknown as ThreadCard | null);
   if (!thread) return null;
   const related = thread.attachment?.subject
     ? await sb.from('library_items').select('id,title,kind,format,subject_code').eq('subject_code', thread.attachment.subject).neq('id', thread.attachment.library_item_id ?? -1).order('downloads_week', { ascending: false }).limit(3)
@@ -369,7 +378,7 @@ export async function getThread(sb: DB, id: number, userId: string | null) {
   const board = all.find((b) => b.id === thread.board.id);
   if (!board) throw new Error(`Board ${thread.board.id} not found`);
   const rv = new Map((replyVotes ? must(replyVotes) : []).map((r) => [r.reply_id, r.value]));
-  const flat = (must(replies) as unknown as Omit<ReplyNode, 'children' | 'myVote'>[]).map((r) => ({ ...r, children: [] as ReplyNode[], myVote: rv.get(r.id) ?? 0 }));
+  const flat = (must(replies) as unknown as Omit<ReplyNode, 'children' | 'myVote'>[]).map((r) => ({ ...withAuthor(r), children: [] as ReplyNode[], myVote: rv.get(r.id) ?? 0 }));
   const byId = new Map(flat.map((r) => [r.id, r]));
   const roots: ReplyNode[] = [];
   for (const r of flat) (r.parent_id && byId.get(r.parent_id) ? byId.get(r.parent_id)!.children : roots).push(r);
@@ -486,12 +495,12 @@ export async function getOpenReports(sb: DB): Promise<OpenReport[]> {
     let g = groups.get(key);
     if (!g) {
       g = r.thread
-        ? { kind: 'thread', title: r.thread.title, body: r.thread.body, route: `/t/${r.thread.id}`, author: r.thread.author } as OpenReport
+        ? { kind: 'thread', title: r.thread.title, body: r.thread.body, route: `/t/${r.thread.id}`, author: r.thread.author ?? DELETED_PERSON } as OpenReport
         : r.reply
-          ? { kind: 'reply', title: 'Reply', body: r.reply.body, route: `/t/${r.reply.thread_id}`, author: r.reply.author } as OpenReport
+          ? { kind: 'reply', title: 'Reply', body: r.reply.body, route: `/t/${r.reply.thread_id}`, author: r.reply.author ?? DELETED_PERSON } as OpenReport
           : r.wiki_talk_id
-            ? { kind: 'talk', title: `Wiki talk · ${r.talk?.article?.title ?? ''}`, body: r.talk?.body ?? '', route: `/wiki/${r.talk?.article?.slug ?? ''}?tab=talk`, author: r.talk?.author ?? null } as OpenReport
-            : { kind: 'lounge', title: `Lounge · #${r.message?.room_slug ?? ''}`, body: r.message?.body ?? '', route: '/lounge', author: r.message?.author ?? null } as OpenReport;
+            ? { kind: 'talk', title: `Wiki talk · ${r.talk?.article?.title ?? ''}`, body: r.talk?.body ?? '', route: `/wiki/${r.talk?.article?.slug ?? ''}?tab=talk`, author: r.talk ? r.talk.author ?? DELETED_PERSON : null } as OpenReport
+            : { kind: 'lounge', title: `Lounge · #${r.message?.room_slug ?? ''}`, body: r.message?.body ?? '', route: '/lounge', author: r.message ? r.message.author ?? DELETED_PERSON : null } as OpenReport;
       Object.assign(g, { key, count: 0, reasons: [], details: [], first_at: r.created_at, ids: [] });
       groups.set(key, g);
     }
@@ -647,7 +656,7 @@ export async function getArticle(sb: DB, slug: string, userId: string | null) {
     userId ? sb.from('wiki_feedback').select('useful').eq('article_id', a.id).eq('user_id', userId).maybeSingle() : null,
   ]);
   type Rev = { id: number; summary: string; delta_words: number | null; created_at: string; editor: PersonLite };
-  const revisions = must(revs) as unknown as Rev[];
+  const revisions = (must(revs) as unknown as Rev[]).map((r) => withAuthor(r, 'editor'));
   const editors: PersonLite[] = [];
   for (const r of [...revisions].reverse()) if (!editors.some((e) => e.id === r.editor.id)) editors.push(r.editor);
   const starter = (a as unknown as { starter: PersonLite | null }).starter;
@@ -657,7 +666,7 @@ export async function getArticle(sb: DB, slug: string, userId: string | null) {
     revisions,
     editors,
     more: must(more),
-    talk: must(talk) as unknown as { id: number; body: string; created_at: string; author: PersonLite }[],
+    talk: (must(talk) as unknown as { id: number; body: string; created_at: string; author: PersonLite }[]).map((t) => withAuthor(t)),
     myFeedback: fb?.data?.useful ?? null,
   };
 }
@@ -690,7 +699,7 @@ export async function getModQueue(sb: DB) {
       .eq('status', 'suggested').eq('article.status', 'published').order('created_at'),
     sb.from('wiki_articles').select(`id,slug,title,dek,body,created_at,starter:profiles!wiki_articles_started_by_fkey(${PERSON})`).eq('status', 'pending').order('created_at'),
   ]);
-  return { revisions: must(revs) as unknown as PendingRevision[], articles: must(arts) as unknown as PendingArticle[] };
+  return { revisions: (must(revs) as unknown as PendingRevision[]).map((r) => withAuthor(r, 'editor')), articles: must(arts) as unknown as PendingArticle[] };
 }
 export async function reviewRevision(sb: DB, id: number, approve: boolean, note?: string) {
   must(await sb.rpc('review_wiki_revision', { p_revision: id, p_approve: approve, p_note: note }));
@@ -788,7 +797,7 @@ export async function getSubject(sb: DB, code: string) {
     subject,
     branch: must(branch),
     items: must(items) as unknown as (LibraryItemRow & { uploader: { handle: string } | null })[],
-    threads: must(threads) as unknown as ThreadCard[],
+    threads: (must(threads) as unknown as ThreadCard[]).map((t) => withAuthor(t)),
   };
 }
 
@@ -957,7 +966,7 @@ export async function getProfile(sb: DB, handle: string) {
     activities: must(acts),
     societies: must(socs) as unknown as { role: string; society: SocietyLite }[],
     badges: must(badges),
-    threads: must(threads) as unknown as ThreadCard[],
+    threads: (must(threads) as unknown as ThreadCard[]).map((t) => withAuthor(t)),
     replies: must(replies) as unknown as { id: number; body: string; score: number; created_at: string; thread: { id: number; title: string } }[],
     uploads: must(uploads),
   };
@@ -965,7 +974,7 @@ export async function getProfile(sb: DB, handle: string) {
 
 export async function getSaved(sb: DB, userId: string) {
   const rows = must(await sb.from('saves').select(`thread:threads(${THREAD_SELECT})`).eq('user_id', userId).order('created_at', { ascending: false }).limit(50));
-  return (rows as unknown as { thread: ThreadCard }[]).map((r) => r.thread).filter(Boolean);
+  return (rows as unknown as { thread: ThreadCard }[]).map((r) => r.thread).filter(Boolean).map((t) => withAuthor(t));
 }
 export async function getDrafts(sb: DB) {
   return must(await sb.from('drafts').select('*').order('updated_at', { ascending: false }));
@@ -988,10 +997,10 @@ export async function getLoungeMessages(sb: DB, room: string, limit = 60, before
   let q = sb.from('lounge_messages').select(LOUNGE_SELECT).eq('room_slug', room);
   if (before) q = q.lt('created_at', before);
   const rows = must(await q.order('created_at', { ascending: false }).limit(limit));
-  return (rows as unknown as LoungeMessage[]).reverse();
+  return (rows as unknown as LoungeMessage[]).map((m) => withAuthor(m)).reverse();
 }
 export async function getLoungeMessage(sb: DB, id: number) {
-  return must(await sb.from('lounge_messages').select(LOUNGE_SELECT).eq('id', id).single()) as unknown as LoungeMessage;
+  return withAuthor(must(await sb.from('lounge_messages').select(LOUNGE_SELECT).eq('id', id).single()) as unknown as LoungeMessage);
 }
 export async function sendLoungeMessage(sb: DB, room: string, userId: string, body: string) {
   return must(await sb.from('lounge_messages').insert({ room_slug: room, author_id: userId, body: body.trim() }).select('id').single()).id;
@@ -1028,4 +1037,14 @@ export async function search(sb: DB, q: string, kind: SearchKind | null) {
   ]);
   const ranked = rank(must(docs) as SearchDoc[], q);
   return { results: ranked, total: Number(must(total) ?? 0) };
+}
+
+// ── Account deletion and export ───────────────────────────────────────────
+/** Deletes the signed-in student's account. Their posts stay, shown as "[deleted user]". */
+export async function deleteMyAccount(sb: DB) {
+  must(await sb.rpc('delete_my_account'));
+}
+/** Everything DTour holds about the signed-in student, as JSON text ready to save. */
+export async function exportMyData(sb: DB) {
+  return JSON.stringify(must(await sb.rpc('export_my_data')), null, 2);
 }

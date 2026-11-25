@@ -1,6 +1,6 @@
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
-import { clock, colors, dayOfMonth, getConfig, getExamCountdown, getTimeline, listThreads, mobileDate, n, timelineTime, weekOfSem } from '@dtour/shared';
+import { DELETED_PERSON, atHandle, clock, colors, dayOfMonth, getConfig, getExamCountdown, getTimeline, listThreads, mobileDate, n, timelineTime, weekOfSem } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
 import { useMe } from '@/lib/auth';
 import { useNotifications } from '@/lib/notifications';
@@ -30,7 +30,7 @@ export default function Today() {
       getConfig(supabase),
       getExamCountdown(supabase, me),
     ]);
-    return { lead: lead.data as unknown as { id: number; title: string; created_at: string; reply_count: number; image_label: string | null; image_path: string | null; author: { handle: string }; society: { verified: boolean } | null } | null, timeline, threads, config, exam };
+    return { lead: lead.data as unknown as { id: number; title: string; created_at: string; reply_count: number; image_label: string | null; image_path: string | null; author: { handle: string } | null; society: { verified: boolean } | null } | null, timeline, threads, config, exam };
   });
   const week = data?.config ? weekOfSem(data.config.sem_start) : null;
 
@@ -76,7 +76,7 @@ export default function Today() {
             <T size={25} w={600} lh={1.12} ls={-0.01} style={{ marginTop: 8, marginBottom: 12 }}>{data.lead.title}</T>
             <Halftone height={150} label={data.lead.image_label} src={data.lead.image_path} />
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8 }}>
-              <T size={12.5} color={colors.neutral700}>@{data.lead.author.handle}</T>{data.lead.society?.verified && <Seal />}
+              <T size={12.5} color={colors.neutral700}>{atHandle(data.lead.author ?? DELETED_PERSON)}</T>{data.lead.society?.verified && <Seal />}
               <T size={12.5} color={colors.neutral700}>· {n(data.lead.reply_count)} replies</T>
             </View>
           </Pressable>

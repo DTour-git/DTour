@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { PAGE_SIZE, ago, colors, getBoard, n, type FeedTab } from '@dtour/shared';
+import { PAGE_SIZE, ago, atHandle, colors, getBoard, n, type FeedTab } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
 import { useData } from '@/lib/useData';
 import { usePresence } from '@/lib/presence';
@@ -34,7 +34,7 @@ export default function Board() {
             </View>
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <T size={12.5} w={600}>@{t.author.handle}</T><FlairTag person={t.author} /><T size={12.5} color={colors.neutral700}>{ago(t.created_at)}</T>
+                <T size={12.5} w={600}>{atHandle(t.author)}</T><FlairTag person={t.author} /><T size={12.5} color={colors.neutral700}>{ago(t.created_at)}</T>
               </View>
               <T size={16.5} w={600} lh={1.3} style={{ marginTop: 4 }}>{t.title}</T>
               <T size={12.5} color={colors.neutral700} style={{ marginTop: 3 }}>{n(t.reply_count)} replies{t.accepted_reply_id ? ' · answered' : ''}</T>

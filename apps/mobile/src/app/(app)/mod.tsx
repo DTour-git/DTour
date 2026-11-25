@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, TextInput, View } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import {
-  REPORT_REASONS, agoLong, colors, fonts, getModQueue, getOpenReports, plain, reportedNoun, resolveReport, reviewArticle, reviewRevision,
+  REPORT_REASONS, agoLong, atHandle, colors, fonts, getModQueue, getOpenReports, plain, reportedNoun, resolveReport, reviewArticle, reviewRevision,
 } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
 import { useMe } from '@/lib/auth';
@@ -77,7 +77,7 @@ export default function Mod() {
           return (
             <View key={r.id} style={[{ paddingVertical: 14 }, rowRule]}>
               <Pressable onPress={() => router.push(appRoute(`/wiki/${r.article.slug}`))}><T size={16} w={600} color={colors.accent700}>{r.article.title}</T></Pressable>
-              <T size={13.5} style={{ marginTop: 2 }}><T size={13.5} w={600}>@{r.editor.handle}</T> {r.summary}</T>
+              <T size={13.5} style={{ marginTop: 2 }}><T size={13.5} w={600}>{atHandle(r.editor)}</T> {r.summary}</T>
               <T size={12.5} color={colors.neutral700}>{agoLong(r.created_at)}{r.delta_words != null ? ` · ${r.delta_words >= 0 ? '+' : '−'}${Math.abs(r.delta_words)} words` : ''}</T>
               <T size={14} lh={1.5} color={colors.neutral800} style={{ marginTop: 6, padding: 10, backgroundColor: colors.accent100 }} numberOfLines={6}>{plain(r.body ?? '', 400)}</T>
               <Note value={notes[k] ?? ''} onChange={(v) => setNotes({ ...notes, [k]: v })} />

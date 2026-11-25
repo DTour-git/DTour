@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { REPORT_REASONS, agoLong, reportedNoun, resolveReport, reviewArticle, reviewRevision, type OpenReport, type PendingArticle, type PendingRevision } from '@dtour/shared';
+import { REPORT_REASONS, agoLong, atHandle, reportedNoun, resolveReport, reviewArticle, reviewRevision, type OpenReport, type PendingArticle, type PendingRevision } from '@dtour/shared';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Markdown } from './Markdown';
 import { Tag } from './ui';
@@ -36,7 +36,7 @@ export function ModQueue({ articles, revisions, reports }: { articles: PendingAr
           <div key={r.key} className="row-rule" style={{ padding: '18px 0' }}>
             <div style={{ display: 'flex', gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
               <Link href={r.route} style={{ font: '600 18px/1.3 var(--font-heading)' }}>{r.title}</Link>
-              <span style={{ fontSize: 13, color: 'var(--color-neutral-700)' }}>{r.author && <>by @{r.author.handle} · </>}{r.count} {r.count === 1 ? 'report' : 'reports'} · first {agoLong(r.first_at)}</span>
+              <span style={{ fontSize: 13, color: 'var(--color-neutral-700)' }}>{r.author && <>by {atHandle(r.author)} · </>}{r.count} {r.count === 1 ? 'report' : 'reports'} · first {agoLong(r.first_at)}</span>
             </div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>{r.reasons.map((x) => <Tag key={x} tone="accent2">{REASON[x] ?? x}</Tag>)}</div>
             <div style={{ background: 'var(--color-surface)', padding: '10px 14px', borderRadius: 2, marginTop: 10, fontSize: 15, lineHeight: 1.5, whiteSpace: 'pre-wrap', maxHeight: 200, overflow: 'auto' }}>{r.body || <i>No text</i>}</div>
@@ -78,7 +78,7 @@ export function ModQueue({ articles, revisions, reports }: { articles: PendingAr
                 <Link href={`/wiki/${r.article.slug}`} style={{ font: '600 18px/1.3 var(--font-heading)' }}>{r.article.title}</Link>
                 {r.delta_words != null && <Tag tone={r.delta_words >= 0 ? 'accent' : 'accent2'}>{r.delta_words >= 0 ? '+' : '−'}{Math.abs(r.delta_words)} words</Tag>}
               </div>
-              <div style={{ fontSize: 14.5, marginTop: 4 }}><b>@{r.editor.handle}</b> {r.summary} <span style={{ color: 'var(--color-neutral-700)', fontSize: 13 }}>· {agoLong(r.created_at)}</span></div>
+              <div style={{ fontSize: 14.5, marginTop: 4 }}><b>{atHandle(r.editor)}</b> {r.summary} <span style={{ color: 'var(--color-neutral-700)', fontSize: 13 }}>· {agoLong(r.created_at)}</span></div>
               <button className="btn btn-ghost" onClick={() => setOpen(open === k ? null : k)}>{open === k ? 'Hide' : 'Compare'} versions</button>
               {open === k && (
                 <div className="grid-2" style={{ gap: 16, marginTop: 8 }}>

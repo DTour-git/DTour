@@ -136,7 +136,7 @@ function Drawer({ rooms, onClose }: { rooms: Room[]; onClose: () => void }) {
               <span>
               {m.society
                 ? <><b>{m.society.name}</b> {m.society.verified && <Seal size={14} />}</>
-                : <Link href={`/u/${m.author.handle}`} className="title-link"><b>{m.author.handle}</b></Link>}{' '}
+                : m.author.id ? <Link href={`/u/${m.author.handle}`} className="title-link"><b>{m.author.handle}</b></Link> : <b>{m.author.handle}</b>}{' '}
               <span style={{ color: 'var(--color-neutral-700)' }}>{chatTime(m.created_at)}{m.edited_at && ' · edited'}</span>
               </span>
               {!m.pending && m.id > 0 && (

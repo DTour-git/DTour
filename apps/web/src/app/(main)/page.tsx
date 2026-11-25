@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import {
-  ago, clock, dayOfMonth, deadlineText, getConfig, getToday, markdownExcerpt, n, POST_KIND_LABEL, postKindTone, timelineTime, weekOfSem, weekdayShort,
+  ago, atHandle, clock, DELETED_PERSON, dayOfMonth, deadlineText, getConfig, getToday, markdownExcerpt, n, POST_KIND_LABEL, postKindTone, timelineTime, weekOfSem, weekdayShort,
   type FeedTab, type ThreadCard, type Tone,
 } from '@dtour/shared';
 import { currentUser } from '@/lib/supabase-server';
@@ -41,7 +41,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
               {d.lead.standfirst && <p style={{ font: 'italic 400 19px/1.45 var(--font-body)', color: 'var(--color-neutral-800)', maxWidth: 620, margin: '0 0 20px' }}>{d.lead.standfirst}</p>}
               <Halftone height={280} label={d.lead.image_label} src={d.lead.image_path} />
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 12, fontSize: 13, color: 'var(--color-neutral-700)', flexWrap: 'wrap' }}>
-                <span>Posted by <b style={{ color: 'var(--color-text)' }}>@{d.lead.author.handle}</b> {d.lead.society?.verified && <Seal />}</span>
+                <span>Posted by <b style={{ color: 'var(--color-text)' }}>{atHandle(d.lead.author)}</b> {d.lead.society?.verified && <Seal />}</span>
                 <span>{n(d.lead.reply_count)} replies</span>
                 <Link href={threadHref(d.lead)} style={{ marginLeft: 'auto', fontWeight: 600 }}>Join the thread →</Link>
               </div>
@@ -112,7 +112,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
               </div>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--color-neutral-700)', flexWrap: 'wrap' }}>
-                  <CategoryTag thread={f} /><b style={{ color: 'var(--color-text)' }}>@{f.author.handle}</b><FlairTag person={f.author} />{ago(f.created_at)}
+                  <CategoryTag thread={f} /><b style={{ color: 'var(--color-text)' }}>{atHandle(f.author)}</b><FlairTag person={f.author} />{ago(f.created_at)}
                 </div>
                 <h3 style={{ fontSize: 32, lineHeight: 1.14, margin: '12px 0 10px', textWrap: 'balance' }}>{f.title}</h3>
                 <p className="feed-excerpt" style={{ fontSize: 17, lineHeight: 1.55, color: 'var(--color-neutral-800)', margin: 0, maxWidth: 600, overflow: 'hidden' }}>
@@ -261,7 +261,7 @@ function boardRootName(t: ThreadCard) {
 async function AcceptedBy({ threadId }: { threadId: number }) {
   const { sb } = await currentUser();
   const { data } = await sb.from('threads').select('accepted:replies!threads_accepted_fk(society:societies(name),author:profiles!replies_author_id_fkey(handle))').eq('id', threadId).single();
-  const a = (data as unknown as { accepted: { society: { name: string } | null; author: { handle: string } } | null })?.accepted;
+  const a = (data as unknown as { accepted: { society: { name: string } | null; author: { handle: string } | null } | null })?.accepted;
   if (!a) return null;
-  return <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="check-circle" size={18} color="var(--color-accent)" />Answered by {a.society?.name ?? `@${a.author.handle}`}</span>;
+  return <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="check-circle" size={18} color="var(--color-accent)" />Answered by {a.society?.name ?? (a.author ? `@${a.author.handle}` : DELETED_PERSON.handle)}</span>;
 }

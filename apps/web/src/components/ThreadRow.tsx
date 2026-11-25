@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ago, n, type ThreadCard } from '@dtour/shared';
+import { ago, atHandle, n, type ThreadCard } from '@dtour/shared';
 import { Icon } from './Icon';
 import { FlairTag, Tag } from './ui';
 import { threadHref } from '@/lib/routes';
@@ -18,7 +18,7 @@ export function ThreadRow({ t, showBoard = true }: { t: ThreadCard; showBoard?: 
           {showBoard && <Tag tone={t.board.category_id === 2 || t.board.category_id === 4 ? 'accent2' : t.board.category_id === 5 ? 'neutral' : 'accent'}>{t.board.short_name ?? t.board.name}</Tag>}
           {t.kind === 'question' && <Tag tone="neutral">Question</Tag>}
           {t.kind === 'poll' && <Tag tone="neutral">Poll</Tag>}
-          <b style={{ color: 'var(--color-text)' }}>@{t.author.handle}</b><FlairTag person={t.author} />{ago(t.created_at)}
+          <b style={{ color: 'var(--color-text)' }}>{atHandle(t.author)}</b><FlairTag person={t.author} />{ago(t.created_at)}
         </div>
         <div style={{ font: '600 22px/1.2 var(--font-heading)', margin: '8px 0 6px' }}>{t.title}</div>
         <div style={{ display: 'flex', gap: 22, fontSize: 14, color: 'var(--color-neutral-700)', flexWrap: 'wrap' }}>

@@ -19,7 +19,7 @@ import {
 } from '@dtour/shared';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Icon } from '../Icon';
-import { Avatar, FlairTag, Seal, Tag } from '../ui';
+import { Avatar, AuthorName, FlairTag, Seal, Tag } from '../ui';
 import { useShell } from '../shell/Shell';
 import { ReportDialog, linkBtn } from '../Manage';
 import { MentionText } from '../Markdown';
@@ -302,9 +302,7 @@ export function ReplyItem({
             </>
           ) : (
             <>
-              <Link href={`/u/${r.author.handle}`} style={{ color: 'var(--color-text)', fontWeight: 600 }}>
-                @{r.author.handle}
-              </Link>
+              <AuthorName author={r.author} asHandle />
               {r.author.id === opId ? <Tag tone="accent2">OP</Tag> : <FlairTag person={r.author} />}
             </>
           )}
