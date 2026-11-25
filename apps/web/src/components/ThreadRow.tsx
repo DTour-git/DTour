@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ago, n, type ThreadCard } from '@dtour/shared';
+import { ago, atHandle, n, type ThreadCard } from '@dtour/shared';
 import { Icon } from './Icon';
 import { FlairTag, Tag } from './ui';
 import { threadHref } from '@/lib/routes';
@@ -28,7 +28,7 @@ export function ThreadRow({ t, showBoard = true }: { t: ThreadCard; showBoard?: 
           )}
           {t.kind === 'question' && <Tag tone="neutral">Question</Tag>}
           {t.kind === 'poll' && <Tag tone="neutral">Poll</Tag>}
-          <b style={{ color: 'var(--color-text)' }}>@{t.author.handle}</b>
+          <b style={{ color: 'var(--color-text)' }}>{atHandle(t.author)}</b>
           <FlairTag person={t.author} />
           {ago(t.created_at)}
         </div>

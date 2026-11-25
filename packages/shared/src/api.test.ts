@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { hotness, isRateLimited, matchesSkills, nextHandleChange, sortReplies, type ReplyNode, type TeamCard } from './api';
+import {
+  DELETED_PERSON,
+  atHandle,
+  hotness,
+  isRateLimited,
+  matchesSkills,
+  nextHandleChange,
+  sortReplies,
+  type ReplyNode,
+  type TeamCard,
+} from './api';
 
 const ago = (h: number) => new Date(Date.now() - h * 3600e3).toISOString();
 
@@ -75,5 +85,15 @@ describe('isRateLimited', () => {
     expect(isRateLimited(new Error('Slow down a little — try again in a minute.'))).toBe(true);
     expect(isRateLimited(new Error('permission denied'))).toBe(false);
     expect(isRateLimited('Slow down a little')).toBe(false);
+  });
+});
+
+describe('deleted users', () => {
+  it('shows no @ before the placeholder, and one before a real handle', () => {
+    expect(atHandle(DELETED_PERSON)).toBe('[deleted user]');
+    expect(atHandle({ handle: 'asha' })).toBe('@asha');
+  });
+  it('has an empty id, so nothing links to it or matches it as a real person', () => {
+    expect(DELETED_PERSON.id).toBe('');
   });
 });

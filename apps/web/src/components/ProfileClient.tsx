@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { changeHandle, nextHandleChange, updateProfile, type ProfileRow } from '@dtour/shared';
+import { changeHandle, deleteMyAccount, exportMyData, nextHandleChange, updateProfile, type ProfileRow } from '@dtour/shared';
 import { HandleHint } from './HandleHint';
 import { useHandleCheck } from '@/lib/useHandleCheck';
 import { supabaseBrowser } from '@/lib/supabase-browser';
@@ -93,6 +93,8 @@ export function ProfileButtons({ profile }: { profile: ProfileRow }) {
   const [open, setOpen] = useState<'edit' | 'settings' | null>(null);
   const [handle, setHandle] = useState(profile.handle);
   const [error, setError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [busy, setBusy] = useState(false);
   const check = useHandleCheck(handle, profile.handle);
   const locked = nextHandleChange(profile);
   const [f, setF] = useState({
@@ -123,6 +125,35 @@ export function ProfileButtons({ profile }: { profile: ProfileRow }) {
       setError((e as Error).message);
     }
   };
+  const closeSettings = () => {
+    setOpen(null);
+    setConfirmDelete(false);
+    setError(null);
+  };
+  const download = async () => {
+    setError(null);
+    try {
+      const url = URL.createObjectURL(new Blob([await exportMyData(supabaseBrowser())], { type: 'application/json' }));
+      Object.assign(document.createElement('a'), { href: url, download: 'dtour-my-data.json' }).click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
+  const deleteAccount = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const sb = supabaseBrowser();
+      await deleteMyAccount(sb);
+      await sb.auth.signOut({ scope: 'local' });
+      router.replace('/login');
+      router.refresh();
+    } catch (e) {
+      setError((e as Error).message);
+      setBusy(false);
+    }
+  };
   return (
     <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
       <button className="btn btn-secondary" onClick={() => setOpen('settings')}>
@@ -134,7 +165,7 @@ export function ProfileButtons({ profile }: { profile: ProfileRow }) {
         Edit profile
       </button>
       {open && (
-        <div className="dialog-backdrop" onClick={() => setOpen(null)} style={{ zIndex: 40 }}>
+        <div className="dialog-backdrop" onClick={closeSettings} style={{ zIndex: 40 }}>
           <div className="dialog" onClick={(e) => e.stopPropagation()} style={{ background: 'var(--color-bg)' }}>
             {open === 'edit' ? (
               <>
@@ -223,12 +254,52 @@ export function ProfileButtons({ profile }: { profile: ProfileRow }) {
                   </button>
                 </div>
               </>
+            ) : confirmDelete ? (
+              <>
+                <div className="dialog-title">Delete your account?</div>
+                <div className="dialog-body">
+                  This cannot be undone. <b>Removed:</b> your profile, handle, karma, badges, votes, saves, drafts, notifications, team
+                  memberships and phone alerts.
+                  <br />
+                  <b>Stays:</b> your threads, replies, Lounge messages and wiki edits, shown as &ldquo;[deleted user]&rdquo;, and anything
+                  you uploaded to the library. Your handle becomes available to others.
+                </div>
+                {error && (
+                  <div role="alert" style={{ fontSize: 14, color: 'var(--color-accent-2-700)' }}>
+                    {error}
+                  </div>
+                )}
+                <div className="dialog-actions">
+                  <button className="btn btn-ghost" onClick={() => setConfirmDelete(false)} disabled={busy}>
+                    Keep my account
+                  </button>
+                  <button className="btn btn-secondary" onClick={deleteAccount} disabled={busy}>
+                    <Icon name="trash" size={17} />
+                    Delete account
+                  </button>
+                </div>
+              </>
             ) : (
               <>
                 <div className="dialog-title">Settings</div>
                 <div className="dialog-body">Signed in to DTour with your DTU account.</div>
+                {error && (
+                  <div role="alert" style={{ fontSize: 14, color: 'var(--color-accent-2-700)' }}>
+                    {error}
+                  </div>
+                )}
+                <div className="dialog-actions" style={{ justifyContent: 'flex-start' }}>
+                  <button className="btn btn-ghost" onClick={download}>
+                    <Icon name="download-simple" size={17} />
+                    Download my data
+                  </button>
+                  <button className="btn btn-ghost" onClick={() => setConfirmDelete(true)}>
+                    <Icon name="trash" size={17} />
+                    Delete account
+                  </button>
+                </div>
                 <form action="/auth/signout" method="post" className="dialog-actions">
-                  <button type="button" className="btn btn-ghost" onClick={() => setOpen(null)}>
+                  <button type="button" className="btn btn-ghost" onClick={closeSettings}>
                     Close
                   </button>
                   <button className="btn btn-secondary">
