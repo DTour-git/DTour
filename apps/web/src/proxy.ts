@@ -9,21 +9,17 @@ const MEMBERS_ONLY = ['/new', '/onboarding', '/mod'];
 // to /login only for member pages.
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
-  const sb = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookieOptions: sessionCookieOptions,
-      cookies: {
-        getAll: () => request.cookies.getAll(),
-        setAll: (list) => {
-          list.forEach(({ name, value }) => request.cookies.set(name, value));
-          response = NextResponse.next({ request });
-          list.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
-        },
+  const sb = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, {
+    cookieOptions: sessionCookieOptions,
+    cookies: {
+      getAll: () => request.cookies.getAll(),
+      setAll: (list) => {
+        list.forEach(({ name, value }) => request.cookies.set(name, value));
+        response = NextResponse.next({ request });
+        list.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
       },
     },
-  );
+  });
   const path = request.nextUrl.pathname;
   const membersOnly = MEMBERS_ONLY.some((p) => path.startsWith(p));
   // Members-only pages ask the Auth server (getUser), so a revoked session is refused at once; elsewhere
