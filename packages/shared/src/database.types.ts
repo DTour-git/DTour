@@ -2310,6 +2310,20 @@ export type Database = {
         Args: { p_thread: number; p_value: number }
         Returns: number
       }
+      similar_threads: {
+        Args: { p_limit?: number; q: string }
+        Returns: {
+          board_name: string | null
+          editor_count: number | null
+          id: number
+          kind: string
+          rank: number
+          reply_count: number | null
+          score: number | null
+          slug: string | null
+          title: string
+        }[]
+      }
       toggle_heart: { Args: { p_place: number }; Returns: boolean }
       toggle_rsvp: { Args: { p_post: number }; Returns: boolean }
       toggle_team_request: { Args: { p_team: number }; Returns: boolean }

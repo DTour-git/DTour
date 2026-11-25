@@ -5,7 +5,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './database.types';
 import { istDate, daysUntil, istInput, fromIstInput } from './format';
-import { rank, titleWords, overlap, type SearchDoc, type SearchKind } from './fuzzy';
+import { rank, titleWords, type SearchDoc, type SearchKind } from './fuzzy';
 import type { Tint, Tone } from './tokens';
 
 export type DB = SupabaseClient<Database>;
@@ -723,44 +723,15 @@ export async function votePoll(sb: DB, threadId: number, optionId: number, userI
 // ── Composer ──────────────────────────────────────────────────────────────
 export type PostType = 'thread' | 'question' | 'article' | 'team' | 'poll' | 'event';
 
+/** "Already asked?": ranked threads and published wiki guides for a draft title (full-text + trigram, see `similar_threads`). */
 export async function similarThreads(sb: DB, title: string, limit = 3) {
-  const words = titleWords(title);
-  if (!words.length) return [];
-  const ors = words
-    .slice(0, 6)
-    .map((w) => `title.ilike.%${w.replace(/[%,()]/g, '')}%`)
-    .join(',');
-  const [t, a] = await Promise.all([
-    sb.from('threads').select('id,title,score,reply_count,board:boards(name,short_name)').or(ors).limit(20),
-    sb.from('wiki_articles').select('slug,title,editor_count').eq('status', 'published').or(ors).limit(10),
-  ]);
-  type Sim = { title: string; sub: string; route: string; n: number };
-  const out: Sim[] = [
-    ...(
-      must(t) as unknown as {
-        id: number;
-        title: string;
-        score: number;
-        reply_count: number;
-        board: { name: string; short_name: string | null };
-      }[]
-    ).map((x) => ({
-      title: x.title,
-      sub: `${x.board.short_name ?? x.board.name} · ${x.score} votes · ${x.reply_count} replies`,
-      route: `/t/${x.id}`,
-      n: overlap(words, x.title),
-    })),
-    ...must(a).map((x) => ({
-      title: x.title,
-      sub: `Wiki · ${x.editor_count} editors`,
-      route: `/wiki/${x.slug}`,
-      n: overlap(words, x.title),
-    })),
-  ];
-  return out
-    .filter((x) => x.n)
-    .sort((x, y) => y.n - x.n)
-    .slice(0, limit);
+  if (!titleWords(title).length) return [];
+  const rows = must(await sb.rpc('similar_threads', { q: title, p_limit: limit }));
+  return rows.map((x) =>
+    x.kind === 'wiki'
+      ? { title: x.title, sub: `Wiki · ${x.editor_count} editors`, route: `/wiki/${x.slug}` }
+      : { title: x.title, sub: `${x.board_name} · ${x.score} votes · ${x.reply_count} replies`, route: `/t/${x.id}` },
+  );
 }
 
 export interface NewThreadInput {

@@ -183,8 +183,15 @@ function Composer({ me }: { me: ProfileRow }) {
   };
 
   useEffect(() => {
-    const t = setTimeout(async () => setSim(title.trim().length > 3 ? ((await similarThreads(supabase, title, 1))[0] ?? null) : null), 250);
-    return () => clearTimeout(t);
+    let live = true; // a slow answer for an older title must not overwrite a newer one
+    const t = setTimeout(async () => {
+      const found = title.trim().length > 3 ? await similarThreads(supabase, title, 1).catch(() => []) : [];
+      if (live) setSim(found[0] ?? null);
+    }, 250);
+    return () => {
+      live = false;
+      clearTimeout(t);
+    };
   }, [title]);
 
   const defaultBoard = useMemo(
