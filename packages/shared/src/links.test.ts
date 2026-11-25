@@ -29,7 +29,10 @@ describe('linkTarget', () => {
     expect(linkTarget('HTTPS://DTour.Example', hosts)).toEqual({ kind: 'internal', path: '/' });
     expect(linkTarget('https://dtour.example?x=1', hosts)).toEqual({ kind: 'internal', path: '/?x=1' });
     expect(linkTarget('https://dtour.example//evil.example', hosts)).toEqual({ kind: 'blocked' });
-    expect(linkTarget('https://dtour.example.evil.example/x', hosts)).toEqual({ kind: 'external', url: 'https://dtour.example.evil.example/x' });
+    expect(linkTarget('https://dtour.example.evil.example/x', hosts)).toEqual({
+      kind: 'external',
+      url: 'https://dtour.example.evil.example/x',
+    });
   });
 
   it.each([

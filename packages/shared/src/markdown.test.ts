@@ -4,23 +4,32 @@ import { headings, inline, inlineLines, markdownExcerpt, parse, plain, slugify, 
 describe('markdownExcerpt', () => {
   it('keeps inline and display maths intact in a compact preview', () => {
     expect(markdownExcerpt('Inline $x^2$\n\n$$\ny=1\n$$')).toEqual([
-      { t: 'text', v: 'Inline ' }, { t: 'math', v: 'x^2' },
-      { t: 'text', v: ' ' }, { t: 'math', v: 'y=1' },
+      { t: 'text', v: 'Inline ' },
+      { t: 'math', v: 'x^2' },
+      { t: 'text', v: ' ' },
+      { t: 'math', v: 'y=1' },
     ]);
   });
 
   it('does not cut a formula in half at the excerpt limit', () => {
     expect(markdownExcerpt('Hi $x^2$', 4)).toEqual([
-      { t: 'text', v: 'Hi ' }, { t: 'text', v: '…' },
+      { t: 'text', v: 'Hi ' },
+      { t: 'text', v: '…' },
     ]);
   });
 
   it('retains inline formatting, link labels and code in a compact preview', () => {
     expect(markdownExcerpt('**bold** *italic* `code` [link](/wiki) @student\n\n```\nx=1\n```')).toEqual([
-      { t: 'b', v: 'bold' }, { t: 'text', v: ' ' }, { t: 'i', v: 'italic' },
-      { t: 'text', v: ' ' }, { t: 'code', v: 'code' }, { t: 'text', v: ' ' },
-      { t: 'link', v: 'link', href: '/wiki' }, { t: 'text', v: ' ' },
-      { t: 'link', v: '@student', href: '/u/student' }, { t: 'text', v: ' ' },
+      { t: 'b', v: 'bold' },
+      { t: 'text', v: ' ' },
+      { t: 'i', v: 'italic' },
+      { t: 'text', v: ' ' },
+      { t: 'code', v: 'code' },
+      { t: 'text', v: ' ' },
+      { t: 'link', v: 'link', href: '/wiki' },
+      { t: 'text', v: ' ' },
+      { t: 'link', v: '@student', href: '/u/student' },
+      { t: 'text', v: ' ' },
       { t: 'code', v: 'x=1' },
     ]);
   });
@@ -93,8 +102,13 @@ describe('inline', () => {
 
   it('recognizes inline maths and preserves escaped dollars, currency and code', () => {
     expect(inline('Let $x^2$ be ` $y$ ` and \\$5.')).toEqual([
-      { t: 'text', v: 'Let ' }, { t: 'math', v: 'x^2' }, { t: 'text', v: ' be ' },
-      { t: 'code', v: ' $y$ ' }, { t: 'text', v: ' and ' }, { t: 'text', v: '$' }, { t: 'text', v: '5.' },
+      { t: 'text', v: 'Let ' },
+      { t: 'math', v: 'x^2' },
+      { t: 'text', v: ' be ' },
+      { t: 'code', v: ' $y$ ' },
+      { t: 'text', v: ' and ' },
+      { t: 'text', v: '$' },
+      { t: 'text', v: '5.' },
     ]);
     expect(inline('₹100 and $5 or ₹/$ 100')).toEqual([{ t: 'text', v: '₹100 and $5 or ₹/$ 100' }]);
     expect(inline('$5 and $10')).toEqual([{ t: 'text', v: '$5 and $10' }]);
@@ -112,8 +126,14 @@ describe('inlineLines', () => {
   it('keeps line breaks and ignores block syntax', () => {
     expect(inlineLines('Unit 1: trees\n## Unit 2: $x$\n- ![x](https://e.x/p.gif)')).toEqual([
       [{ t: 'text', v: 'Unit 1: trees' }],
-      [{ t: 'text', v: '## Unit 2: ' }, { t: 'math', v: 'x' }],
-      [{ t: 'text', v: '- !' }, { t: 'link', v: 'x', href: 'https://e.x/p.gif' }],
+      [
+        { t: 'text', v: '## Unit 2: ' },
+        { t: 'math', v: 'x' },
+      ],
+      [
+        { t: 'text', v: '- !' },
+        { t: 'link', v: 'x', href: 'https://e.x/p.gif' },
+      ],
     ]);
   });
 });

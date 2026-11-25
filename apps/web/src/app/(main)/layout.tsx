@@ -11,7 +11,10 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   if (me && !me.profile.onboarded) redirect('/onboarding');
   const isMod = me?.profile.role === 'moderator' || me?.profile.role === 'admin';
   const [config, exam, rooms, queue, reports] = await Promise.all([
-    getConfig(sb), getExamCountdown(sb, me?.profile ?? null), getLoungeRooms(sb), isMod ? getModQueue(sb) : null,
+    getConfig(sb),
+    getExamCountdown(sb, me?.profile ?? null),
+    getLoungeRooms(sb),
+    isMod ? getModQueue(sb) : null,
     isMod ? openReportCount(sb) : 0,
   ]);
   return (
