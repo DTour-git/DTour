@@ -46,11 +46,12 @@ npm run test:e2e           # Playwright tests in apps/web/e2e against the dev DB
 npm run db:dev:reset       # wipe and rebuild the DEV database: migrations + seed + test accounts
 npm run dev:login -- e2e.student     # print a one-click sign-in link for a dev test account
 npm run format             # Prettier on files your branch changed (never the whole repo)
+npm run format:check       # Prettier check over the whole repo (what CI runs)
 ```
 
 **Before you call a change done**, run `npm run check`. If you changed SQL, also run `npm run test:db`; if you changed a web flow, also run `npm run test:e2e`. If you changed mobile code, also confirm it bundles: `cd apps/mobile && npx expo export --platform android --output-dir /tmp/x`.
 
-CI (`.github/workflows/ci.yml`) runs two jobs on every PR and every push to `main`. **check** runs typecheck, lint, unit tests, and the web build. **dev-db** runs database and browser tests against a fresh local Supabase stack on each runner. It uses local test credentials and requires no hosted Supabase secrets.
+CI (`.github/workflows/ci.yml`) runs two jobs on every PR and every push to `main`. **check** runs the Prettier check, typecheck, lint, unit tests, and the web build. **dev-db** runs database and browser tests against a fresh local Supabase stack on each runner. It uses local test credentials and requires no hosted Supabase secrets.
 
 ## Tests
 
@@ -138,7 +139,7 @@ These are product decisions. Don't change them without asking.
 - **Commits.** Use imperative subjects ("Add …", "Fix …") and explain the *why* in the body when it isn't obvious.
 - **If a PR touches the database:** list the new migrations, say whether they're already applied to `megohwzcghnbfdzsaypz`, and give any manual steps (dashboard settings, function deploys, cron jobs).
 - **Templates.** PRs use `.github/pull_request_template.md`; fill in every section. New work starts as an issue from the **Task** template, whose acceptance criteria define "done".
-- **Formatting.** Prettier (`.prettierrc.json`). `npm run format` only touches files your branch changed, so it never causes conflicts. Don't reformat unrelated files.
+- **Formatting.** Prettier (`.prettierrc.json`). The whole repo is formatted and CI enforces it (`npm run format:check`). `npm run format` formats only the files your branch changed, so it never causes conflicts; run `npm run format:check` before pushing. Don't reformat unrelated files. To hide the one-off reformat from local blame: `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
 
 ## Guardrails for Claude Code
 

@@ -47,7 +47,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const load = useCallback(async (s: Session | null) => {
     setMonitoringUser(s?.user.id ?? null);
-    if (!s) { setProfile(null); return; }
+    if (!s) {
+      setProfile(null);
+      return;
+    }
     const { data, error } = await supabase.from('profiles').select('*').eq('id', s.user.id).maybeSingle();
     setProfile(data);
     // A saved sign-in whose account no longer exists (deleted, or the database was reset):

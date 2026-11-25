@@ -55,7 +55,9 @@ export function Shell({ me, children }: { me: ProfileRow | null; children: React
   const countRef = useRef<ReturnType<ReturnType<typeof supabaseBrowser>['channel']> | null>(null);
   const boardRef = useRef<string | null>(null);
 
-  useEffect(() => { setMonitoringUser(me?.id ?? null); }, [me?.id]);
+  useEffect(() => {
+    setMonitoringUser(me?.id ?? null);
+  }, [me?.id]);
 
   // Realtime presence (#41). Who's online and which board they're reading is on
   // a private channel only signed-in students can join (RLS on realtime.messages).

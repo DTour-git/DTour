@@ -27,7 +27,4 @@ const nextConfig: NextConfig = {
 // Source maps are uploaded to Sentry only when the host sets SENTRY_AUTH_TOKEN
 // (with SENTRY_ORG and SENTRY_PROJECT) for the build (#15). Without it the
 // config is unchanged and the build never contacts Sentry.
-export default process.env.SENTRY_AUTH_TOKEN
-  ? withSentryConfig(nextConfig, { silent: !process.env.CI, telemetry: false })
-  : nextConfig;
-
+export default process.env.SENTRY_AUTH_TOKEN ? withSentryConfig(nextConfig, { silent: !process.env.CI, telemetry: false }) : nextConfig;

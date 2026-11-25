@@ -12,7 +12,9 @@ export function HandleHint({ check }: { check: ReturnType<typeof useHandleCheck>
   return (
     <View accessibilityLiveRegion="polite" style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
       {check.status !== 'checking' && <Icon name={good ? 'check-circle' : 'warning'} size={16} color={color} />}
-      <T size={13} color={color} style={{ flex: 1 }}>{check.message}</T>
+      <T size={13} color={color} style={{ flex: 1 }}>
+        {check.message}
+      </T>
     </View>
   );
 }
