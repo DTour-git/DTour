@@ -324,7 +324,13 @@ export default async function ProfilePage({
                     <Icon
                       name={b.icon}
                       size={30}
-                      color={b.tone === 'accent2' ? 'var(--color-accent-2)' : 'var(--color-accent)'}
+                      color={
+                        b.tone === 'accent2'
+                          ? 'var(--color-accent-2)'
+                          : b.tone === 'neutral'
+                            ? 'var(--color-neutral-700)'
+                            : 'var(--color-accent)'
+                      }
                       style={{ margin: '0 auto' }}
                     />
                     <div>{b.label}</div>

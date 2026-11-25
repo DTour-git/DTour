@@ -149,32 +149,37 @@ export function NotificationBell() {
                 background: n.read_at ? undefined : 'var(--color-accent-100)',
               }}
             >
-              <span style={{ position: 'relative' }}>
-                {n.actor ? <Avatar person={n.actor} size={32} /> : <Avatar person={{ handle: '?', tint: 'neutral' }} size={32} />}
-                <span
-                  style={{
-                    position: 'absolute',
-                    right: -4,
-                    bottom: -4,
-                    width: 18,
-                    height: 18,
-                    borderRadius: '50%',
-                    background: 'var(--color-bg)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Icon
-                    name={NOTIFICATION_ICON[n.kind] ?? 'bell'}
-                    size={13}
-                    color={n.kind === 'upvote' || n.kind === 'accepted' ? 'var(--color-accent)' : 'var(--color-accent-2)'}
-                  />
+              {n.kind === 'badge' ? (
+                <Icon name="medal" size={32} color="var(--color-accent-2)" />
+              ) : (
+                <span style={{ position: 'relative' }}>
+                  {n.actor ? <Avatar person={n.actor} size={32} /> : <Avatar person={{ handle: '?', tint: 'neutral' }} size={32} />}
+                  <span
+                    style={{
+                      position: 'absolute',
+                      right: -4,
+                      bottom: -4,
+                      width: 18,
+                      height: 18,
+                      borderRadius: '50%',
+                      background: 'var(--color-bg)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Icon
+                      name={NOTIFICATION_ICON[n.kind] ?? 'bell'}
+                      size={13}
+                      color={n.kind === 'upvote' || n.kind === 'accepted' ? 'var(--color-accent)' : 'var(--color-accent-2)'}
+                    />
+                  </span>
                 </span>
-              </span>
+              )}
               <span style={{ minWidth: 0 }}>
                 <span style={{ fontSize: 14, lineHeight: 1.4 }}>
-                  <b>@{n.actor?.handle ?? 'someone'}</b> {n.text}
+                  {n.kind !== 'badge' && <b>@{n.actor?.handle ?? 'someone'} </b>}
+                  {n.text}
                 </span>
                 {n.snippet && (
                   <span className="ellipsis" style={{ display: 'block', fontSize: 13, color: 'var(--color-neutral-700)', marginTop: 2 }}>
