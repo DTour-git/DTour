@@ -69,6 +69,7 @@ CI (`.github/workflows/ci.yml`) runs two jobs on every PR and every push to `mai
 
 - `apps/web/.env.local` sets `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
 - `apps/mobile/.env` sets `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+- `NEXT_PUBLIC_SITE_URL` (web) is the public address of the site, used in share-image links, `robots.txt` and the sitemap. Set it in the host's build environment: without it those links point at `http://localhost:3000`.
 - Copy each from the `.env.example` next to it. These files are gitignored. **Never commit them.**
 - Apps only ever get the **publishable** key. The **secret** (service-role) key, database passwords and OAuth client secrets never go in the repo, in app env files, or in client code.
 - **Two Supabase projects:**

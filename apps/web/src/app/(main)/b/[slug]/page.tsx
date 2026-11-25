@@ -15,6 +15,13 @@ const TABS: [FeedTab, string][] = [
   ['top', 'Top this week'],
 ];
 
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const { sb } = await currentUser();
+  const { data } = await sb.from('boards').select('name,description').eq('slug', slug).maybeSingle();
+  return { title: data?.name ?? 'Board', description: data?.description ?? undefined };
+}
+
 export default async function BoardPage({
   params,
   searchParams,

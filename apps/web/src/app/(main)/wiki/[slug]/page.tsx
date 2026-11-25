@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { agoLong, atHandle, flair, getArticle, headings, myPendingEdits, parse } from '@dtour/shared';
+import { agoLong, atHandle, flair, getArticle, headings, mediaImageUrl, myPendingEdits, parse } from '@dtour/shared';
 import { currentUser } from '@/lib/supabase-server';
+import { NOINDEX, OPEN_GRAPH } from '@/lib/seo';
 import { Icon } from '@/components/Icon';
 import { Avatar, H6 } from '@/components/ui';
 import { Markdown } from '@/components/Markdown';
@@ -12,8 +13,16 @@ const TABS = ['read', 'edit', 'history', 'talk'] as const;
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const { sb } = await currentUser();
-  const { data } = await sb.from('wiki_articles').select('title').eq('slug', slug).maybeSingle();
-  return { title: data?.title ?? 'Wiki' };
+  const { data } = await sb.from('wiki_articles').select('title,dek,cover_path,status,is_demo').eq('slug', slug).maybeSingle();
+  if (!data) return { title: 'Wiki' };
+  // Setting openGraph replaces the site default (image included), so a page without a cover sets none.
+  const cover = mediaImageUrl(data.cover_path, process.env.NEXT_PUBLIC_SUPABASE_URL);
+  return {
+    title: data.title,
+    description: data.dek ?? undefined,
+    ...(cover && { openGraph: { ...OPEN_GRAPH, images: [{ url: cover, alt: data.title }] } }),
+    ...((data.is_demo || data.status !== 'published') && NOINDEX),
+  };
 }
 
 export default async function ArticlePage({

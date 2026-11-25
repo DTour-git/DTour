@@ -15,3 +15,6 @@ locally and in CI).
 Loaded in `../layout.tsx` with `next/font/local`. To add a weight, copy the
 matching `source-serif-4-latin-<weight>-<style>.woff2` from that package and add
 it to the `src` list there.
+
+`SourceSerif4-SemiBold.ttf` (weight 600) is only for the generated share images (`../../lib/og.tsx`):
+`ImageResponse` cannot read WOFF2. It comes from `@expo-google-fonts/source-serif-4` (the same font the mobile app uses).
