@@ -11,6 +11,7 @@ import {
   getLoungeMessage,
   getLoungeMessages,
   getLoungeRooms,
+  isRateLimited,
   sendLoungeMessage,
   unreadCounts,
   type LoungeMessage,
@@ -134,9 +135,10 @@ export default function Lounge() {
     setMsgs((m) => [...m, temp]);
     try {
       await sendLoungeMessage(supabase, room, me.id, body);
-    } catch {
+    } catch (e) {
       setMsgs((m) => m.filter((x) => x.id !== temp.id));
       setDraft(body);
+      if (isRateLimited(e)) Alert.alert((e as Error).message);
     }
   };
 

@@ -4,6 +4,7 @@ import {
   atHandle,
   getBoard,
   hotness,
+  isRateLimited,
   matchesSkills,
   nextHandleChange,
   similarThreads,
@@ -78,6 +79,14 @@ describe('matchesSkills', () => {
     expect(matchesSkills(team, ['frontend'])).toBe(true);
     expect(matchesSkills(team, ['ML'])).toBe(false);
     expect(matchesSkills(team, [])).toBe(false);
+  });
+});
+
+describe('isRateLimited', () => {
+  it('recognises the database rate-limit message only', () => {
+    expect(isRateLimited(new Error('Slow down a little — try again in a minute.'))).toBe(true);
+    expect(isRateLimited(new Error('permission denied'))).toBe(false);
+    expect(isRateLimited('Slow down a little')).toBe(false);
   });
 });
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { n, toggleHeart, toggleRsvp, toggleTeamRequest } from '@dtour/shared';
+import { isRateLimited, n, toggleHeart, toggleRsvp, toggleTeamRequest } from '@dtour/shared';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Icon } from './Icon';
 import { useShell } from './shell/Shell';
@@ -63,8 +63,9 @@ export function AskToJoin({ teamId, requested, primary }: { teamId: number; requ
     try {
       await toggleTeamRequest(supabaseBrowser(), teamId);
       if (!r) toast('Request sent to the team.');
-    } catch {
+    } catch (e) {
       setR(r);
+      if (isRateLimited(e)) toast((e as Error).message);
     }
   };
   return (

@@ -9,6 +9,7 @@ import {
   editLoungeMessage,
   getLoungeMessage,
   getLoungeMessages,
+  isRateLimited,
   promoteLoungeMessage,
   sendLoungeMessage,
   titleFromMessage,
@@ -156,10 +157,10 @@ function Drawer({ rooms, onClose }: { rooms: Room[]; onClose: () => void }) {
     setMsgs((m) => [...m, temp]);
     try {
       await sendLoungeMessage(supabaseBrowser(), room, me.id, body);
-    } catch {
+    } catch (e) {
       setMsgs((m) => m.filter((x) => x.id !== temp.id));
       setDraft(body);
-      toast('Message not sent — try again.');
+      toast(isRateLimited(e) ? (e as Error).message : 'Message not sent — try again.');
     }
   };
 

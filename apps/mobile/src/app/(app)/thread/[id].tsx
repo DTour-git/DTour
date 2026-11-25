@@ -92,7 +92,14 @@ export default function Thread() {
     setDraft('');
     const parent = replyTo ? (replyTo.parent_id ?? replyTo.id) : null;
     setReplyTo(null);
-    await postReply(supabase, { threadId: t.id, userId: u.id, body, parentId: parent });
+    try {
+      await postReply(supabase, { threadId: t.id, userId: u.id, body, parentId: parent });
+    } catch (e) {
+      setDraft(body);
+      setReplyTo(replyTo);
+      Alert.alert('Could not post your reply', (e as Error).message);
+      return;
+    }
     reload();
   };
 

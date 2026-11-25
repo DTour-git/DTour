@@ -7,6 +7,7 @@ import {
   deadlineText,
   flair,
   getTeams,
+  isRateLimited,
   matchesSkills,
   reviewTeamRequest,
   toggleTeamRequest,
@@ -67,7 +68,10 @@ export default function Teams() {
     if (r.has(id)) r.delete(id);
     else r.add(id);
     setData({ ...data, myRequests: r });
-    await toggleTeamRequest(supabase, id).catch(refresh);
+    await toggleTeamRequest(supabase, id).catch((e) => {
+      refresh();
+      if (isRateLimited(e)) Alert.alert((e as Error).message);
+    });
   };
 
   return (
