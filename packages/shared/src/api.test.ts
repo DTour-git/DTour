@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hotness, matchesSkills, nextHandleChange, sortReplies, type ReplyNode, type TeamCard } from './api';
+import { DELETED_PERSON, atHandle, hotness, matchesSkills, nextHandleChange, sortReplies, type ReplyNode, type TeamCard } from './api';
 
 const ago = (h: number) => new Date(Date.now() - h * 3600e3).toISOString();
 
@@ -67,5 +67,15 @@ describe('matchesSkills', () => {
     expect(matchesSkills(team, ['frontend'])).toBe(true);
     expect(matchesSkills(team, ['ML'])).toBe(false);
     expect(matchesSkills(team, [])).toBe(false);
+  });
+});
+
+describe('deleted users', () => {
+  it('shows no @ before the placeholder, and one before a real handle', () => {
+    expect(atHandle(DELETED_PERSON)).toBe('[deleted user]');
+    expect(atHandle({ handle: 'asha' })).toBe('@asha');
+  });
+  it('has an empty id, so nothing links to it or matches it as a real person', () => {
+    expect(DELETED_PERSON.id).toBe('');
   });
 });
