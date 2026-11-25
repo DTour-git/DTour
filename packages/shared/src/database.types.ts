@@ -2207,6 +2207,7 @@ export type Database = {
       fuzzy_pattern: { Args: { q: string }; Returns: string }
       handle_status: { Args: { p_handle: string }; Returns: string }
       hook_before_user_created: { Args: { event: Json }; Returns: Json }
+      is_admin: { Args: never; Returns: boolean }
       is_moderator: { Args: never; Returns: boolean }
       is_society_poster: { Args: never; Returns: boolean }
       karma_breakdown: {
