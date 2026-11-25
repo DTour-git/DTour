@@ -12,16 +12,27 @@ export function useHandleCheck(value: string, current: string) {
     if (h === current || handleProblem(h)) return;
     let alive = true;
     const t = setTimeout(async () => {
-      try { const status = await handleStatus(supabaseBrowser(), h); if (alive) setResult({ for: h, status }); } catch { /* offline: the save will check again */ }
+      try {
+        const status = await handleStatus(supabaseBrowser(), h);
+        if (alive) setResult({ for: h, status });
+      } catch {
+        /* offline: the save will check again */
+      }
     }, 350);
-    return () => { alive = false; clearTimeout(t); };
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
   }, [h, current]);
-  const status: HandleStatus | 'unchanged' | 'checking' = h === current ? 'unchanged'
-    : handleProblem(h) ? 'invalid'
-    : result?.for === h ? result.status : 'checking';
-  const message = status === 'unchanged' ? null
-    : status === 'checking' ? 'Checking…'
-    : status === 'available' || status === 'yours' ? `@${h} is available.`
-    : handleStatusMessage(status, h);
+  const status: HandleStatus | 'unchanged' | 'checking' =
+    h === current ? 'unchanged' : handleProblem(h) ? 'invalid' : result?.for === h ? result.status : 'checking';
+  const message =
+    status === 'unchanged'
+      ? null
+      : status === 'checking'
+        ? 'Checking…'
+        : status === 'available' || status === 'yours'
+          ? `@${h} is available.`
+          : handleStatusMessage(status, h);
   return { handle: h, status, message, ok: status === 'unchanged' || status === 'available' || status === 'yours' };
 }

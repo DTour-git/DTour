@@ -22,7 +22,7 @@
     "db:dev:reset": "node scripts/db-dev-reset.mjs",
     "dev:login": "node scripts/dev-login.mjs",
     "format": "node scripts/format-changed.mjs",
-    "format:check": "node scripts/format-changed.mjs --check",
+    "format:check": "prettier --check .",
     "format:all": "prettier --write ."
   },
   "overrides": {

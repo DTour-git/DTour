@@ -60,7 +60,12 @@ describe('openUserLink', () => {
   });
 
   it('swallows a failed openURL instead of throwing', async () => {
-    const d = { push: vi.fn(), openURL: vi.fn(async () => { throw new Error('No app'); }) };
+    const d = {
+      push: vi.fn(),
+      openURL: vi.fn(async () => {
+        throw new Error('No app');
+      }),
+    };
     expect(openUserLink('https://example.com', d)).toBe(true);
     await new Promise((r) => setTimeout(r, 0));
   });
