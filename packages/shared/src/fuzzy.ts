@@ -120,14 +120,10 @@ export function rank(docs: SearchDoc[], q: string, limit = 40): RankedDoc[] {
   return out.slice(0, limit);
 }
 
-/** "Already asked?" — word overlap between a draft title and existing titles. */
+/** "Already asked?" — the words of a draft title worth searching for (matches the SQL in `similar_threads`). */
 export function titleWords(title: string): string[] {
   return title
     .toLowerCase()
     .split(/[^a-z0-9]+/)
     .filter((w) => w.length > 2);
-}
-export function overlap(words: string[], title: string): number {
-  const t = title.toLowerCase();
-  return words.filter((w) => t.includes(w)).length;
 }

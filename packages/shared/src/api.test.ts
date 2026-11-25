@@ -1,11 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   DELETED_PERSON,
   atHandle,
+  getBoard,
   hotness,
   isRateLimited,
   matchesSkills,
   nextHandleChange,
+  similarThreads,
   sortReplies,
   type ReplyNode,
   type TeamCard,
@@ -85,6 +87,71 @@ describe('isRateLimited', () => {
     expect(isRateLimited(new Error('Slow down a little — try again in a minute.'))).toBe(true);
     expect(isRateLimited(new Error('permission denied'))).toBe(false);
     expect(isRateLimited('Slow down a little')).toBe(false);
+  });
+});
+
+describe('similarThreads', () => {
+  const fakeDb = (result: { data: unknown; error: unknown }) => {
+    const rpc = vi.fn().mockResolvedValue(result);
+    return { sb: { rpc } as never, rpc };
+  };
+  it('maps rows to suggestions and keeps the server order', async () => {
+    const { sb, rpc } = fakeDb({
+      error: null,
+      data: [
+        {
+          kind: 'wiki',
+          id: 2,
+          slug: 'endsem-plan',
+          title: 'End-sem plan',
+          board_name: null,
+          score: null,
+          reply_count: null,
+          editor_count: 4,
+          rank: 0.9,
+        },
+        {
+          kind: 'thread',
+          id: 7,
+          slug: null,
+          title: 'DSA end-sem: which units?',
+          board_name: 'COE · 3rd sem',
+          score: 12,
+          reply_count: 5,
+          editor_count: null,
+          rank: 0.7,
+        },
+      ],
+    });
+    expect(await similarThreads(sb, 'DSA endsem units', 2)).toEqual([
+      { title: 'End-sem plan', sub: 'Wiki · 4 editors', route: '/wiki/endsem-plan' },
+      { title: 'DSA end-sem: which units?', sub: 'COE · 3rd sem · 12 votes · 5 replies', route: '/t/7' },
+    ]);
+    expect(rpc).toHaveBeenCalledWith('similar_threads', { q: 'DSA endsem units', p_limit: 2 });
+  });
+  it('does not call the database for a title with no searchable words', async () => {
+    const { sb, rpc } = fakeDb({ data: [], error: null });
+    expect(await similarThreads(sb, 'a?')).toEqual([]);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+  it('throws when the database errors', async () => {
+    const { sb } = fakeDb({ data: null, error: { message: 'boom' } });
+    await expect(similarThreads(sb, 'DSA endsem units')).rejects.toBeTruthy();
+  });
+});
+
+describe('getBoard', () => {
+  const fake = (tables: Record<string, unknown[]>) =>
+    ({ from: (t: string) => ({ select: async () => ({ data: tables[t] ?? [], error: null }) }) }) as unknown as Parameters<
+      typeof getBoard
+    >[0];
+
+  it('returns null for an unknown board', async () => {
+    await expect(getBoard(fake({}), 'nope')).resolves.toBeNull();
+  });
+  it('throws a clear error when the board has no category', async () => {
+    const boards = [{ id: 'b1', slug: 'x', category_id: 9, parent_id: null, sort: 0 }];
+    await expect(getBoard(fake({ boards }), 'x')).rejects.toThrow(/Category 9 for board x not found/);
   });
 });
 
