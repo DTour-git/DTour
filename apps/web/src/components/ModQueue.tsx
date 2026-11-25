@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import {
   REPORT_REASONS,
   agoLong,
+  atHandle,
   reportedNoun,
   resolveReport,
   reviewArticle,
@@ -73,7 +74,7 @@ export function ModQueue({
                 {r.title}
               </Link>
               <span style={{ fontSize: 13, color: 'var(--color-neutral-700)' }}>
-                {r.author && <>by @{r.author.handle} · </>}
+                {r.author && <>by {atHandle(r.author)} · </>}
                 {r.count} {r.count === 1 ? 'report' : 'reports'} · first {agoLong(r.first_at)}
               </span>
             </div>
@@ -136,7 +137,7 @@ export function ModQueue({
               <div style={{ display: 'flex', gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
                 <span style={{ font: '600 20px/1.3 var(--font-heading)' }}>{a.title}</span>
                 <span style={{ fontSize: 13, color: 'var(--color-neutral-700)' }}>
-                  by @{a.starter?.handle} · {agoLong(a.created_at)}
+                  by {a.starter ? `@${a.starter.handle}` : '[deleted user]'} · {agoLong(a.created_at)}
                 </span>
               </div>
               {a.dek && <div style={{ fontStyle: 'italic', color: 'var(--color-neutral-800)', marginTop: 4 }}>{a.dek}</div>}
@@ -178,7 +179,7 @@ export function ModQueue({
                 )}
               </div>
               <div style={{ fontSize: 14.5, marginTop: 4 }}>
-                <b>@{r.editor.handle}</b> {r.summary}{' '}
+                <b>{atHandle(r.editor)}</b> {r.summary}{' '}
                 <span style={{ color: 'var(--color-neutral-700)', fontSize: 13 }}>· {agoLong(r.created_at)}</span>
               </div>
               <button className="btn btn-ghost" onClick={() => setOpen(open === k ? null : k)}>

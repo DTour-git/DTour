@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { PAGE_SIZE, ago, colors, getBoard, n, type FeedTab } from '@dtour/shared';
+import { PAGE_SIZE, ago, atHandle, colors, getBoard, n, type FeedTab } from '@dtour/shared';
 import { supabase } from '@/lib/supabase';
 import { useData } from '@/lib/useData';
 import { usePresence } from '@/lib/presence';
@@ -70,7 +70,7 @@ export default function Board() {
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <T size={12.5} w={600}>
-                  @{t.author.handle}
+                  {atHandle(t.author)}
                 </T>
                 <FlairTag person={t.author} />
                 <T size={12.5} color={colors.neutral700}>

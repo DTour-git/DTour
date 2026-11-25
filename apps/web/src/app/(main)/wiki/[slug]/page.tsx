@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { agoLong, flair, getArticle, headings, myPendingEdits, parse } from '@dtour/shared';
+import { agoLong, atHandle, flair, getArticle, headings, myPendingEdits, parse } from '@dtour/shared';
 import { currentUser } from '@/lib/supabase-server';
 import { Icon } from '@/components/Icon';
 import { Avatar, H6 } from '@/components/ui';
@@ -188,7 +188,7 @@ export default async function ArticlePage({
           <div style={{ maxWidth: 680 }}>
             {d.revisions.map((r) => (
               <div key={r.id} className="row-rule" style={{ padding: '14px 0', fontSize: 15 }}>
-                <b>@{r.editor.handle}</b> {r.summary}
+                <b>{atHandle(r.editor)}</b> {r.summary}
                 <div style={{ fontSize: 13, color: 'var(--color-neutral-700)' }}>
                   {agoLong(r.created_at)}
                   {r.delta_words != null && (
@@ -213,7 +213,8 @@ export default async function ArticlePage({
             <TalkForm articleId={a.id} />
             {d.talk.map((t) => (
               <div key={t.id} className="row-rule" style={{ padding: '14px 0', fontSize: 15, lineHeight: 1.5 }}>
-                <b>@{t.author.handle}</b> <span style={{ color: 'var(--color-neutral-700)', fontSize: 13 }}>· {agoLong(t.created_at)}</span>
+                <b>{atHandle(t.author)}</b>{' '}
+                <span style={{ color: 'var(--color-neutral-700)', fontSize: 13 }}>· {agoLong(t.created_at)}</span>
                 <TalkActions id={t.id} authorId={t.author.id} />
                 <div>{t.body}</div>
               </div>
@@ -228,7 +229,7 @@ export default async function ArticlePage({
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14, lineHeight: 1.4 }}>
             {d.revisions.slice(0, 3).map((r) => (
               <div key={r.id}>
-                <b>@{r.editor.handle}</b> {r.summary}
+                <b>{atHandle(r.editor)}</b> {r.summary}
                 <div style={{ fontSize: 12.5, color: 'var(--color-neutral-700)' }}>
                   {agoLong(r.created_at)}
                   {r.delta_words != null && (
@@ -264,7 +265,7 @@ export default async function ArticlePage({
           <H6>Talk</H6>
           {d.talk[0] && (
             <div style={{ fontSize: 14, lineHeight: 1.45 }}>
-              <b>@{d.talk[0].author.handle}</b> <span style={{ fontStyle: 'italic' }}>{d.talk[0].body}</span>
+              <b>{atHandle(d.talk[0].author)}</b> <span style={{ fontStyle: 'italic' }}>{d.talk[0].body}</span>
             </div>
           )}
           <Link href={`/wiki/${slug}?tab=talk`} style={{ display: 'block', marginTop: 8, fontSize: 14, fontWeight: 600 }}>

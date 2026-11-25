@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { getBoard, hotness, matchesSkills, nextHandleChange, sortReplies, type ReplyNode, type TeamCard } from './api';
+import {
+  DELETED_PERSON,
+  atHandle,
+  getBoard,
+  hotness,
+  matchesSkills,
+  nextHandleChange,
+  sortReplies,
+  type ReplyNode,
+  type TeamCard,
+} from './api';
 
 const ago = (h: number) => new Date(Date.now() - h * 3600e3).toISOString();
 
@@ -82,5 +92,15 @@ describe('getBoard', () => {
   it('throws a clear error when the board has no category', async () => {
     const boards = [{ id: 'b1', slug: 'x', category_id: 9, parent_id: null, sort: 0 }];
     await expect(getBoard(fake({ boards }), 'x')).rejects.toThrow(/Category 9 for board x not found/);
+  });
+});
+
+describe('deleted users', () => {
+  it('shows no @ before the placeholder, and one before a real handle', () => {
+    expect(atHandle(DELETED_PERSON)).toBe('[deleted user]');
+    expect(atHandle({ handle: 'asha' })).toBe('@asha');
+  });
+  it('has an empty id, so nothing links to it or matches it as a real person', () => {
+    expect(DELETED_PERSON.id).toBe('');
   });
 });
