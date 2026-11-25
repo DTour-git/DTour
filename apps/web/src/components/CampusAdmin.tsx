@@ -6,9 +6,9 @@ import { CAMPUS_SECTIONS, deleteCampusItem, saveCampusItem, type CampusItem, typ
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { useShell } from './shell/Shell';
 
-/** Plain forms for the content behind Today, the exam countdown, Team Up deadlines and the Lounge rooms. */
+/** Plain forms for the content behind Today, the exam countdown, Team Up deadlines, societies and the Lounge rooms. */
 export function CampusAdmin({ data, isAdmin }: { data: Record<CampusKind, CampusItem[]>; isAdmin: boolean }) {
-  const kinds: CampusKind[] = isAdmin ? ['event', 'exam', 'deadline', 'room'] : ['event', 'exam', 'deadline'];
+  const kinds: CampusKind[] = isAdmin ? ['event', 'exam', 'deadline', 'society', 'room'] : ['event', 'exam', 'deadline', 'society'];
   return (
     <div style={{ marginTop: 56, display: 'flex', flexDirection: 'column', gap: 40 }}>
       {kinds.map((kind) => (
@@ -49,7 +49,9 @@ function ItemForm({ kind, item }: { kind: CampusKind; item: CampusItem | null })
     <form
       className="row-rule"
       style={{ padding: '16px 0' }}
-      aria-label={item ? `Edit ${item.values.title ?? item.values.label ?? item.id}` : `Add to ${CAMPUS_SECTIONS[kind].title}`}
+      aria-label={
+        item ? `Edit ${item.values.title ?? item.values.label ?? item.values.name ?? item.id}` : `Add to ${CAMPUS_SECTIONS[kind].title}`
+      }
       onSubmit={(e) => {
         e.preventDefault();
         run(
@@ -78,7 +80,7 @@ function ItemForm({ kind, item }: { kind: CampusKind; item: CampusItem | null })
                 value={v[f.key] ?? ''}
                 placeholder={f.hint}
                 type={f.type === 'datetime' ? 'datetime-local' : f.type === 'date' ? 'date' : f.type === 'number' ? 'number' : 'text'}
-                disabled={kind === 'room' && f.key === 'slug' && !!item}
+                disabled={(kind === 'room' || kind === 'society') && f.key === 'slug' && !!item}
                 onChange={(e) => setV({ ...v, [f.key]: e.target.value })}
               />
             )}
@@ -86,7 +88,7 @@ function ItemForm({ kind, item }: { kind: CampusKind; item: CampusItem | null })
         ))}
       </div>
       <div style={{ display: 'flex', gap: 10, marginTop: 12, justifyContent: 'flex-end' }}>
-        {item && kind !== 'room' && (
+        {item && kind !== 'room' && kind !== 'society' && (
           <button
             type="button"
             className="btn btn-secondary"

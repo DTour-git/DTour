@@ -1,9 +1,10 @@
 import Link from 'next/link';
-import { getSocietyBoard, POST_KIND_LABEL, postKindTone, safeHref } from '@dtour/shared';
+import { getMySocieties, getSocietyBoard, POST_KIND_LABEL, postKindTone, safeHref } from '@dtour/shared';
 import { currentUser } from '@/lib/supabase-server';
 import { Icon } from '@/components/Icon';
 import { Halftone } from '@/components/ui';
 import { Rsvp } from '@/components/Toggles';
+import { MySocieties } from '@/components/MySocieties';
 
 export const metadata = { title: 'Society board', description: 'Events, recruitments, workshops and talks from DTU societies.' };
 const FILTERS: [string | null, string, string][] = [
@@ -17,7 +18,10 @@ const FILTERS: [string | null, string, string][] = [
 export default async function SocietiesPage({ searchParams }: { searchParams: Promise<{ kind?: string }> }) {
   const { kind } = await searchParams;
   const { sb, me } = await currentUser();
-  const d = await getSocietyBoard(sb, me?.userId ?? null, kind ?? null);
+  const [d, mine] = await Promise.all([
+    getSocietyBoard(sb, me?.userId ?? null, kind ?? null),
+    me ? getMySocieties(sb, me.userId) : Promise.resolve([]),
+  ]);
   return (
     <>
       <div className="flex-wrap-row px" style={{ paddingTop: 36 }}>
@@ -34,6 +38,7 @@ export default async function SocietiesPage({ searchParams }: { searchParams: Pr
           Promote an event
         </Link>
       </div>
+      {me && mine.length > 0 && <MySocieties societies={mine} myId={me.userId} />}
       <div className="pills px" style={{ paddingTop: 24 }}>
         {FILTERS.map(([k, l, cls]) => (
           <Link key={l} href={k ? `/societies?kind=${k}` : '/societies'} className={`pill ${cls}`} data-active={(kind ?? null) === k}>

@@ -74,7 +74,9 @@ export function Composer({
   const body = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLInputElement>(null);
-  const postable = boards.filter((b) => !b.verified_only || societies.length > 0);
+  // Verified-only boards need a verified society you can post as (is_society_poster).
+  const verifiedPoster = societies.some((s) => s.verified);
+  const postable = boards.filter((b) => !b.verified_only || verifiedPoster);
   const defBoard =
     postable.find((b) => b.slug === initialBoard) ??
     postable.find((b) => b.slug === `academics-${(me.branch_code ?? '').toLowerCase()}`) ??
@@ -296,7 +298,7 @@ export function Composer({
   };
 
   const filtered = boards.filter(
-    (b) => b.path.join(' ').toLowerCase().includes(pickQ.toLowerCase()) && (!b.verified_only || societies.length),
+    (b) => b.path.join(' ').toLowerCase().includes(pickQ.toLowerCase()) && (!b.verified_only || verifiedPoster),
   );
 
   return (
@@ -885,7 +887,7 @@ export function Composer({
                   Today timeline.
                 </>
               ) : (
-                <>Only verified society accounts can post here. Ask your society’s admin to add you.</>
+                <>Only verified society accounts can post here. Ask your society’s lead to add you.</>
               )}
             </div>
           </div>

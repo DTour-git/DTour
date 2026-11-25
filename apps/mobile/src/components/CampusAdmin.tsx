@@ -5,16 +5,16 @@ import { supabase } from '@/lib/supabase';
 import { T } from './T';
 import { PrimaryBtn, rowRule } from './ui';
 
-/** Plain forms for the content behind Today, the exam countdown, Team Up deadlines and the Lounge rooms. */
+/** Plain forms for the content behind Today, the exam countdown, Team Up deadlines, societies and the Lounge rooms. */
 export function CampusAdmin({ data, isAdmin, reload }: { data: Record<CampusKind, CampusItem[]>; isAdmin: boolean; reload: () => void }) {
-  const kinds: CampusKind[] = isAdmin ? ['event', 'exam', 'deadline', 'room'] : ['event', 'exam', 'deadline'];
+  const kinds: CampusKind[] = isAdmin ? ['event', 'exam', 'deadline', 'society', 'room'] : ['event', 'exam', 'deadline', 'society'];
   return (
     <View>
       <T size={26} w={600} style={{ marginTop: 40 }}>
         Campus content
       </T>
       <T size={14} i color={colors.neutral800}>
-        What Today, the exam countdown, Team Up deadlines and Lounge rooms show. Times are in IST.
+        What Today, the exam countdown, Team Up deadlines, societies and Lounge rooms show. Times are in IST.
       </T>
       {kinds.map((kind) => (
         <View key={kind}>
@@ -71,7 +71,7 @@ function ItemForm({ kind, item, reload }: { kind: CampusKind; item: CampusItem |
               placeholderTextColor={colors.neutral700}
               keyboardType={f.type === 'number' ? 'number-pad' : 'default'}
               autoCapitalize="none"
-              editable={!(kind === 'room' && f.key === 'slug' && item)}
+              editable={!((kind === 'room' || kind === 'society') && f.key === 'slug' && item)}
               accessibilityLabel={f.label}
               style={{
                 height: 40,
@@ -87,7 +87,7 @@ function ItemForm({ kind, item, reload }: { kind: CampusKind; item: CampusItem |
         </View>
       ))}
       <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
-        {item && kind !== 'room' && (
+        {item && kind !== 'room' && kind !== 'society' && (
           <PrimaryBtn
             label="Delete"
             secondary
