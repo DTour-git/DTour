@@ -8,7 +8,10 @@ import { threadHref } from '@/lib/routes';
 
 export async function generateMetadata({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
-  return { title: code.toUpperCase() };
+  const { sb } = await currentUser();
+  const { data } = await sb.from('subjects').select('name').eq('code', code.toUpperCase()).maybeSingle();
+  const title = code.toUpperCase();
+  return { title, description: data && `${data.name} (${title}): notes, PYQs and lab files from DTU students.` };
 }
 
 // Web layout of the mobile "Subject files" screen.

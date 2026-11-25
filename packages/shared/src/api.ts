@@ -422,6 +422,8 @@ export async function getBoard(sb: DB, slug: string, tab: FeedTab = 'hot', limit
   const all = must(boards);
   const board = all.find((b) => b.slug === slug);
   if (!board) return null;
+  const category = must(cats).find((c) => c.id === board.category_id) as (CategoryRow & { tone: Tone }) | undefined;
+  if (!category) throw new Error(`Category ${board.category_id} for board ${board.slug} not found`);
   const desc = (id: string): string[] => all.filter((b) => b.parent_id === id).flatMap((b) => [b.id, ...desc(b.id)]);
   const ids = [board.id, ...desc(board.id)];
   const [threads, path] = await Promise.all([listThreads(sb, { tab, boardIds: ids, limit: limit + 1 }), boardAncestors(sb, board.id, all)]);
@@ -429,7 +431,7 @@ export async function getBoard(sb: DB, slug: string, tab: FeedTab = 'hot', limit
     board,
     threads: threads.slice(0, limit),
     hasMore: threads.length > limit,
-    category: must(cats).find((c) => c.id === board.category_id) as CategoryRow & { tone: Tone },
+    category,
     path,
     children: all.filter((b) => b.parent_id === board.id).sort((a, b) => a.sort - b.sort),
   };

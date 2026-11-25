@@ -69,6 +69,7 @@ CI (`.github/workflows/ci.yml`) runs two jobs on every PR and every push to `mai
 
 - `apps/web/.env.local` sets `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
 - `apps/mobile/.env` sets `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+- `NEXT_PUBLIC_SITE_URL` (web) is the public address of the site, used in share-image links, `robots.txt` and the sitemap. Set it in the host's build environment: without it those links point at `http://localhost:3000`.
 - Copy each from the `.env.example` next to it. These files are gitignored. **Never commit them.**
 - Apps only ever get the **publishable** key. The **secret** (service-role) key, database passwords and OAuth client secrets never go in the repo, in app env files, or in client code.
 - **Two Supabase projects:**
@@ -99,6 +100,7 @@ These are product decisions. Don't change them without asking.
 - **Reading is public; anything that writes needs a signed-in DTU account.** RLS is the real gate: anon gets read-only access to content tables, and personal rows such as votes and saves are owner-only. In the UI, call `requireMe()` (web, from `useShell()`) or `useRequireMe()` (mobile) at the start of every write action, so visitors get sent to sign in.
 - **DTU only.** Sign-up is limited to `@dtu.ac.in` addresses. Three things enforce it: the `before_user_created` auth hook, a trigger on `auth.users`, and `public.allowed_email_domains`. Sign-in is Google (with a `hd=dtu.ac.in` hint) or a 6-digit email code. New profiles are pre-filled from the roll number in the email, then confirmed in onboarding.
 - **Wiki moderation.** New guides start as `status = 'pending'` and edits as `wiki_revisions.status = 'suggested'`. They go live only when a moderator approves them, through the `review_wiki_article` / `review_wiki_revision` RPCs and the `/mod` queue. `ai_verdict` is reserved for a future AI pre-check. Roles live in `profiles.role` (`member` | `moderator` | `admin`) and can only be changed with SQL.
+- **Session freshness.** `proxy.ts` and `getMe()` use `getClaims()` (local JWT check, no Auth round trip). With `jwt_expiry = 3600`, a revoked session or banned user can look signed in on public pages for up to an hour. `/new`, `/onboarding` and `/mod` call `getUser()` in `proxy.ts`, so they refuse it at once. Roles and deleted users are always fresh (`getMe()` reads `profiles` every request), and writes are gated by RLS on the JWT. If bans become a real tool, shorten `jwt_expiry` or extend the `getUser()` paths. Off asymmetric signing keys, `getClaims()` silently falls back to `getUser()`.
 - **Counters and karma are maintained by triggers:** scores, reply counts, downloads, RSVPs, and karma (+10 per upvote received, +25 per accepted answer). Never write counters from client code; guard triggers reset them anyway.
 - **Notifications are created by database triggers:** @mentions, replies, comments, grouped upvotes, accepted answers, team requests and wiki reviews. Clients only read them and mark them read. Realtime subscriptions on owner-only tables must call `supabase.realtime.setAuth(accessToken)` before subscribing, or RLS hides the rows.
 

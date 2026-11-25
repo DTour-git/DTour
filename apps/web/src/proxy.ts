@@ -20,14 +20,19 @@ export async function proxy(request: NextRequest) {
       },
     },
   });
-  // getClaims() refreshes an expired session and verifies the JWT locally (no Auth round trip).
-  const { data } = await sb.auth.getClaims();
   const path = request.nextUrl.pathname;
-  if (!data?.claims && MEMBERS_ONLY.some((p) => path.startsWith(p))) {
+  const membersOnly = MEMBERS_ONLY.some((p) => path.startsWith(p));
+  // Members-only pages ask the Auth server (getUser), so a revoked session is refused at once; elsewhere
+  // getClaims() verifies the JWT locally. Both refresh an expired session. See AGENTS.md "Session freshness".
+  const signedIn = membersOnly ? !!(await sb.auth.getUser()).data.user : !!(await sb.auth.getClaims()).data?.claims;
+  if (!signedIn && membersOnly) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.search = `?next=${encodeURIComponent(path + request.nextUrl.search)}`;
-    return NextResponse.redirect(url);
+    const redirect = NextResponse.redirect(url);
+    // Keep any cookie the Auth client just cleared or refreshed (a revoked session's dead cookie).
+    response.cookies.getAll().forEach((c) => redirect.cookies.set(c));
+    return redirect;
   }
   return response;
 }

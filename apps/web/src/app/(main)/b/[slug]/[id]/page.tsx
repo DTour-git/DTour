@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { agoLong, getThread, n, sortReplies } from '@dtour/shared';
 import { currentUser } from '@/lib/supabase-server';
+import { NOINDEX, preview } from '@/lib/seo';
 import { Icon } from '@/components/Icon';
 import { Avatar, AuthorName, FlairTag, H6, Seal, Tag } from '@/components/ui';
 import { Markdown } from '@/components/Markdown';
@@ -18,8 +19,9 @@ const SORTS = [
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { sb } = await currentUser();
-  const { data } = await sb.from('threads').select('title').eq('id', Number(id)).maybeSingle();
-  return { title: data?.title ?? 'Thread' };
+  const { data } = await sb.from('threads').select('title,standfirst,body,is_demo').eq('id', Number(id)).maybeSingle();
+  if (!data) return { title: 'Thread' };
+  return { title: data.title, description: preview(data.standfirst || data.body), ...(data.is_demo && NOINDEX) };
 }
 
 export default async function ThreadPage({

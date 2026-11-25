@@ -47,7 +47,7 @@ Environment files are gitignored. Copy the examples and fill them in from the Su
 - **Notifications** (the bell): @mentions in the Lounge, threads and replies; replies to your threads; replies to your comments; upvotes (grouped per post); accepted answers; team join requests; wiki review results. They arrive live over Supabase Realtime.
 - **Reply preference:** the composer checkbox controls reply alerts per thread. This uses `notify_on_reply` from migration `20261017000010_reply_preferences.sql`.
 - **Drafts:** both composers save and reopen drafts from your profile. Publishing removes the saved draft.
-- **Event reminders:** society events with a start date can notify students who RSVP about 30 minutes before the event. Migration `20261017000009_event_reminders.sql` provides the idempotent reminder job.
+- **Event reminders:** society events with a start date can notify students who RSVP about 30 minutes before the event. Migration `20261017000009_event_reminders.sql` provides the idempotent reminder function, and `20261017000036_event_reminder_cron.sql` enables `pg_cron` and runs it every 15 minutes. Recruiting posts, posts without a start date and demo content get no reminder.
 
 ### Auth: DTU accounts only
 
@@ -67,6 +67,6 @@ Phone push requires a development or preview build, an EAS project ID, and iOS/A
 4. In Supabase Database Webhooks, create a webhook for `INSERT` on `public.notifications` targeting the `push` function. Add an `apikey` header holding a **secret** Supabase API key; the function uses secret-key authentication. Do not put that key in the app or web environment files.
 5. Sign in on the built app, open Settings, and choose **Enable phone alerts**. Test delivery with a reply or mention.
 
-For RSVP event reminders, enable `pg_cron` in Supabase and schedule `select public.enqueue_event_reminders();` every 15 minutes. For example, in the SQL editor: `select cron.schedule('dtour-event-reminders', '*/15 * * * *', 'select public.enqueue_event_reminders()');`. Event posts need a start date for this job to find them.
+RSVP event reminders run from `pg_cron`. Migration `20261017000036_event_reminder_cron.sql` enables it and schedules the `dtour-event-reminders` job every 15 minutes, so `supabase db push` is the only setup step. To check it, run `select * from cron.job where jobname = 'dtour-event-reminders';` and `select * from cron.job_run_details order by start_time desc limit 10;` in the SQL editor. To pause it, run `select cron.alter_job(jobid, active := false) from cron.job where jobname = 'dtour-event-reminders';` (set `true` to resume); to remove it, run `select cron.unschedule('dtour-event-reminders');`. Reminders are best effort: pg_cron does not back-fill a missed run, so events in that 15-minute slice get no reminder. Event posts need a start date for this job to find them.
 
 Google OAuth client creation, the email-code sender, assigning moderator accounts, applying migrations to the live project, and EAS credential/build setup require your service accounts. The code and local configuration do not perform those account changes.

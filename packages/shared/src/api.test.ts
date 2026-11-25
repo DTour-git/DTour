@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   DELETED_PERSON,
   atHandle,
+  getBoard,
   hotness,
   matchesSkills,
   nextHandleChange,
@@ -127,6 +128,21 @@ describe('similarThreads', () => {
   it('throws when the database errors', async () => {
     const { sb } = fakeDb({ data: null, error: { message: 'boom' } });
     await expect(similarThreads(sb, 'DSA endsem units')).rejects.toBeTruthy();
+  });
+});
+
+describe('getBoard', () => {
+  const fake = (tables: Record<string, unknown[]>) =>
+    ({ from: (t: string) => ({ select: async () => ({ data: tables[t] ?? [], error: null }) }) }) as unknown as Parameters<
+      typeof getBoard
+    >[0];
+
+  it('returns null for an unknown board', async () => {
+    await expect(getBoard(fake({}), 'nope')).resolves.toBeNull();
+  });
+  it('throws a clear error when the board has no category', async () => {
+    const boards = [{ id: 'b1', slug: 'x', category_id: 9, parent_id: null, sort: 0 }];
+    await expect(getBoard(fake({ boards }), 'x')).rejects.toThrow(/Category 9 for board x not found/);
   });
 });
 
