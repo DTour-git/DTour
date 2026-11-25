@@ -4,7 +4,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './database.types';
-import { istDate, daysUntil } from './format';
+import { istDate, daysUntil, istInput, fromIstInput } from './format';
 import { rank, titleWords, type SearchDoc, type SearchKind } from './fuzzy';
 import type { Tint, Tone } from './tokens';
 
@@ -1614,6 +1614,184 @@ export async function search(sb: DB, q: string, kind: SearchKind | null) {
   ]);
   const ranked = rank(must(docs) as SearchDoc[], q);
   return { results: ranked, total: Number(must(total) ?? 0) };
+}
+
+// ── Campus admin (moderators; Lounge rooms admin-only) ────────────────────
+// Each item is a form: string values keyed by field, so web and mobile render the same editor.
+export type CampusKind = 'event' | 'exam' | 'deadline' | 'room';
+export interface CampusField {
+  key: string;
+  label: string;
+  type: 'text' | 'datetime' | 'date' | 'number' | 'bool';
+  hint?: string;
+}
+export interface CampusItem {
+  id: string;
+  values: Record<string, string>;
+}
+export const CAMPUS_SECTIONS: Record<CampusKind, { title: string; fields: CampusField[] }> = {
+  event: {
+    title: 'Today at DTU',
+    fields: [
+      { key: 'starts_at', label: 'Starts (IST)', type: 'datetime', hint: '2026-11-24 14:30' },
+      { key: 'ends_at', label: 'Ends (IST, optional)', type: 'datetime', hint: '2026-11-24 16:00' },
+      { key: 'title', label: 'Title', type: 'text' },
+      { key: 'short_title', label: 'Short title', type: 'text' },
+      { key: 'sub', label: 'Sub line', type: 'text' },
+      { key: 'thread_id', label: 'Linked thread id', type: 'number' },
+      { key: 'society_post_id', label: 'Linked society post id', type: 'number' },
+    ],
+  },
+  exam: {
+    title: 'Exam countdown',
+    fields: [
+      { key: 'branch_code', label: 'Branch code (blank = everyone)', type: 'text', hint: 'COE' },
+      { key: 'semester', label: 'Semester (blank = all)', type: 'number' },
+      { key: 'label', label: 'Label', type: 'text', hint: 'End-sems' },
+      { key: 'starts_on', label: 'Starts on', type: 'date', hint: '2026-12-01' },
+    ],
+  },
+  deadline: {
+    title: 'Team Up deadlines',
+    fields: [
+      { key: 'on_date', label: 'Date', type: 'date', hint: '2026-12-01' },
+      { key: 'title', label: 'Title', type: 'text' },
+      { key: 'sub', label: 'Sub line', type: 'text' },
+      { key: 'highlight', label: 'Highlight', type: 'bool' },
+    ],
+  },
+  room: {
+    title: 'Lounge rooms',
+    fields: [
+      { key: 'slug', label: 'Slug (fixed once created)', type: 'text', hint: 'hostel' },
+      { key: 'label', label: 'Label', type: 'text', hint: '#hostel' },
+      { key: 'short_label', label: 'Short label', type: 'text' },
+      { key: 'sort', label: 'Order (lowest first)', type: 'number' },
+      { key: 'pinned_text', label: 'Pinned text', type: 'text' },
+      { key: 'pinned_thread_id', label: 'Pinned thread id', type: 'number' },
+    ],
+  },
+};
+
+const str = (v: unknown) => (v == null ? '' : String(v));
+const text = (v: string) => v.trim() || null;
+function num(v: string, label: string): number | null {
+  if (!v.trim()) return null;
+  const x = Number(v);
+  if (!Number.isInteger(x)) throw new Error(`${label} must be a whole number.`);
+  return x;
+}
+function need(v: string, label: string) {
+  if (!v.trim()) throw new Error(`${label} is required.`);
+  return v.trim();
+}
+function date(v: string, label: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v.trim())) throw new Error(`${label} must look like 2026-12-01.`);
+  return v.trim();
+}
+function when(v: string, label: string) {
+  const iso = fromIstInput(v);
+  if (!iso) throw new Error(`${label} must look like 2026-11-24 14:30.`);
+  return iso;
+}
+
+/** Everything the campus editor lists. Events from the last week onward; the other lists in full. */
+export async function getCampusAdmin(sb: DB): Promise<Record<CampusKind, CampusItem[]>> {
+  const since = new Date(Date.now() - 7 * 86400e3).toISOString();
+  const [events, exams, deadlines, rooms] = await Promise.all([
+    sb.from('campus_events').select('*').gte('starts_at', since).order('starts_at'),
+    sb.from('exam_windows').select('*').order('starts_on'),
+    sb.from('deadlines').select('*').order('on_date'),
+    sb.from('lounge_rooms').select('*').order('sort'),
+  ]);
+  const item = (id: unknown, row: Record<string, unknown>, fields: CampusField[]): CampusItem => ({
+    id: String(id),
+    values: Object.fromEntries(fields.map((f) => [f.key, str(row[f.key])])),
+  });
+  const f = CAMPUS_SECTIONS;
+  return {
+    event: must(events).map((r) =>
+      item(r.id, { ...r, starts_at: istInput(r.starts_at), ends_at: r.ends_at ? istInput(r.ends_at) : '' }, f.event.fields),
+    ),
+    exam: must(exams).map((r) => item(r.id, r, f.exam.fields)),
+    deadline: must(deadlines).map((r) => item(r.id, { ...r, highlight: r.highlight ? 'true' : '' }, f.deadline.fields)),
+    room: must(rooms).map((r) => item(r.slug, r, f.room.fields)),
+  };
+}
+
+function campusFailure(error: { code?: string; message: string }): never {
+  if (error.code === '23503') throw new Error('That branch, thread or society post does not exist.');
+  if (error.code === '23505') throw new Error('That already exists.');
+  if (error.code === '42501') throw new Error('Only moderators can change this.');
+  throw new Error(error.message);
+}
+
+/** Creates (id null) or updates one item. New rows are never demo content. */
+export async function saveCampusItem(sb: DB, kind: CampusKind, id: string | null, v: Record<string, string>) {
+  const q = (name: string) => v[name] ?? '';
+  let res;
+  if (kind === 'event') {
+    const row = {
+      starts_at: when(q('starts_at'), 'Start time'),
+      ends_at: q('ends_at').trim() ? when(q('ends_at'), 'End time') : null,
+      title: need(q('title'), 'Title'),
+      short_title: text(q('short_title')),
+      sub: text(q('sub')),
+      thread_id: num(q('thread_id'), 'Thread id'),
+      society_post_id: num(q('society_post_id'), 'Society post id'),
+    };
+    if (row.ends_at && row.ends_at <= row.starts_at) throw new Error('The end time must be after the start.');
+    res = id
+      ? await sb.from('campus_events').update(row).eq('id', Number(id)).select('id')
+      : await sb.from('campus_events').insert(row).select('id');
+  } else if (kind === 'exam') {
+    const row = {
+      branch_code: text(q('branch_code'))?.toUpperCase() ?? null,
+      semester: num(q('semester'), 'Semester'),
+      label: need(q('label'), 'Label'),
+      starts_on: date(q('starts_on'), 'Start date'),
+    };
+    res = id
+      ? await sb.from('exam_windows').update(row).eq('id', Number(id)).select('id')
+      : await sb.from('exam_windows').insert(row).select('id');
+  } else if (kind === 'deadline') {
+    const row = {
+      on_date: date(q('on_date'), 'Date'),
+      title: need(q('title'), 'Title'),
+      sub: text(q('sub')),
+      highlight: q('highlight') === 'true',
+    };
+    res = id
+      ? await sb.from('deadlines').update(row).eq('id', Number(id)).select('id')
+      : await sb.from('deadlines').insert(row).select('id');
+  } else {
+    const row = {
+      label: need(q('label'), 'Label'),
+      short_label: text(q('short_label')),
+      sort: num(q('sort'), 'Order') ?? 0,
+      pinned_text: text(q('pinned_text')),
+      pinned_thread_id: num(q('pinned_thread_id'), 'Pinned thread id'),
+    };
+    if (id) res = await sb.from('lounge_rooms').update(row).eq('slug', id).select('slug');
+    else {
+      const slug = need(q('slug'), 'Slug').toLowerCase();
+      if (!/^[a-z0-9-]+$/.test(slug)) throw new Error('The slug can only have lowercase letters, numbers and dashes.');
+      res = await sb
+        .from('lounge_rooms')
+        .insert({ ...row, slug })
+        .select('slug');
+    }
+  }
+  if (res.error) campusFailure(res.error);
+  if (!res.data?.length) throw new Error('Only moderators can change this.');
+}
+
+/** Deletes an event, exam window or deadline (rooms are never deleted: it would wipe their chat). */
+export async function deleteCampusItem(sb: DB, kind: Exclude<CampusKind, 'room'>, id: string) {
+  const table = { event: 'campus_events', exam: 'exam_windows', deadline: 'deadlines' }[kind] as 'campus_events';
+  const { data, error } = await sb.from(table).delete().eq('id', Number(id)).select('id');
+  if (error) campusFailure(error);
+  if (!data?.length) throw new Error('Only moderators can delete this.');
 }
 
 // ── Account deletion and export ───────────────────────────────────────────
