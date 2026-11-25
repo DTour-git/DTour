@@ -1,7 +1,9 @@
 // Formatting helpers shared by web and mobile. All dates are shown in IST.
 
 const TZ = 'Asia/Kolkata';
-const MIN = 60_000, HOUR = 60 * MIN, DAY = 24 * HOUR;
+const MIN = 60_000,
+  HOUR = 60 * MIN,
+  DAY = 24 * HOUR;
 
 /** "2h", "52m", "3d" — compact age used in meta rows. */
 export function ago(iso: string | Date, now = Date.now()): string {
@@ -29,13 +31,24 @@ export function agoLong(iso: string | Date, now = Date.now()): string {
 
 function parts(date: Date) {
   const f = new Intl.DateTimeFormat('en-GB', {
-    timeZone: TZ, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-    hour: 'numeric', minute: '2-digit', hour12: true,
+    timeZone: TZ,
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
   }).formatToParts(date);
   const get = (t: string) => f.find((p) => p.type === t)?.value ?? '';
   return {
-    weekday: get('weekday'), day: get('day'), month: get('month'), year: get('year'),
-    hour: get('hour'), minute: get('minute'), period: get('dayPeriod').toLowerCase(),
+    weekday: get('weekday'),
+    day: get('day'),
+    month: get('month'),
+    year: get('year'),
+    hour: get('hour'),
+    minute: get('minute'),
+    period: get('dayPeriod').toLowerCase(),
   };
 }
 
@@ -167,7 +180,10 @@ export function ordinalSem(semester: number): string {
 
 /** "AK" from "aarav.k", "SS" from "segfault_sneha", "H6" from "hostel_h6". */
 export function initials(handleOrName: string): string {
-  const parts = handleOrName.replace(/^@/, '').split(/[\s._-]+/).filter(Boolean);
+  const parts = handleOrName
+    .replace(/^@/, '')
+    .split(/[\s._-]+/)
+    .filter(Boolean);
   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
   return handleOrName.replace(/^@/, '').slice(0, 2).toUpperCase();
 }
@@ -187,7 +203,10 @@ export function deadlineText(deadlineOn: string | null, label: string | null, no
 
 /** Society-post kicker kind label. */
 export const POST_KIND_LABEL: Record<string, string> = {
-  event: 'Event', recruiting: 'Recruiting', workshop: 'Workshop', talk: 'Talk',
+  event: 'Event',
+  recruiting: 'Recruiting',
+  workshop: 'Workshop',
+  talk: 'Talk',
 };
 export function postKindTone(kind: string): 'accent' | 'accent2' {
   return kind === 'event' || kind === 'recruiting' ? 'accent2' : 'accent';

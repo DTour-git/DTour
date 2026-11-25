@@ -9,7 +9,6 @@ import { Avatar, LogoMark, Pill, PrimaryBtn, Screen, Tag } from '@/components/ui
 import { HandleHint } from '@/components/HandleHint';
 import { useHandleCheck } from '@/lib/useHandleCheck';
 
-
 export default function Onboarding() {
   const me = useMe()!; // onboarding is only reachable while signed in
   const { refreshProfile } = useAuth();
@@ -25,46 +24,115 @@ export default function Onboarding() {
 
   const save = async () => {
     const h = normalizeHandle(handle);
-    setBusy(true); setError(null);
+    setBusy(true);
+    setError(null);
     try {
       const msg = handleStatusMessage(await handleStatus(supabase, h), h);
       if (msg) throw new Error(msg);
-      await updateProfile(supabase, me.id, { handle: h, branch_code: branch || null, grad_year: grad || null, semester: sem || null, onboarded: true });
+      await updateProfile(supabase, me.id, {
+        handle: h,
+        branch_code: branch || null,
+        grad_year: grad || null,
+        semester: sem || null,
+        onboarded: true,
+      });
       await refreshProfile();
-    } catch (e) { setError((e as Error).message); setBusy(false); }
+    } catch (e) {
+      setError((e as Error).message);
+      setBusy(false);
+    }
   };
 
   return (
     <Screen>
       <ScrollView contentContainerStyle={{ padding: 24, paddingTop: 40 }} keyboardShouldPersistTaps="handled">
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><LogoMark size={24} /><T size={27} w={600} ls={-0.03}>DTour</T></View>
-        <T size={34} w={600} ls={-0.025} style={{ marginTop: 26 }}>Welcome to campus.</T>
-        <T size={16.5} i lh={1.45} color={colors.neutral800} style={{ marginTop: 8, marginBottom: 24 }}>Pick a handle (you can change it later) — your branch and batch show as a flair on everything you post.</T>
-        <T size={11} w={600} ls={0.12} caps color={colors.neutral700}>Handle</T>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, borderBottomWidth: 2, borderBottomColor: colors.text, paddingBottom: 6, marginTop: 8 }}>
-          <T size={24} w={600} color={colors.neutral600}>@</T>
-          <TextInput value={handle} onChangeText={(v) => setHandle(v.toLowerCase())} autoCapitalize="none" autoCorrect={false} maxLength={24}
-            style={{ flex: 1, fontFamily: fonts.semibold, fontSize: 24, color: colors.text, paddingVertical: 4 }} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <LogoMark size={24} />
+          <T size={27} w={600} ls={-0.03}>
+            DTour
+          </T>
+        </View>
+        <T size={34} w={600} ls={-0.025} style={{ marginTop: 26 }}>
+          Welcome to campus.
+        </T>
+        <T size={16.5} i lh={1.45} color={colors.neutral800} style={{ marginTop: 8, marginBottom: 24 }}>
+          Pick a handle (you can change it later) — your branch and batch show as a flair on everything you post.
+        </T>
+        <T size={11} w={600} ls={0.12} caps color={colors.neutral700}>
+          Handle
+        </T>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            borderBottomWidth: 2,
+            borderBottomColor: colors.text,
+            paddingBottom: 6,
+            marginTop: 8,
+          }}
+        >
+          <T size={24} w={600} color={colors.neutral600}>
+            @
+          </T>
+          <TextInput
+            value={handle}
+            onChangeText={(v) => setHandle(v.toLowerCase())}
+            autoCapitalize="none"
+            autoCorrect={false}
+            maxLength={24}
+            style={{ flex: 1, fontFamily: fonts.semibold, fontSize: 24, color: colors.text, paddingVertical: 4 }}
+          />
         </View>
         <HandleHint check={check} />
-        <T size={11} w={600} ls={0.12} caps color={colors.neutral700} style={{ marginTop: 24, marginBottom: 8 }}>Branch</T>
+        <T size={11} w={600} ls={0.12} caps color={colors.neutral700} style={{ marginTop: 24, marginBottom: 8 }}>
+          Branch
+        </T>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {branches?.filter((b) => b.code !== 'FY').map((b) => <Pill key={b.code} label={b.code} active={branch === b.code} onPress={() => setBranch(b.code)} />)}
+          {branches
+            ?.filter((b) => b.code !== 'FY')
+            .map((b) => (
+              <Pill key={b.code} label={b.code} active={branch === b.code} onPress={() => setBranch(b.code)} />
+            ))}
         </View>
-        <T size={11} w={600} ls={0.12} caps color={colors.neutral700} style={{ marginTop: 20, marginBottom: 8 }}>Graduating</T>
+        <T size={11} w={600} ls={0.12} caps color={colors.neutral700} style={{ marginTop: 20, marginBottom: 8 }}>
+          Graduating
+        </T>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {Array.from({ length: 6 }, (_, i) => year - 1 + i).map((y) => <Pill key={y} label={String(y)} active={grad === y} onPress={() => setGrad(y)} />)}
+          {Array.from({ length: 6 }, (_, i) => year - 1 + i).map((y) => (
+            <Pill key={y} label={String(y)} active={grad === y} onPress={() => setGrad(y)} />
+          ))}
         </View>
-        <T size={11} w={600} ls={0.12} caps color={colors.neutral700} style={{ marginTop: 20, marginBottom: 8 }}>Semester</T>
+        <T size={11} w={600} ls={0.12} caps color={colors.neutral700} style={{ marginTop: 20, marginBottom: 8 }}>
+          Semester
+        </T>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => <Pill key={s} label={`Sem ${s}`} active={sem === s} onPress={() => setSem(s)} />)}
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
+            <Pill key={s} label={`Sem ${s}`} active={sem === s} onPress={() => setSem(s)} />
+          ))}
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 26, padding: 14, backgroundColor: colors.surface, borderRadius: 2 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 10,
+            marginTop: 26,
+            padding: 14,
+            backgroundColor: colors.surface,
+            borderRadius: 2,
+          }}
+        >
           <Avatar person={{ handle: handle || 'you', tint: me.tint }} size={34} />
-          <T size={16} w={600}>@{handle || 'you'}</T>
+          <T size={16} w={600}>
+            @{handle || 'you'}
+          </T>
           {flair(branch, grad) && <Tag>{flair(branch, grad)!}</Tag>}
         </View>
-        {error && <T size={14} color={colors.accent2_800} style={{ marginTop: 14, padding: 12, backgroundColor: colors.accent2_100 }}>{error}</T>}
+        {error && (
+          <T size={14} color={colors.accent2_800} style={{ marginTop: 14, padding: 12, backgroundColor: colors.accent2_100 }}>
+            {error}
+          </T>
+        )}
         <PrimaryBtn label="Enter DTour" height={48} onPress={save} disabled={busy || !check.ok} style={{ marginTop: 22 }} />
       </ScrollView>
     </Screen>

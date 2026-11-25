@@ -1,5 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { compact, dateline, daysBetween, deadlineText, fileSize, flair, fromIstInput, istInput, initials, n, ordinalSem, weekOfSem, yearLabel } from './format';
+import {
+  compact,
+  dateline,
+  daysBetween,
+  deadlineText,
+  fileSize,
+  flair,
+  fromIstInput,
+  istInput,
+  initials,
+  n,
+  ordinalSem,
+  weekOfSem,
+  yearLabel,
+} from './format';
 
 describe('numbers', () => {
   it('n adds thousands separators', () => {
