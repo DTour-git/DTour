@@ -30,7 +30,7 @@ test('an approved guide earns its author the Wiki author badge', async ({ page }
   await page.context().clearCookies();
   await signIn(page, 'e2e.student', '/u/e2e.student');
   await expect(page.getByRole('heading', { name: 'Badges' })).toBeVisible();
-  await expect(page.getByText('Wiki author', { exact: true })).toBeVisible();
+  await expect(page.getByRole('complementary').getByText('Wiki author', { exact: true })).toBeVisible();
 
   await page.getByRole('button', { name: /Notifications/ }).click();
   await expect(page.getByRole('dialog', { name: 'Notifications' }).getByText('You earned the “Wiki author” badge')).toBeVisible();
