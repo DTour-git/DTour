@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useShell } from './shell/Shell';
+import { usePresence, useShell } from './shell/Shell';
 
 export function WhosOnline({
   newest,
@@ -11,7 +11,8 @@ export function WhosOnline({
   record: { n: number; label: string | null };
 }) {
   // Everyone sees how many are online; only signed-in students see who (#41).
-  const { me, online, onlineCount } = useShell();
+  const { me } = useShell();
+  const { online, onlineCount } = usePresence();
   const shown = online.slice(0, 7);
   return (
     <div
