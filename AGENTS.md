@@ -40,6 +40,7 @@ npm run mobile:dev-db      # same for the mobile app
 
 npm run check              # typecheck + lint (web, mobile) + unit tests + web build — run before every PR
 npm run check:all          # check + database tests + browser tests (needs .env.dev)
+npm run check:migrations   # migration names, unique versions, newer than origin/main (also in CI)
 npm test                   # unit tests only (Vitest), `npm run test:watch` while working
 npm run test:db            # pgTAP tests in supabase/tests/database against the dev DB
 npm run test:e2e           # Playwright tests in apps/web/e2e against the dev DB (builds and serves on :3100)
@@ -108,6 +109,7 @@ These are product decisions. Don't change them without asking.
 ## Database changes
 
 - **Never edit a migration that is already applied.** Add a new file in `supabase/migrations/` with the next version number (`20261017000014_…`, then `…15_…`). Versions must be unique across all branches, so check other open branches before picking one.
+- **CI checks migration versions** (`npm run check:migrations`, first step of the **check** job). It fails when a file name isn't `NNNNNNNNNNNNNN_snake_name.sql`, when two files share a version, when a migration your branch adds isn't newer than the newest one on `origin/main`, or when your branch edits, renames or deletes a migration that's already on main. The usual cause is another PR merging a migration first. **Fix it by renaming your file to the next free version** (the error suggests one; check other open PRs don't use it), then rerun `npm run check:migrations` after `git fetch origin main`. Never renumber a file that's already on main.
 - **Each migration must include its RLS policies and grants.** Grant `select` to `anon` only for public content. Don't forget `revoke … from anon, authenticated` for internal `security definer` helpers.
 - **Try migrations on dev first:** `npm run db:dev:reset` rebuilds the dev DB from all migration files, then `npm run test:db`.
 - **Applying to production** happens after the PR is merged, done by a maintainer: `supabase db push` from an up-to-date `main` that has **every** applied migration file.
