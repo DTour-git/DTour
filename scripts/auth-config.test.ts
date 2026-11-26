@@ -36,3 +36,20 @@ test('the confirmation email carries the code, like the sign-in email', () => {
   }
   expect(readFileSync(new URL('../supabase/templates/otp.html', import.meta.url), 'utf8')).toContain('{{ .Token }}');
 });
+
+// #65: codes go out through Resend over custom SMTP on the hosted projects.
+test('the SMTP password is only ever an env() reference', () => {
+  // The Resend API key lives in the Supabase dashboard, never in this file.
+  expect(setting('auth.email.smtp', 'pass')).toMatch(/^"env\([A-Z0-9_]+\)"$/);
+});
+
+test('the local stack keeps mail in Mailpit, so CI needs no key', () => {
+  expect(setting('auth.email.smtp', 'enabled')).toBe('false');
+  expect(setting('local_smtp', 'enabled')).toBe('true');
+});
+
+test('one inbox gets at most one code a minute, and codes last 10 minutes', () => {
+  expect(setting('auth.email', 'max_frequency')).toBe('"60s"');
+  expect(setting('auth.email', 'otp_expiry')).toBe('600');
+  expect(readFileSync(new URL('../supabase/templates/otp.html', import.meta.url), 'utf8')).toContain('10 minutes');
+});

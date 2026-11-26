@@ -160,7 +160,7 @@ These are product decisions. Don't change them without asking.
 
 ## Still open (as of Oct 2026)
 
-- **Email codes** need a custom SMTP provider. Supabase's default mailer only delivers to project members, and the free tier blocks the template edit that puts the 6-digit `{{ .Token }}` in the email. The template is ready in `supabase/templates/otp.html`.
+- **Email codes** go out through Resend over custom SMTP (#65). The repo side is done: `[auth.email.smtp]` in `supabase/config.toml` (off for the local stack, so mail stays in Mailpit), the `otp.html` template, and the auth rate limits. The hosted side is manual and not yet done on production or dev. It covers the sending domain with SPF/DKIM/DMARC, the SMTP settings, templates and rate limits in each dashboard, and a test with a real `@dtu.ac.in` address. The steps are in README → "Email codes". The Resend API key lives only in Resend and the Supabase dashboard, never in the repo or any env file. `mail.dtour.example` in `config.toml` is a placeholder until the real domain is chosen.
 - **Google sign-in** is configured on production (`megohwzcghnbfdzsaypz`) but not yet verified end-to-end with a real `@dtu.ac.in` account (redirect URLs, consent screen publishing). It is **not enabled on dev**, so test with email-code accounts there.
 - **Phone push** isn't live yet: the `push` function isn't deployed, and there's no webhook or EAS credentials yet.
 - **Branch protection** on `main` isn't possible on the GitHub Free plan for a private repo. Until the org upgrades (or the repo goes public), "PRs only" and CODEOWNERS reviews are a team rule, not enforced by GitHub.
