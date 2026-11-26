@@ -459,10 +459,31 @@ export async function setBoardJoined(sb: DB, boardId: string, userId: string, jo
 
 // ── Thread page ───────────────────────────────────────────────────────────
 export async function getThread(sb: DB, id: number, userId: string | null) {
-  // Everything keyed by the thread id loads alongside the thread itself; only
-  // "Related in Library" has to wait, because it needs the thread's attachment.
-  const [threadRes, replies, myVote, saved, replyVotes, boards, joinedBoards, poll, myPoll, wiki, lounge] = await Promise.all([
-    sb.from('threads').select(THREAD_SELECT).eq('id', id).maybeSingle(),
+  // One round of parallel requests. Poll options come embedded in the thread row (an empty list for
+  // other kinds), and "Related in Library" starts as soon as the thread row, which names the subject,
+  // arrives, while the other queries are still in flight.
+  const threadP = Promise.resolve(
+    sb
+      .from('threads')
+      .select(`${THREAD_SELECT},poll_options(*)`)
+      .eq('id', id)
+      .order('sort', { referencedTable: 'poll_options' })
+      .maybeSingle(),
+  );
+  const relatedP = threadP.then(({ data }) => {
+    const a = (data as unknown as ThreadCard | null)?.attachment;
+    return a?.subject
+      ? sb
+          .from('library_items')
+          .select('id,title,kind,format,subject_code')
+          .eq('subject_code', a.subject)
+          .neq('id', a.library_item_id ?? -1)
+          .order('downloads_week', { ascending: false })
+          .limit(3)
+      : null;
+  });
+  const [threadRes, replies, myVote, saved, replyVotes, boards, joinedBoards, myPoll, wiki, lounge, related] = await Promise.all([
+    threadP,
     sb
       .from('replies')
       .select(
@@ -477,7 +498,6 @@ export async function getThread(sb: DB, id: number, userId: string | null) {
       : null,
     sb.from('boards').select('*'),
     userId ? sb.from('board_members').select('board_id').eq('user_id', userId) : null,
-    sb.from('poll_options').select('*').eq('thread_id', id).order('sort'),
     userId ? sb.from('poll_votes').select('option_id').eq('thread_id', id).eq('user_id', userId).maybeSingle() : null,
     sb
       .from('wiki_articles')
@@ -487,18 +507,12 @@ export async function getThread(sb: DB, id: number, userId: string | null) {
       .limit(1)
       .maybeSingle(),
     sb.from('lounge_messages').select('id,room_slug').eq('promoted_thread_id', id).maybeSingle(),
+    relatedP,
   ]);
-  const thread = withAuthor(must(threadRes) as unknown as ThreadCard | null);
-  if (!thread) return null;
-  const related = thread.attachment?.subject
-    ? await sb
-        .from('library_items')
-        .select('id,title,kind,format,subject_code')
-        .eq('subject_code', thread.attachment.subject)
-        .neq('id', thread.attachment.library_item_id ?? -1)
-        .order('downloads_week', { ascending: false })
-        .limit(3)
-    : null;
+  const row = must(threadRes) as unknown as (ThreadCard & { poll_options: Tables['poll_options']['Row'][] }) | null;
+  if (!row) return null;
+  const { poll_options: poll, ...rest } = row;
+  const thread = withAuthor(rest as ThreadCard);
   const all = must(boards);
   const path = await boardAncestors(sb, thread.board.id, all);
   const board = all.find((b) => b.id === thread.board.id);
@@ -521,7 +535,7 @@ export async function getThread(sb: DB, id: number, userId: string | null) {
     path,
     board,
     joined: !!joinedBoards && must(joinedBoards).some((j) => j.board_id === board.id),
-    poll: thread.kind === 'poll' ? must(poll) : null,
+    poll: thread.kind === 'poll' ? poll : null,
     myPollOption: myPoll?.data?.option_id ?? null,
     related: related ? must(related) : [],
     wiki: must(wiki),

@@ -3,6 +3,7 @@ import {
   DELETED_PERSON,
   atHandle,
   getBoard,
+  getThread,
   hotness,
   isRateLimited,
   matchesSkills,
@@ -152,6 +153,60 @@ describe('getBoard', () => {
   it('throws a clear error when the board has no category', async () => {
     const boards = [{ id: 'b1', slug: 'x', category_id: 9, parent_id: null, sort: 0 }];
     await expect(getBoard(fake({ boards }), 'x')).rejects.toThrow(/Category 9 for board x not found/);
+  });
+});
+
+describe('getThread', () => {
+  // Fake client: logs when each table's request starts and ends. The thread row answers first, the rest 5 ms later.
+  const fake = (thread: Record<string, unknown>) => {
+    const log: string[] = [];
+    const selects: Record<string, string> = {};
+    const list = ['replies', 'reply_votes', 'board_members'];
+    const data: Record<string, unknown> = { threads: thread, boards: [{ id: 'b1', parent_id: null }], library_items: [{ id: 3 }] };
+    const from = (t: string) => {
+      const q: Record<string, unknown> = { select: (s: string) => ((selects[t] = s), q) };
+      for (const m of ['eq', 'neq', 'order', 'limit', 'maybeSingle']) q[m] = () => q;
+      q.then = (ok: (v: unknown) => unknown, err: (e: unknown) => unknown) => {
+        log.push(`start ${t}`);
+        return new Promise((r) => setTimeout(r, t === 'threads' ? 0 : 5))
+          .then(() => (log.push(`end ${t}`), { data: data[t] ?? (list.includes(t) ? [] : null), error: null }))
+          .then(ok, err);
+      };
+      return q;
+    };
+    return { sb: { from } as unknown as Parameters<typeof getThread>[0], log, selects };
+  };
+  const row = (kind: string, attachment: unknown = null) => ({
+    id: 1,
+    kind,
+    attachment,
+    board: { id: 'b1' },
+    author: { handle: 'a' },
+    poll_options: kind === 'poll' ? [{ id: 5, label: 'Yes', sort: 0, votes: 2 }] : [],
+  });
+  const starts = (log: string[]) => log.filter((e) => e.startsWith('start'));
+
+  it('loads a plain thread in one parallel round, with no poll_options or library request', async () => {
+    const { sb, log, selects } = fake(row('discussion'));
+    const d = await getThread(sb, 1, 'u1');
+    expect(starts(log)).toHaveLength(10);
+    expect(log.slice(0, 10)).toEqual(starts(log));
+    expect(log.some((e) => /poll_options|library_items/.test(e))).toBe(false);
+    expect(selects.threads).toContain('poll_options(*)');
+    expect(d?.poll).toBeNull();
+    expect(d?.related).toEqual([]);
+    expect(d?.thread).not.toHaveProperty('poll_options');
+  });
+  it('takes poll options from the thread row and starts Related in Library before the other queries finish', async () => {
+    const { sb, log } = fake(row('poll', { subject: 'CO201', library_item_id: 2 }));
+    const d = await getThread(sb, 1, null);
+    expect(starts(log)).toEqual(
+      ['threads', 'replies', 'boards', 'wiki_articles', 'lounge_messages', 'library_items'].map((t) => `start ${t}`),
+    );
+    expect(log.indexOf('end threads')).toBeLessThan(log.indexOf('start library_items'));
+    expect(log.indexOf('start library_items')).toBeLessThan(log.indexOf('end replies'));
+    expect(d?.poll).toEqual([{ id: 5, label: 'Yes', sort: 0, votes: 2 }]);
+    expect(d?.related).toEqual([{ id: 3 }]);
   });
 });
 
