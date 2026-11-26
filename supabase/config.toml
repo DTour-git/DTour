@@ -110,8 +110,9 @@ port = 54324
 # Uncomment to expose additional ports for testing user applications that send emails.
 # smtp_port = 54325
 # pop3_port = 54326
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+# Match the hosted sender so local mail looks like the real thing.
+admin_email = "no-reply@mail.dtour.example"
+sender_name = "DTour"
 
 [storage]
 enabled = true
@@ -195,9 +196,13 @@ password_requirements = ""
 # rp_id = "localhost"
 # rp_origins = ["http://127.0.0.1:3000"]
 
+# DTour's auth limits (#65). The hosted projects take these from the dashboard
+# (Authentication > Rate Limits), so keep both in step; see README "Email codes".
 [auth.rate_limit]
 # Number of emails that can be sent per hour. Requires auth.email.smtp to be enabled.
-email_sent = 2
+# Project-wide, not per IP. 30 an hour keeps a burst well inside Resend's free plan
+# (100 a day). Raise it once the plan allows more.
+email_sent = 30
 # Number of SMS messages that can be sent per hour. Requires auth.sms to be enabled.
 sms_sent = 30
 # Number of anonymous sign-ins that can be made per hour per IP address. Requires enable_anonymous_sign_ins = true.
@@ -205,9 +210,11 @@ anonymous_users = 30
 # Number of sessions that can be refreshed in a 5 minute interval per IP address.
 token_refresh = 150
 # Number of sign up and sign-in requests that can be made in a 5 minute interval per IP address (excludes anonymous users).
-sign_in_sign_ups = 30
+# Higher than the default 30: students on campus Wi-Fi share a few public IPs.
+sign_in_sign_ups = 60
 # Number of OTP / Magic link verifications that can be made in a 5 minute interval per IP address.
-token_verifications = 30
+# Same reason. Guessing a code stays hopeless: one code has a million values and dies in 10 minutes.
+token_verifications = 60
 # Number of Web3 logins that can be made in a 5 minute interval per IP address.
 web3 = 30
 
@@ -232,26 +239,35 @@ enable_confirmations = true
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
-max_frequency = "1s"
+# 60s stops one inbox being flooded with codes; the login screens show the wait.
+max_frequency = "60s"
 # Number of characters used in the email OTP.
 otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 600
 
-# Use a production-ready SMTP server
-# [auth.email.smtp]
-# enabled = true
-# host = "smtp.sendgrid.net"
-# port = 587
-# user = "apikey"
-# pass = "env(SENDGRID_API_KEY)"
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+# Custom SMTP through Resend (#65). Off for the local stack, so local mail keeps
+# landing in Mailpit (http://127.0.0.1:54324) and CI needs no key. The hosted
+# projects set these same values in the dashboard (Authentication > Emails >
+# SMTP Settings); see README "Email codes". The password is a Resend API key: it
+# lives only in the dashboard and in Resend, never in this repo or an env file.
+# To try real delivery from a local stack, export RESEND_API_KEY in your shell
+# and set enabled = true for that run only.
+[auth.email.smtp]
+enabled = false
+host = "smtp.resend.com"
+port = 465
+user = "resend"
+pass = "env(RESEND_API_KEY)"
+# Placeholder: use the verified Resend sending domain.
+admin_email = "no-reply@mail.dtour.example"
+sender_name = "DTour"
 
 # The sign-in code email. With confirmations on, a new student's first code
 # arrives as the "confirmation" email, so both templates carry the 6-digit code.
-# These apply to the local stack. The hosted projects need custom SMTP first
-# (#65: the free tier blocks template edits on the default mailer).
+# These apply to the local stack. The hosted projects get the same subject and
+# HTML in the dashboard (Authentication > Emails > Templates), which allows the
+# edit once custom SMTP is on (#65).
 [auth.email.template.magic_link]
 subject = "Your DTour sign-in code"
 content_path = "./supabase/templates/otp.html"

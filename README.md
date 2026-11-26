@@ -55,6 +55,30 @@ Environment files are gitignored. Copy the examples and fill them in from the Su
 - **Sign-in methods:** Google sign-in (restricted to the DTU domain), or a 6-digit email code. The code lets students read their DTU mail on another device and type it on their phone.
 - **Profile setup:** each new profile is pre-filled from the roll number in the email address, e.g. `name_2k23co123@dtu.ac.in` gives branch COE, batch '27 and the current semester. Onboarding lets the student confirm or correct these.
 
+### Email codes (custom SMTP)
+
+The 6-digit sign-in code is sent through [Resend](https://resend.com) over SMTP, from a subdomain of the site (`no-reply@mail.<domain>`; `mail.dtour.example` in the repo is a placeholder). Supabase's built-in mailer only delivers to project members and won't let the free tier edit templates, so both hosted projects need this.
+
+- **Local stack:** nothing to set up. `supabase start` keeps custom SMTP off (`[auth.email.smtp] enabled = false` in `supabase/config.toml`), so every email lands in Mailpit at http://127.0.0.1:54324 with the real template, and CI needs no key.
+- **Template:** `supabase/templates/otp.html`, subject "Your DTour sign-in code". It is used for both **Magic link** (returning students) and **Confirm signup** (a new student's first code), since confirmations are on (#30).
+- **Limits:** codes last 10 minutes, one email per address per 60 seconds, 30 emails an hour project-wide, and 60 sign-in requests and 60 code checks per 5 minutes per IP (campus Wi-Fi puts many students behind one IP). `config.toml` has the same values for the local stack.
+
+**Where the credentials live.** The SMTP password is a Resend API key. It exists only in Resend and in each Supabase project's SMTP settings (which never show it again). If the team wants a copy, keep it in the team password manager. It never goes in this repo, `config.toml` (which only names `env(RESEND_API_KEY)`), `.env.dev`, or any app env file. Use a separate key for production and dev, so either can be revoked alone.
+
+**One-off setup (a maintainer, in the dashboards):**
+
+1. **Resend account.** Create it under a team-owned address, not a personal one. Add the domain `mail.<domain>`; the Tokyo region (`ap-northeast-1`) is closest to Delhi.
+2. **DNS.** At the domain's DNS host, add exactly the records Resend shows. Those are the SPF records (an MX and a TXT on `send.mail.<domain>`) and the DKIM TXT on `resend._domainkey.mail.<domain>`. Add a DMARC record: TXT on `_dmarc.<domain>`, starting with `v=DMARC1; p=none; rua=mailto:<a team inbox>`. Once the reports show SPF and DKIM passing, tighten it to `p=quarantine`. Wait until Resend marks the domain **Verified**.
+3. **API keys.** In Resend, create two keys with **Sending access** for that domain only: `dtour-production` and `dtour-dev`.
+4. **SMTP settings**, in each project: production `megohwzcghnbfdzsaypz` with the production key, and dev `cqdqfmejbwvumbbclkfk` with the dev key. Go to Authentication → Emails → SMTP Settings and turn on custom SMTP. Set host `smtp.resend.com`, port `465`, username `resend`, and password the API key. Set the sender email to `no-reply@mail.<domain>` and the sender name to `DTour` (use `DTour (dev)` on dev). Set the minimum interval per user to 60 seconds. Resend's "Connect to Supabase" integration can fill these in instead.
+5. **Templates**, in each project: go to Authentication → Emails → Templates. For both **Magic link** and **Confirm signup**, set the subject to `Your DTour sign-in code` and paste in the whole of `supabase/templates/otp.html`.
+6. **Code settings**, in each project: go to Authentication → Sign In / Providers → Email. Set the email OTP expiration to `600` seconds and the length to `6`, and keep "Confirm email" on.
+7. **Rate limits**, in each project: go to Authentication → Rate Limits. Set emails sent per hour to `30`, sign-ups and sign-ins to `60` per 5 minutes, and token verifications to `60` per 5 minutes. Raise the email limit when Resend's plan allows more than its free 100 a day.
+8. **Test with a real `@dtu.ac.in` address** on the website and the app. The code should arrive within a minute and not in spam. DTU mail is Google Workspace, so in Gmail use "Show original" and check for `SPF: PASS`, `DKIM: PASS` and `DMARC: PASS`. Also check that a non-DTU address is still refused.
+9. Replace the `mail.dtour.example` placeholder in `supabase/config.toml` with the real domain.
+
+Don't use `supabase config push` for any of this. It would copy the local stack's settings, including localhost URLs and SMTP turned off, over the hosted project.
+
 ## Mobile builds
 
 There is no Xcode or Android SDK on this machine, so builds go through EAS: `npx eas-cli@latest build`. Expo Go works for day-to-day development.
@@ -69,4 +93,4 @@ Phone push requires a development or preview build, an EAS project ID, and iOS/A
 
 RSVP event reminders run from `pg_cron`. Migration `20261017000036_event_reminder_cron.sql` enables it and schedules the `dtour-event-reminders` job every 15 minutes, so `supabase db push` is the only setup step. To check it, run `select * from cron.job where jobname = 'dtour-event-reminders';` and `select * from cron.job_run_details order by start_time desc limit 10;` in the SQL editor. To pause it, run `select cron.alter_job(jobid, active := false) from cron.job where jobname = 'dtour-event-reminders';` (set `true` to resume); to remove it, run `select cron.unschedule('dtour-event-reminders');`. Reminders are best effort: pg_cron does not back-fill a missed run, so events in that 15-minute slice get no reminder. Event posts need a start date for this job to find them.
 
-Google OAuth client creation, the email-code sender, assigning moderator accounts, applying migrations to the live project, and EAS credential/build setup require your service accounts. The code and local configuration do not perform those account changes.
+Google OAuth client creation, the email-code sender (see "Email codes" above), assigning moderator accounts, applying migrations to the live project, and EAS credential/build setup require your service accounts. The code and local configuration do not perform those account changes.
