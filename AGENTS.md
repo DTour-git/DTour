@@ -48,6 +48,7 @@ npm run db:dev:reset       # wipe and rebuild the DEV database: migrations + see
 npm run dev:login -- e2e.student     # print a one-click sign-in link for a dev test account
 npm run format             # Prettier on files your branch changed (never the whole repo)
 npm run format:check       # Prettier check over the whole repo (what CI runs)
+npm run icons              # regenerate the website's icon paths after adding an icon
 ```
 
 **Before you call a change done**, run `npm run check`. If you changed SQL, also run `npm run test:db`; if you changed a web flow, also run `npm run test:e2e`. If you changed mobile code, also confirm it bundles: `cd apps/mobile && npx expo export --platform android --output-dir /tmp/x`.
@@ -88,7 +89,7 @@ CI (`.github/workflows/ci.yml`) runs two jobs on every PR and every push to `mai
   - Web uses the CSS variables from `apps/web/src/styles/broadsheet.css`, copied from the design tokens.
   - Mobile uses `colors`, `tone` and `tint` from `@dtour/shared` tokens.
   - On mobile, always render text with `<T>` (`src/components/T.tsx`). It maps weight and italic to the right Source Serif font file and handles em-based letter-spacing.
-- **Icons.** Use `<Icon name="kebab-name" />`. Add every new icon in **both** maps: `apps/web/src/components/Icon.tsx` and `apps/mobile/src/components/Icon.tsx`. For mobile, also add it to the type stub `apps/mobile/src/types/phosphor-icon.d.ts`; mobile uses per-icon deep imports to keep the bundle small.
+- **Icons.** Use `<Icon name="kebab-name" />`. Add every new icon on **both** platforms. Web: add it to `ICONS` in `scripts/gen-icons.mjs` (and to `FILL` if it switches to `weight="fill"`), then run `npm run icons`, which regenerates `apps/web/src/components/icon-paths.ts` with only the weights we draw (never edit that file; a unit test checks it). Mobile: add it to `apps/mobile/src/components/Icon.tsx` and to the type stub `apps/mobile/src/types/phosphor-icon.d.ts`; mobile uses per-icon deep imports to keep the bundle small.
 - **Routes.**
   - Web: `/`, `/boards`, `/b/[slug]`, `/b/[slug]/[id]` (thread; `/t/[id]` redirects there), `/wiki`, `/wiki/[slug]`, `/library/[branch]/[sem]`, `/library/subject/[code]`, `/societies`, `/teams`, `/kahan-chalein`, `/new`, `/u/[handle]`, `/mod`, `/lounge`.
   - The database stores **web** routes, in search results, activity and notifications. Mobile converts them with `appRoute()` in `apps/mobile/src/lib/routes.ts`. Keep that mapping in sync when you add routes.

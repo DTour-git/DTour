@@ -25,7 +25,8 @@
     "dev:login": "node scripts/dev-login.mjs",
     "format": "node scripts/format-changed.mjs",
     "format:check": "prettier --check .",
-    "format:all": "prettier --write ."
+    "format:all": "prettier --write .",
+    "icons": "node scripts/gen-icons.mjs"
   },
   "overrides": {
     "@expo/cli": {
