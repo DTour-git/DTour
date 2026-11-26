@@ -1683,6 +1683,59 @@ export async function search(sb: DB, q: string, kind: SearchKind | null) {
   return { results: ranked, total: Number(must(total) ?? 0) };
 }
 
+// ── Suspensions (#64): moderators stop a member writing; the table is the log ──
+export interface Suspension {
+  id: number;
+  reason: string;
+  ends_at: string | null;
+  created_at: string;
+  lifted_at: string | null;
+  user: PersonLite;
+  by: PersonLite | null;
+  lifter: PersonLite | null;
+}
+export const SUSPENSION_DAYS: [number | null, string][] = [
+  [1, '1 day'],
+  [7, '7 days'],
+  [30, '30 days'],
+  [null, 'Indefinitely'],
+];
+export const suspensionActive = (s: { lifted_at: string | null; ends_at: string | null }, now = Date.now()) =>
+  !s.lifted_at && (!s.ends_at || new Date(s.ends_at).getTime() > now);
+/** My current suspension, if any (members can read their own). */
+export async function getMySuspension(sb: DB, userId: string) {
+  const rows = must(
+    await sb
+      .from('suspensions')
+      .select('reason,ends_at,lifted_at')
+      .eq('user_id', userId)
+      .is('lifted_at', null)
+      .order('created_at', { ascending: false }),
+  );
+  return rows.find((s) => suspensionActive(s)) ?? null;
+}
+/** Recent suspensions, newest first (moderators). */
+export async function getSuspensions(sb: DB, limit = 50) {
+  const rows = must(
+    await sb
+      .from('suspensions')
+      .select(
+        `id,reason,ends_at,created_at,lifted_at,user:profiles!suspensions_user_id_fkey(${PERSON}),` +
+          `by:profiles!suspensions_created_by_fkey(${PERSON}),lifter:profiles!suspensions_lifted_by_fkey(${PERSON})`,
+      )
+      .order('created_at', { ascending: false })
+      .limit(limit),
+  );
+  return rows as unknown as Suspension[];
+}
+export async function suspendMember(sb: DB, handle: string, reason: string, days: number | null) {
+  if (reason.trim().length < 3) throw new Error('Give a reason the member will see.');
+  must(await sb.rpc('suspend_member', { p_handle: handle, p_reason: reason, p_days: days ?? undefined }));
+}
+export async function liftSuspension(sb: DB, id: number) {
+  must(await sb.rpc('lift_suspension', { p_id: id }));
+}
+
 // ── Campus admin (moderators; Lounge rooms admin-only) ────────────────────
 // Each item is a form: string values keyed by field, so web and mobile render the same editor.
 export type CampusKind = 'event' | 'exam' | 'deadline' | 'society' | 'room';

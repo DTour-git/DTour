@@ -34,8 +34,9 @@ export function MySocieties({ myId }: { myId: string }) {
   const [busy, setBusy] = useState(false);
   if (!data?.length) return null;
 
-  const act = async (fn: () => Promise<void>) => {
-    if (!requireMe()) return false;
+  // purpose 'own': leaving is housekeeping a suspension still allows (#64).
+  const act = async (fn: () => Promise<void>, purpose?: 'own') => {
+    if (!requireMe(purpose)) return false;
     setBusy(true);
     try {
       await fn();
@@ -51,7 +52,7 @@ export function MySocieties({ myId }: { myId: string }) {
   const leave = (m: MySociety) =>
     Alert.alert(`Leave ${m.society.name}?`, undefined, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Leave', style: 'destructive', onPress: () => act(() => removeSocietyMember(supabase, m.society.id, myId)) },
+      { text: 'Leave', style: 'destructive', onPress: () => act(() => removeSocietyMember(supabase, m.society.id, myId), 'own') },
     ]);
 
   return (

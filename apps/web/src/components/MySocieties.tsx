@@ -46,8 +46,9 @@ function useAct() {
   const router = useRouter();
   const { toast, requireMe } = useShell();
   const [busy, setBusy] = useState(false);
-  const act = async (fn: () => Promise<void>, msg?: string) => {
-    if (!requireMe()) return false;
+  // purpose 'own': leaving is housekeeping a suspension still allows (#64).
+  const act = async (fn: () => Promise<void>, msg?: string, purpose?: 'own') => {
+    if (!requireMe(purpose)) return false;
     setBusy(true);
     try {
       await fn();
@@ -70,7 +71,9 @@ function Leave({ societyId, myId, name }: { societyId: string; myId: string; nam
     <button
       className="btn btn-secondary"
       disabled={busy}
-      onClick={() => confirm(`Leave ${name}?`) && act(() => removeSocietyMember(supabaseBrowser(), societyId, myId), `You left ${name}.`)}
+      onClick={() =>
+        confirm(`Leave ${name}?`) && act(() => removeSocietyMember(supabaseBrowser(), societyId, myId), `You left ${name}.`, 'own')
+      }
     >
       Leave
     </button>

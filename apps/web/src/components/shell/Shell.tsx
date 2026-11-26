@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import type { ProfileRow } from '@dtour/shared';
+import { suspensionText, type ProfileRow } from '@dtour/shared';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { setMonitoringUser } from '@/lib/monitoring';
 
@@ -16,8 +16,12 @@ export interface OnlineUser {
 interface ShellCtx {
   /** Signed-in profile, or null for a visitor reading without an account. */
   me: ProfileRow | null;
-  /** Returns the profile, or sends a visitor to sign in and returns null. Call at the start of any write. */
-  requireMe: () => ProfileRow | null;
+  /**
+   * Returns the profile, or sends a visitor to sign in and returns null. Call at the start of any write.
+   * A suspended member (#64) gets the reason and end date instead, unless the write is `'own'`
+   * housekeeping (saves, downloads) that a suspension still allows.
+   */
+  requireMe: (purpose?: 'own') => ProfileRow | null;
   /** Signed-in students online, with names and boards. Empty for visitors (#41). */
   online: OnlineUser[];
   /** How many students are online, for everyone, visitors included. */
@@ -41,7 +45,15 @@ export const useShell = () => {
   return c;
 };
 
-export function Shell({ me, children }: { me: ProfileRow | null; children: ReactNode }) {
+export function Shell({
+  me,
+  suspension = null,
+  children,
+}: {
+  me: ProfileRow | null;
+  suspension?: { reason: string; ends_at: string | null } | null;
+  children: ReactNode;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const [online, setOnline] = useState<OnlineUser[]>([]);
@@ -128,13 +140,20 @@ export function Shell({ me, children }: { me: ProfileRow | null; children: React
 
   const toast = useCallback((msg: string) => {
     setToastMsg(msg);
-    window.setTimeout(() => setToastMsg(null), 2600);
+    window.setTimeout(() => setToastMsg(null), Math.max(2600, msg.length * 50)); // long enough to read a suspension notice
   }, []);
 
-  const requireMe = useCallback(() => {
-    if (!me) router.push(`/login?next=${encodeURIComponent(pathname)}`);
-    return me;
-  }, [me, router, pathname]);
+  const requireMe = useCallback(
+    (purpose?: 'own') => {
+      if (!me) router.push(`/login?next=${encodeURIComponent(pathname)}`);
+      else if (suspension && purpose !== 'own') {
+        toast(suspensionText(suspension));
+        return null;
+      }
+      return me;
+    },
+    [me, router, pathname, suspension, toast],
+  );
 
   const value = useMemo<ShellCtx>(
     () => ({

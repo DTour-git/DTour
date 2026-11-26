@@ -41,7 +41,7 @@ export default function SubjectFiles() {
   };
 
   const download = async (id: number) => {
-    if (!requireMe()) return;
+    if (!requireMe('own')) return;
     try {
       const url = await downloadItem(supabase, id);
       if (url) Linking.openURL(url);

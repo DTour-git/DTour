@@ -377,7 +377,7 @@ function FileRow({ it }: { it: FileItem }) {
   const { toast, requireMe } = useShell();
   const [ic, col] = ICON[it.kind] ?? ICON.notes;
   const download = async () => {
-    if (!requireMe()) return;
+    if (!requireMe('own')) return;
     try {
       const { downloadItem } = await import('@dtour/shared');
       const url = await downloadItem(supabaseBrowser(), it.id);

@@ -211,3 +211,9 @@ export const POST_KIND_LABEL: Record<string, string> = {
 export function postKindTone(kind: string): 'accent' | 'accent2' {
   return kind === 'event' || kind === 'recruiting' ? 'accent2' : 'accent';
 }
+
+/** "You’re suspended from writing until 2 Dec, 2:30 pm IST. Reason: spam" (#64). Same wording as public.suspension_message(). */
+export function suspensionText(s: { reason: string; ends_at: string | null }): string {
+  const until = s.ends_at ? ` until ${shortDate(s.ends_at)}, ${clock(s.ends_at, false)} IST` : '';
+  return `You’re suspended from writing${until}. Reason: ${s.reason}`;
+}
