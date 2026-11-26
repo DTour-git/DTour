@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.18"
-  }
   public: {
     Tables: {
       activities: {
@@ -25,6 +20,7 @@ export type Database = {
           title: string
           user_id: string
         }
+        ComputedFields: never
         Insert: {
           created_at?: string
           id?: never
@@ -59,6 +55,7 @@ export type Database = {
         Row: {
           domain: string
         }
+        ComputedFields: never
         Insert: {
           domain: string
         }
@@ -78,6 +75,7 @@ export type Database = {
           sem_start: string
           timezone: string
         }
+        ComputedFields: never
         Insert: {
           id?: number
           launch_date?: string
@@ -110,6 +108,7 @@ export type Database = {
           tone: string
           user_id: string
         }
+        ComputedFields: never
         Insert: {
           created_at?: string
           icon: string
@@ -147,6 +146,7 @@ export type Database = {
           subtitle: string
           tone: string
         }
+        ComputedFields: never
         Insert: {
           icon: string
           id: number
@@ -171,6 +171,7 @@ export type Database = {
           created_at: string
           user_id: string
         }
+        ComputedFields: never
         Insert: {
           board_id: string
           created_at?: string
@@ -217,6 +218,7 @@ export type Database = {
           thread_count: number
           verified_only: boolean
         }
+        ComputedFields: never
         Insert: {
           category_id: number
           description?: string | null
@@ -279,6 +281,7 @@ export type Database = {
           roll_code: string | null
           sort: number
         }
+        ComputedFields: never
         Insert: {
           code: string
           file_count?: number
@@ -309,6 +312,7 @@ export type Database = {
           thread_id: number | null
           title: string
         }
+        ComputedFields: never
         Insert: {
           ends_at?: string | null
           id?: never
@@ -357,6 +361,7 @@ export type Database = {
           sub: string | null
           title: string
         }
+        ComputedFields: never
         Insert: {
           highlight?: boolean
           id?: never
@@ -377,22 +382,23 @@ export type Database = {
       }
       device_push_tokens: {
         Row: {
-          token: string
-          user_id: string
           platform: string
+          token: string
           updated_at: string
-        }
-        Insert: {
-          token: string
           user_id: string
+        }
+        ComputedFields: never
+        Insert: {
           platform: string
+          token: string
           updated_at?: string
+          user_id: string
         }
         Update: {
-          token?: string
-          user_id?: string
           platform?: string
+          token?: string
           updated_at?: string
+          user_id?: string
         }
         Relationships: [
           {
@@ -410,17 +416,18 @@ export type Database = {
           body: string
           id: string
           kind: string
-          payload: Json
+          payload: NonNullable<Json>
           title: string
           updated_at: string
           user_id: string
         }
+        ComputedFields: never
         Insert: {
           board_id?: string | null
           body?: string
           id?: string
           kind?: string
-          payload?: Json
+          payload?: NonNullable<Json>
           title?: string
           updated_at?: string
           user_id: string
@@ -430,7 +437,7 @@ export type Database = {
           body?: string
           id?: string
           kind?: string
-          payload?: Json
+          payload?: NonNullable<Json>
           title?: string
           updated_at?: string
           user_id?: string
@@ -452,6 +459,40 @@ export type Database = {
           },
         ]
       }
+      event_reminder_deliveries: {
+        Row: {
+          delivered_at: string
+          post_id: number
+          user_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          delivered_at?: string
+          post_id: number
+          user_id: string
+        }
+        Update: {
+          delivered_at?: string
+          post_id?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_reminder_deliveries_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "society_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_reminder_deliveries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exam_windows: {
         Row: {
           branch_code: string | null
@@ -460,6 +501,7 @@ export type Database = {
           semester: number | null
           starts_on: string
         }
+        ComputedFields: never
         Insert: {
           branch_code?: string | null
           id?: never
@@ -484,6 +526,33 @@ export type Database = {
           },
         ]
       }
+      handle_history: {
+        Row: {
+          handle: string
+          released_at: string
+          user_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          handle: string
+          released_at: string
+          user_id: string
+        }
+        Update: {
+          handle?: string
+          released_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "handle_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       karma_events: {
         Row: {
           amount: number
@@ -493,6 +562,7 @@ export type Database = {
           reason: string
           user_id: string
         }
+        ComputedFields: never
         Insert: {
           amount: number
           bucket: string
@@ -526,6 +596,7 @@ export type Database = {
           item_id: number
           user_id: string | null
         }
+        ComputedFields: never
         Insert: {
           created_at?: string
           id?: never
@@ -571,6 +642,7 @@ export type Database = {
           top_rated: boolean
           uploader_id: string | null
         }
+        ComputedFields: never
         Insert: {
           created_at?: string
           downloads?: number
@@ -630,6 +702,7 @@ export type Database = {
           room_slug: string
           society_id: string | null
         }
+        ComputedFields: never
         Insert: {
           author_id?: string | null
           body: string
@@ -692,6 +765,7 @@ export type Database = {
           slug: string
           sort: number
         }
+        ComputedFields: never
         Insert: {
           label: string
           pinned_text?: string | null
@@ -718,6 +792,37 @@ export type Database = {
           },
         ]
       }
+      notification_upvoters: {
+        Row: {
+          actor_id: string
+          notification_id: number
+        }
+        ComputedFields: never
+        Insert: {
+          actor_id: string
+          notification_id: number
+        }
+        Update: {
+          actor_id?: string
+          notification_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_upvoters_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_upvoters_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           actor_id: string | null
@@ -736,6 +841,7 @@ export type Database = {
           thread_id: number | null
           user_id: string
         }
+        ComputedFields: never
         Insert: {
           actor_id?: string | null
           article_id?: number | null
@@ -827,6 +933,7 @@ export type Database = {
           place_id: number
           user_id: string
         }
+        ComputedFields: never
         Insert: {
           place_id: number
           user_id: string
@@ -879,6 +986,7 @@ export type Database = {
           under_100: boolean
           where_label: string | null
         }
+        ComputedFields: never
         Insert: {
           author_id?: string | null
           category: string
@@ -949,6 +1057,7 @@ export type Database = {
           thread_id: number
           votes: number
         }
+        ComputedFields: never
         Insert: {
           id?: never
           label: string
@@ -979,6 +1088,7 @@ export type Database = {
           thread_id: number
           user_id: string
         }
+        ComputedFields: never
         Insert: {
           option_id: number
           thread_id: number
@@ -1041,6 +1151,7 @@ export type Database = {
           tint: string
           upload_count: number
         }
+        ComputedFields: never
         Insert: {
           accepted_count?: number
           bio?: string | null
@@ -1105,6 +1216,139 @@ export type Database = {
           },
         ]
       }
+      rate_limit_hits: {
+        Row: {
+          action: string
+          at: string
+          user_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          action: string
+          at?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rate_limit_hits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      replies: {
+        Row: {
+          author_id: string | null
+          body: string
+          created_at: string
+          deleted_at: string | null
+          edited_at: string | null
+          id: number
+          is_demo: boolean
+          parent_id: number | null
+          score: number
+          society_id: string | null
+          thread_id: number
+        }
+        ComputedFields: never
+        Insert: {
+          author_id?: string | null
+          body: string
+          created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
+          id?: never
+          is_demo?: boolean
+          parent_id?: number | null
+          score?: number
+          society_id?: string | null
+          thread_id: number
+        }
+        Update: {
+          author_id?: string | null
+          body?: string
+          created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
+          id?: never
+          is_demo?: boolean
+          parent_id?: number | null
+          score?: number
+          society_id?: string | null
+          thread_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "replies_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "replies_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "replies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "replies_society_id_fkey"
+            columns: ["society_id"]
+            isOneToOne: false
+            referencedRelation: "societies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "replies_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reply_votes: {
+        Row: {
+          reply_id: number
+          user_id: string
+          value: number
+        }
+        ComputedFields: never
+        Insert: {
+          reply_id: number
+          user_id: string
+          value: number
+        }
+        Update: {
+          reply_id?: number
+          user_id?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reply_votes_reply_id_fkey"
+            columns: ["reply_id"]
+            isOneToOne: false
+            referencedRelation: "replies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reply_votes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reports: {
         Row: {
           created_at: string
@@ -1120,6 +1364,7 @@ export type Database = {
           thread_id: number | null
           wiki_talk_id: number | null
         }
+        ComputedFields: never
         Insert: {
           created_at?: string
           details?: string | null
@@ -1193,109 +1438,18 @@ export type Database = {
           },
         ]
       }
-      replies: {
+      reserved_handles: {
         Row: {
-          author_id: string | null
-          body: string
-          created_at: string
-          deleted_at: string | null
-          edited_at: string | null
-          id: number
-          is_demo: boolean
-          parent_id: number | null
-          score: number
-          society_id: string | null
-          thread_id: number
+          handle: string
         }
+        ComputedFields: never
         Insert: {
-          author_id?: string | null
-          body: string
-          created_at?: string
-          deleted_at?: string | null
-          edited_at?: string | null
-          id?: never
-          is_demo?: boolean
-          parent_id?: number | null
-          score?: number
-          society_id?: string | null
-          thread_id: number
+          handle: string
         }
         Update: {
-          author_id?: string | null
-          body?: string
-          created_at?: string
-          deleted_at?: string | null
-          edited_at?: string | null
-          id?: never
-          is_demo?: boolean
-          parent_id?: number | null
-          score?: number
-          society_id?: string | null
-          thread_id?: number
+          handle?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "replies_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "replies_parent_id_fkey"
-            columns: ["parent_id"]
-            isOneToOne: false
-            referencedRelation: "replies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "replies_society_id_fkey"
-            columns: ["society_id"]
-            isOneToOne: false
-            referencedRelation: "societies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "replies_thread_id_fkey"
-            columns: ["thread_id"]
-            isOneToOne: false
-            referencedRelation: "threads"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      reply_votes: {
-        Row: {
-          reply_id: number
-          user_id: string
-          value: number
-        }
-        Insert: {
-          reply_id: number
-          user_id: string
-          value: number
-        }
-        Update: {
-          reply_id?: number
-          user_id?: string
-          value?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "reply_votes_reply_id_fkey"
-            columns: ["reply_id"]
-            isOneToOne: false
-            referencedRelation: "replies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reply_votes_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       rsvps: {
         Row: {
@@ -1303,6 +1457,7 @@ export type Database = {
           post_id: number
           user_id: string
         }
+        ComputedFields: never
         Insert: {
           created_at?: string
           post_id: number
@@ -1336,6 +1491,7 @@ export type Database = {
           thread_id: number
           user_id: string
         }
+        ComputedFields: never
         Insert: {
           created_at?: string
           thread_id: number
@@ -1376,6 +1532,7 @@ export type Database = {
           tint: string
           verified: boolean
         }
+        ComputedFields: never
         Insert: {
           created_at?: string
           description?: string | null
@@ -1410,6 +1567,7 @@ export type Database = {
           society_id: string
           user_id: string
         }
+        ComputedFields: never
         Insert: {
           can_post?: boolean
           is_lead?: boolean
@@ -1463,6 +1621,7 @@ export type Database = {
           when_label: string
           where_label: string | null
         }
+        ComputedFields: never
         Insert: {
           apply_url?: string | null
           author_id?: string | null
@@ -1538,6 +1697,7 @@ export type Database = {
           sort: number
           thread_count: number
         }
+        ComputedFields: never
         Insert: {
           branch_code: string
           code: string
@@ -1589,6 +1749,7 @@ export type Database = {
           reason: string
           user_id: string
         }
+        ComputedFields: never
         Insert: {
           created_at?: string
           created_by?: string | null
@@ -1638,6 +1799,7 @@ export type Database = {
           team_id: number
           user_id: string
         }
+        ComputedFields: never
         Insert: {
           team_id: number
           user_id: string
@@ -1670,6 +1832,7 @@ export type Database = {
           team_id: number
           user_id: string
         }
+        ComputedFields: never
         Insert: {
           created_at?: string
           status?: string
@@ -1708,6 +1871,7 @@ export type Database = {
           sort: number
           team_id: number
         }
+        ComputedFields: never
         Insert: {
           filled?: boolean
           filled_by?: string | null
@@ -1759,6 +1923,7 @@ export type Database = {
           title: string
           urgent: boolean
         }
+        ComputedFields: never
         Insert: {
           category: string
           created_at?: string
@@ -1809,6 +1974,7 @@ export type Database = {
           user_id: string
           value: number
         }
+        ComputedFields: never
         Insert: {
           thread_id: number
           user_id: string
@@ -1861,6 +2027,7 @@ export type Database = {
           title: string
           updated_at: string
         }
+        ComputedFields: never
         Insert: {
           accepted_reply_id?: number | null
           attachment?: Json | null
@@ -1975,6 +2142,7 @@ export type Database = {
           useful_count: number
           views_week: number
         }
+        ComputedFields: never
         Insert: {
           ai_verdict?: Json | null
           board_id?: string | null
@@ -2075,6 +2243,7 @@ export type Database = {
           slug: string
           tone: string
         }
+        ComputedFields: never
         Insert: {
           id: number
           name: string
@@ -2097,6 +2266,7 @@ export type Database = {
           useful: boolean
           user_id: string
         }
+        ComputedFields: never
         Insert: {
           article_id: number
           useful: boolean
@@ -2139,6 +2309,7 @@ export type Database = {
           status: string
           summary: string
         }
+        ComputedFields: never
         Insert: {
           ai_verdict?: Json | null
           article_id: number
@@ -2199,6 +2370,7 @@ export type Database = {
           created_at: string
           id: number
         }
+        ComputedFields: never
         Insert: {
           article_id: number
           author_id?: string | null
@@ -2242,6 +2414,7 @@ export type Database = {
           sub: string | null
           title: string | null
         }
+        ComputedFields: never
         Relationships: []
       }
     }
@@ -2250,13 +2423,13 @@ export type Database = {
         Args: { p_reply: number; p_thread: number }
         Returns: undefined
       }
-      am_suspended: { Args: never; Returns: boolean }
+      am_suspended: { Args: Record<PropertyKey, never>; Returns: boolean }
       award_badge: {
         Args: { p_kind: string; p_notify?: boolean; p_user: string }
         Returns: undefined
       }
       board_new_counts: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
           board_id: string
           n: number
@@ -2265,18 +2438,26 @@ export type Database = {
       board_path: { Args: { p_board: string }; Returns: string }
       can_post_as: { Args: { p_society: string }; Returns: boolean }
       current_handle: { Args: { p_handle: string }; Returns: string }
-      delete_my_account: { Args: never; Returns: undefined }
+      delete_my_account: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       delete_reply: { Args: { p_reply: number }; Returns: undefined }
-      dtour_clear_demo: { Args: never; Returns: undefined }
-      export_my_data: { Args: never; Returns: Json }
+      dtour_clear_demo: { Args: Record<PropertyKey, never>; Returns: undefined }
+      enqueue_event_reminders: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      export_my_data: { Args: Record<PropertyKey, never>; Returns: Json }
       fmt_n: { Args: { n: number }; Returns: string }
       fuzzy_pattern: { Args: { q: string }; Returns: string }
       handle_status: { Args: { p_handle: string }; Returns: string }
       hook_before_user_created: { Args: { event: Json }; Returns: Json }
-      is_admin: { Args: never; Returns: boolean }
-      is_moderator: { Args: never; Returns: boolean }
+      is_admin: { Args: Record<PropertyKey, never>; Returns: boolean }
+      is_media_image_url: { Args: { url: string }; Returns: boolean }
+      is_moderator: { Args: Record<PropertyKey, never>; Returns: boolean }
       is_society_lead: { Args: { p_society: string }; Returns: boolean }
-      is_society_poster: { Args: never; Returns: boolean }
+      is_society_poster: { Args: Record<PropertyKey, never>; Returns: boolean }
       karma_breakdown: {
         Args: { p_user: string }
         Returns: {
@@ -2286,7 +2467,10 @@ export type Database = {
       }
       karma_this_week: { Args: { p_user: string }; Returns: number }
       lift_suspension: { Args: { p_id: number }; Returns: undefined }
-      mark_notifications_read: { Args: never; Returns: undefined }
+      mark_notifications_read: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       notify: {
         Args: {
           p_actor: string
@@ -2334,12 +2518,21 @@ export type Database = {
         Args: { p_platform: string; p_token: string }
         Returns: undefined
       }
+      rename_mentions: {
+        Args: { p_new: string; p_old: string; p_text: string }
+        Returns: string
+      }
       resolve_report: {
         Args: { p_remove: boolean; p_report: number }
         Returns: undefined
       }
       review_team_request: {
-        Args: { p_accept: boolean; p_role?: number; p_team: number; p_user: string }
+        Args: {
+          p_accept: boolean
+          p_role?: number
+          p_team: number
+          p_user: string
+        }
         Returns: undefined
       }
       review_wiki_article: {
@@ -2381,14 +2574,14 @@ export type Database = {
       similar_threads: {
         Args: { p_limit?: number; q: string }
         Returns: {
-          board_name: string | null
-          editor_count: number | null
+          board_name: string
+          editor_count: number
           id: number
           kind: string
           rank: number
-          reply_count: number | null
-          score: number | null
-          slug: string | null
+          reply_count: number
+          score: number
+          slug: string
           title: string
         }[]
       }
@@ -2445,8 +2638,7 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
@@ -2470,8 +2662,7 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
@@ -2495,8 +2686,7 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
   EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }

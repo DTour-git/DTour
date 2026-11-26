@@ -112,8 +112,10 @@ These are product decisions. Don't change them without asking.
 - **Try migrations on dev first:** `npm run db:dev:reset` rebuilds the dev DB from all migration files, then `npm run test:db`.
 - **Applying to production** happens after the PR is merged, done by a maintainer: `supabase db push` from an up-to-date `main` that has **every** applied migration file.
 - **Never run `supabase db reset --linked`** or anything else that wipes the live project.
-- **After a schema change, regenerate the shared types:**
-  `supabase gen types typescript --project-id megohwzcghnbfdzsaypz --schema public > packages/shared/src/database.types.ts`
+- **After a schema change, regenerate the shared types** from a fresh local stack (`npx supabase@3.1.0 start`, which applies every migration):
+  `npm run db:types`
+  It runs `supabase gen types typescript --local --schema public` with CLI 3.1.0 and formats the output with Prettier (defaults, no semicolons) into `packages/shared/src/database.types.ts`. **CI checks it:** the dev-db job runs `npm run db:types -- --check` and fails with a diff if the committed file doesn't match the migrations. Never hand-edit the file.
+  To see what production has, `supabase gen types typescript --project-id megohwzcghnbfdzsaypz --schema public` still works, but the hosted generator's output differs in style, so don't commit it.
 - **Demo content.** Rows from `seed.sql` are flagged `is_demo`. Notifications skip demo users, and `select public.dtour_clear_demo();` removes all demo content, and the dev test accounts at `@dtour.invalid`, before launch.
 
 ## Platform gotchas
