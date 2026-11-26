@@ -7,6 +7,7 @@ import { useMe, useRequireMe } from '@/lib/auth';
 import { useData } from '@/lib/useData';
 import { openUserLink } from '@/lib/links';
 import { T, Kicker } from '@/components/T';
+import { MySocieties } from '@/components/MySocieties';
 import { AppBar, Halftone, IconBtn, Pill, PillRow, PrimaryBtn, Screen, Seal, rowRule } from '@/components/ui';
 
 const FILTERS: [string | null, string, 'accent' | 'accent2' | undefined][] = [
@@ -61,6 +62,7 @@ export default function Societies() {
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.accent} />}
       >
+        {me && <MySocieties myId={me.id} />}
         {data?.posts.map((p) => {
           const going = data.myRsvps.has(p.id);
           const kick = `${POST_KIND_LABEL[p.kind]} · ${p.when_label}${p.where_label && p.kind !== 'event' ? ` · ${p.where_label}` : ''}`;

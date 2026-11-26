@@ -443,7 +443,7 @@ function Composer({ me }: { me: ProfileRow }) {
               </Pressable>
               {picking &&
                 data?.boards
-                  .filter((b) => !b.verified_only || data.societies.length)
+                  .filter((b) => !b.verified_only || data.societies.some((s) => s.verified))
                   .map((b) => (
                     <Pressable
                       key={b.id}
