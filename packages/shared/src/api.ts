@@ -910,6 +910,69 @@ export async function myPostingSocieties(sb: DB, userId: string) {
   return (rows as unknown as { society: SocietyLite }[]).map((r) => r.society);
 }
 
+// ── Society management (#62): leads manage their society; anyone can leave ──
+export interface SocietyMember {
+  user_id: string;
+  role: string;
+  can_post: boolean;
+  is_lead: boolean;
+  person: PersonLite;
+}
+export interface MySociety {
+  role: string;
+  can_post: boolean;
+  is_lead: boolean;
+  society: SocietyLite;
+  members: SocietyMember[];
+}
+/** The societies I belong to; for those I lead, with their members (leads first). */
+export async function getMySocieties(sb: DB, userId: string): Promise<MySociety[]> {
+  const mine = must(
+    await sb.from('society_members').select(`role,can_post,is_lead,society:societies(${SOCIETY})`).eq('user_id', userId),
+  ) as unknown as Omit<MySociety, 'members'>[];
+  const led = mine.filter((m) => m.is_lead).map((m) => m.society.id);
+  const all = led.length
+    ? (must(
+        await sb
+          .from('society_members')
+          .select(`society_id,user_id,role,can_post,is_lead,person:profiles(${PERSON})`)
+          .in('society_id', led)
+          .order('is_lead', { ascending: false }),
+      ) as unknown as (SocietyMember & { society_id: string })[])
+    : [];
+  return mine
+    .map((m) => ({ ...m, members: all.filter((x) => x.society_id === m.society.id) }))
+    .sort((a, b) => a.society.name.localeCompare(b.society.name));
+}
+async function profileIdByHandle(sb: DB, handle: string) {
+  const h = handle.trim().replace(/^@/, '').toLowerCase();
+  const p = must(await sb.from('profiles').select('id').eq('handle', h).maybeSingle());
+  if (!p) throw new Error(`No one has the handle @${h}.`);
+  return p.id;
+}
+export async function addSocietyMember(sb: DB, societyId: string, handle: string, role = 'Member', isLead = false) {
+  const userId = await profileIdByHandle(sb, handle);
+  const { error } = await sb
+    .from('society_members')
+    .insert({ society_id: societyId, user_id: userId, role: role.trim() || 'Member', is_lead: isLead });
+  if (error?.code === '23505') throw new Error('They are already a member.');
+  if (error) throw new Error(error.code === '42501' ? 'Only the society’s leads can add members.' : error.message);
+}
+export async function updateSocietyMember(
+  sb: DB,
+  societyId: string,
+  userId: string,
+  patch: Partial<Pick<SocietyMember, 'role' | 'can_post' | 'is_lead'>>,
+) {
+  const rows = must(await sb.from('society_members').update(patch).eq('society_id', societyId).eq('user_id', userId).select('user_id'));
+  if (!rows.length) throw new Error('Only the society’s leads can change this.');
+}
+/** Removes a member, or leaves when userId is your own. */
+export async function removeSocietyMember(sb: DB, societyId: string, userId: string) {
+  const rows = must(await sb.from('society_members').delete().eq('society_id', societyId).eq('user_id', userId).select('user_id'));
+  if (!rows.length) throw new Error('Only the society’s leads can remove members.');
+}
+
 export async function saveDraft(
   sb: DB,
   d: { id?: string; userId: string; kind: string; boardId: string | null; title: string; body: string; payload?: Record<string, unknown> },
@@ -1622,7 +1685,7 @@ export async function search(sb: DB, q: string, kind: SearchKind | null) {
 
 // ── Campus admin (moderators; Lounge rooms admin-only) ────────────────────
 // Each item is a form: string values keyed by field, so web and mobile render the same editor.
-export type CampusKind = 'event' | 'exam' | 'deadline' | 'room';
+export type CampusKind = 'event' | 'exam' | 'deadline' | 'society' | 'room';
 export interface CampusField {
   key: string;
   label: string;
@@ -1664,6 +1727,18 @@ export const CAMPUS_SECTIONS: Record<CampusKind, { title: string; fields: Campus
       { key: 'highlight', label: 'Highlight', type: 'bool' },
     ],
   },
+  society: {
+    title: 'Societies',
+    fields: [
+      { key: 'slug', label: 'Slug (fixed once created)', type: 'text', hint: 'gdsc' },
+      { key: 'name', label: 'Name', type: 'text', hint: 'GDSC DTU' },
+      { key: 'short_name', label: 'Short name', type: 'text' },
+      { key: 'description', label: 'Description', type: 'text' },
+      { key: 'tint', label: 'Tint (accent, accent2 or neutral)', type: 'text', hint: 'accent' },
+      { key: 'verified', label: 'Verified', type: 'bool' },
+      { key: 'lead', label: 'Add a lead (handle)', type: 'text', hint: 'aarav.k' },
+    ],
+  },
   room: {
     title: 'Lounge rooms',
     fields: [
@@ -1702,10 +1777,11 @@ function when(v: string, label: string) {
 /** Everything the campus editor lists. Events from the last week onward; the other lists in full. */
 export async function getCampusAdmin(sb: DB): Promise<Record<CampusKind, CampusItem[]>> {
   const since = new Date(Date.now() - 7 * 86400e3).toISOString();
-  const [events, exams, deadlines, rooms] = await Promise.all([
+  const [events, exams, deadlines, societies, rooms] = await Promise.all([
     sb.from('campus_events').select('*').gte('starts_at', since).order('starts_at'),
     sb.from('exam_windows').select('*').order('starts_on'),
     sb.from('deadlines').select('*').order('on_date'),
+    sb.from('societies').select('*').order('name'),
     sb.from('lounge_rooms').select('*').order('sort'),
   ]);
   const item = (id: unknown, row: Record<string, unknown>, fields: CampusField[]): CampusItem => ({
@@ -1719,6 +1795,7 @@ export async function getCampusAdmin(sb: DB): Promise<Record<CampusKind, CampusI
     ),
     exam: must(exams).map((r) => item(r.id, r, f.exam.fields)),
     deadline: must(deadlines).map((r) => item(r.id, { ...r, highlight: r.highlight ? 'true' : '' }, f.deadline.fields)),
+    society: must(societies).map((r) => item(r.id, { ...r, verified: r.verified ? 'true' : '' }, f.society.fields)),
     room: must(rooms).map((r) => item(r.slug, r, f.room.fields)),
   };
 }
@@ -1768,6 +1845,31 @@ export async function saveCampusItem(sb: DB, kind: CampusKind, id: string | null
     res = id
       ? await sb.from('deadlines').update(row).eq('id', Number(id)).select('id')
       : await sb.from('deadlines').insert(row).select('id');
+  } else if (kind === 'society') {
+    const tint = text(q('tint')) ?? 'accent';
+    if (!['accent', 'accent2', 'neutral'].includes(tint)) throw new Error('Tint must be accent, accent2 or neutral.');
+    const row = {
+      name: need(q('name'), 'Name'),
+      short_name: text(q('short_name')),
+      description: text(q('description')),
+      tint,
+      verified: q('verified') === 'true',
+    };
+    if (!id && !q('lead').trim()) throw new Error('A new society needs its first lead.');
+    const lead = q('lead').trim() ? await profileIdByHandle(sb, q('lead')) : null;
+    if (id) res = await sb.from('societies').update(row).eq('id', id).select('id');
+    else {
+      const slug = need(q('slug'), 'Slug').toLowerCase();
+      if (!/^[a-z0-9-]+$/.test(slug)) throw new Error('The slug can only have lowercase letters, numbers and dashes.');
+      res = await sb
+        .from('societies')
+        .insert({ ...row, slug })
+        .select('id');
+    }
+    if (lead && res.data?.length) {
+      const up = await sb.from('society_members').upsert({ society_id: res.data[0].id, user_id: lead, is_lead: true });
+      if (up.error) campusFailure(up.error);
+    }
   } else {
     const row = {
       label: need(q('label'), 'Label'),
@@ -1790,8 +1892,8 @@ export async function saveCampusItem(sb: DB, kind: CampusKind, id: string | null
   if (!res.data?.length) throw new Error('Only moderators can change this.');
 }
 
-/** Deletes an event, exam window or deadline (rooms are never deleted: it would wipe their chat). */
-export async function deleteCampusItem(sb: DB, kind: Exclude<CampusKind, 'room'>, id: string) {
+/** Deletes an event, exam window or deadline (rooms and societies are never deleted: it would wipe their chat or posts). */
+export async function deleteCampusItem(sb: DB, kind: Exclude<CampusKind, 'room' | 'society'>, id: string) {
   const table = { event: 'campus_events', exam: 'exam_windows', deadline: 'deadlines' }[kind] as 'campus_events';
   const { data, error } = await sb.from(table).delete().eq('id', Number(id)).select('id');
   if (error) campusFailure(error);

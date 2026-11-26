@@ -23,7 +23,7 @@ export default async function ModPage() {
         Campus content
       </h2>
       <div style={{ font: 'italic 400 17px var(--font-body)', color: 'var(--color-neutral-800)', marginTop: 4 }}>
-        What Today, the exam countdown, Team Up deadlines and the Lounge rooms show. Times are in IST.
+        What Today, the exam countdown, Team Up deadlines, societies and the Lounge rooms show. Times are in IST.
       </div>
       <CampusAdmin data={campus} isAdmin={me.profile.role === 'admin'} />
     </div>

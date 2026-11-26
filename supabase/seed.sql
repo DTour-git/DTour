@@ -93,14 +93,14 @@ update public.profiles set skills = '{Flutter,Firebase}', open_to_teams = true w
 update public.profiles set skills = '{PyTorch,CV}', open_to_teams = true where id = pg_temp.u(16);
 update public.profiles set skills = '{Arduino,PCB design}', open_to_teams = true where id = pg_temp.u(17);
 
-insert into public.societies (id, slug, name, short_name, icon, tint, description, is_demo) values
-  (pg_temp.u(101), 'gdsc-dtu', 'GDSC DTU', null, 'code', 'accent', 'Google Developer Student Club. Workshops, doubt sessions, hackathons.', true),
-  (pg_temp.u(102), 'music-society', 'Music Society', null, 'music-notes', 'accent2', 'Jamming nights, open mics and the OAT.', true),
-  (pg_temp.u(103), 'dramatics-society', 'Dramatics Society', 'Dramatics Soc.', 'mask-happy', 'accent2', 'Street play and stage.', true),
-  (pg_temp.u(104), 'ieee-dtu', 'IEEE DTU', null, 'cpu', 'accent', 'Talks, papers and the alumni network.', true),
-  (pg_temp.u(105), 'engifest', 'Engifest', null, 'confetti', 'accent2', 'DTU''s annual cultural fest.', true),
-  (pg_temp.u(106), 'design-club', 'Design Club', null, 'paint-brush', 'accent', 'Figma, posters and product design.', true),
-  (pg_temp.u(107), 'student-council', 'DTU Student Council', 'Council', 'bank', 'accent', 'Verified campus news.', true)
+insert into public.societies (id, slug, name, short_name, icon, tint, description, is_demo, verified) values
+  (pg_temp.u(101), 'gdsc-dtu', 'GDSC DTU', null, 'code', 'accent', 'Google Developer Student Club. Workshops, doubt sessions, hackathons.', true, true),
+  (pg_temp.u(102), 'music-society', 'Music Society', null, 'music-notes', 'accent2', 'Jamming nights, open mics and the OAT.', true, true),
+  (pg_temp.u(103), 'dramatics-society', 'Dramatics Society', 'Dramatics Soc.', 'mask-happy', 'accent2', 'Street play and stage.', true, true),
+  (pg_temp.u(104), 'ieee-dtu', 'IEEE DTU', null, 'cpu', 'accent', 'Talks, papers and the alumni network.', true, true),
+  (pg_temp.u(105), 'engifest', 'Engifest', null, 'confetti', 'accent2', 'DTU''s annual cultural fest.', true, true),
+  (pg_temp.u(106), 'design-club', 'Design Club', null, 'paint-brush', 'accent', 'Figma, posters and product design.', true, true),
+  (pg_temp.u(107), 'student-council', 'DTU Student Council', 'Council', 'bank', 'accent', 'Verified campus news.', true, true)
 on conflict do nothing;
 
 insert into public.society_members (society_id, user_id, role, can_post) values

@@ -1405,18 +1405,21 @@ export type Database = {
       society_members: {
         Row: {
           can_post: boolean
+          is_lead: boolean
           role: string
           society_id: string
           user_id: string
         }
         Insert: {
           can_post?: boolean
+          is_lead?: boolean
           role?: string
           society_id: string
           user_id: string
         }
         Update: {
           can_post?: boolean
+          is_lead?: boolean
           role?: string
           society_id?: string
           user_id?: string
@@ -2216,6 +2219,7 @@ export type Database = {
       hook_before_user_created: { Args: { event: Json }; Returns: Json }
       is_admin: { Args: never; Returns: boolean }
       is_moderator: { Args: never; Returns: boolean }
+      is_society_lead: { Args: { p_society: string }; Returns: boolean }
       is_society_poster: { Args: never; Returns: boolean }
       karma_breakdown: {
         Args: { p_user: string }
