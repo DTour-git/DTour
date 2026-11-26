@@ -10,6 +10,7 @@ package-lock.json
 
 # Generated or hand-tuned
 packages/shared/src/database.types.ts
+apps/web/src/components/icon-paths.ts
 supabase/
 design_handoff_dtour/
 *.md
