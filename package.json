@@ -19,6 +19,7 @@
     "build:web": "npm run build -w @dtour/web",
     "check": "npm run typecheck && npm run lint && npm test && npm run build:web",
     "check:all": "npm run check && npm run test:db && npm run test:e2e",
+    "check:migrations": "node scripts/check-migrations.mjs",
     "db:dev:reset": "node scripts/db-dev-reset.mjs",
     "dev:login": "node scripts/dev-login.mjs",
     "format": "node scripts/format-changed.mjs",
