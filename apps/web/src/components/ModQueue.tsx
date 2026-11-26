@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
+  DELETED_PERSON,
   REPORT_REASONS,
   agoLong,
   atHandle,
@@ -18,6 +19,7 @@ import {
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Markdown } from './Markdown';
 import { Tag } from './ui';
+import { SuspendForm } from './Suspensions';
 import { useShell } from './shell/Shell';
 
 const REASON = Object.fromEntries(REPORT_REASONS);
@@ -34,6 +36,7 @@ export function ModQueue({
   const router = useRouter();
   const { toast } = useShell();
   const [open, setOpen] = useState<string | null>(null);
+  const [suspending, setSuspending] = useState<string | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const act = async (key: string, fn: () => Promise<void>, msg: string) => {
     try {
@@ -105,7 +108,19 @@ export function ModQueue({
                 “{d}”
               </div>
             ))}
+            {r.author && r.author.handle !== DELETED_PERSON.handle && suspending === r.key && (
+              <SuspendForm
+                handle={r.author.handle}
+                reason={`Reported: ${r.reasons.map((x) => REASON[x] ?? x).join(', ')}`}
+                onDone={() => setSuspending(null)}
+              />
+            )}
             <div style={{ display: 'flex', gap: 10, marginTop: 12, justifyContent: 'flex-end' }}>
+              {r.author && r.author.handle !== DELETED_PERSON.handle && (
+                <button className="btn btn-ghost" onClick={() => setSuspending(suspending === r.key ? null : r.key)}>
+                  {suspending === r.key ? 'Cancel' : 'Suspend author'}
+                </button>
+              )}
               <button
                 className="btn btn-secondary"
                 onClick={() => act(r.key, () => resolveReport(supabaseBrowser(), r.ids[0], false), 'Report dismissed.')}

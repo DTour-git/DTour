@@ -44,7 +44,7 @@ export function VoteRail({ threadId, score, myVote, saved }: { threadId: number;
     }
   };
   const save = async () => {
-    const me = requireMe();
+    const me = requireMe('own');
     if (!me) return;
     setIsSaved(!isSaved);
     try {
@@ -432,7 +432,7 @@ export function JoinBoard({ boardId, joined }: { boardId: string; joined: boolea
   const { requireMe } = useShell();
   const [j, setJ] = useState(joined);
   const toggle = async () => {
-    const me = requireMe();
+    const me = requireMe('own'); // joining a board is housekeeping a suspension allows
     if (!me) return;
     setJ(!j);
     try {

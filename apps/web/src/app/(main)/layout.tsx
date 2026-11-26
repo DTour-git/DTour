@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { getConfig, getExamCountdown, getLoungeRooms, getModQueue, openReportCount } from '@dtour/shared';
+import { getConfig, getExamCountdown, getLoungeRooms, getModQueue, getMySuspension, openReportCount } from '@dtour/shared';
 import { currentUser } from '@/lib/supabase-server';
 import { Shell } from '@/components/shell/Shell';
 import { Header } from '@/components/shell/Header';
@@ -10,15 +10,16 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   const { sb, me } = await currentUser();
   if (me && !me.profile.onboarded) redirect('/onboarding');
   const isMod = me?.profile.role === 'moderator' || me?.profile.role === 'admin';
-  const [config, exam, rooms, queue, reports] = await Promise.all([
+  const [config, exam, rooms, queue, reports, suspension] = await Promise.all([
     getConfig(sb),
     getExamCountdown(sb, me?.profile ?? null),
     getLoungeRooms(sb),
     isMod ? getModQueue(sb) : null,
     isMod ? openReportCount(sb) : 0,
+    me ? getMySuspension(sb, me.userId) : null,
   ]);
   return (
-    <Shell me={me?.profile ?? null}>
+    <Shell me={me?.profile ?? null} suspension={suspension}>
       <div className="page">
         <Header config={config} exam={exam} modQueue={queue ? queue.articles.length + queue.revisions.length + reports : null} />
         <main>{children}</main>

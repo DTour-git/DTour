@@ -79,7 +79,7 @@ export default function Thread() {
     }
   };
   const save = async () => {
-    const u = requireMe();
+    const u = requireMe('own');
     if (!u) return;
     setData({ ...data, saved: !data.saved });
     await setSaved(supabase, t.id, u.id, !data.saved).catch(reload);

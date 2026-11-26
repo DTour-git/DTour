@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   compact,
+  suspensionText,
   dateline,
   daysBetween,
   deadlineText,
@@ -86,5 +87,16 @@ describe('IST form values', () => {
   it('rejects text that is not a date and time', () => {
     expect(fromIstInput('tomorrow')).toBeNull();
     expect(fromIstInput('2026-13-40 10:00')).toBeNull();
+  });
+});
+
+describe('suspensionText', () => {
+  it('gives the end in IST and the reason', () => {
+    expect(suspensionText({ reason: 'Spam in the Lounge', ends_at: '2026-12-02T09:00:00Z' })).toBe(
+      'You’re suspended from writing until 2 Dec, 2:30 pm IST. Reason: Spam in the Lounge',
+    );
+  });
+  it('has no end date when indefinite', () => {
+    expect(suspensionText({ reason: 'Harassment', ends_at: null })).toBe('You’re suspended from writing. Reason: Harassment');
   });
 });

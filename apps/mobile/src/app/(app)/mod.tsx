@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, TextInput, View } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import {
+  DELETED_PERSON,
   REPORT_REASONS,
   agoLong,
   atHandle,
@@ -10,6 +11,7 @@ import {
   getCampusAdmin,
   getModQueue,
   getOpenReports,
+  getSuspensions,
   plain,
   reportedNoun,
   resolveReport,
@@ -22,6 +24,7 @@ import { useData } from '@/lib/useData';
 import { appRoute } from '@/lib/routes';
 import { T } from '@/components/T';
 import { CampusAdmin } from '@/components/CampusAdmin';
+import { SuspendForm, Suspensions } from '@/components/Suspensions';
 import { AppBar, PrimaryBtn, Screen, Tag, rowRule } from '@/components/ui';
 
 const REASON = Object.fromEntries(REPORT_REASONS);
@@ -31,11 +34,17 @@ export default function Mod() {
   const me = useMe();
   const router = useRouter();
   const { data, refreshing, refresh, reload } = useData(async () => {
-    const [queue, reports, campus] = await Promise.all([getModQueue(supabase), getOpenReports(supabase), getCampusAdmin(supabase)]);
-    return { ...queue, reports, campus };
+    const [queue, reports, campus, suspensions] = await Promise.all([
+      getModQueue(supabase),
+      getOpenReports(supabase),
+      getCampusAdmin(supabase),
+      getSuspensions(supabase),
+    ]);
+    return { ...queue, reports, campus, suspensions };
   });
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
+  const [suspending, setSuspending] = useState<string | null>(null);
   if (!me) return <Redirect href="/login" />;
   if (me.role !== 'moderator' && me.role !== 'admin') return <Redirect href="/" />;
 
@@ -89,6 +98,27 @@ export default function Mod() {
                 “{d}”
               </T>
             ))}
+            {r.author && r.author.handle !== DELETED_PERSON.handle && (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setSuspending(suspending === r.key ? null : r.key)}
+                style={{ marginTop: 10, alignSelf: 'flex-start' }}
+              >
+                <T size={13.5} w={600} color={colors.accent}>
+                  {suspending === r.key ? 'Cancel' : 'Suspend author'}
+                </T>
+              </Pressable>
+            )}
+            {r.author && suspending === r.key && (
+              <SuspendForm
+                handle={r.author.handle}
+                reason={`Reported: ${r.reasons.map((x) => REASON[x] ?? x).join(', ')}`}
+                onDone={() => {
+                  setSuspending(null);
+                  reload();
+                }}
+              />
+            )}
             <Buttons
               busy={busy === r.key}
               no="Keep it up"
@@ -169,6 +199,7 @@ export default function Mod() {
         })}
         {data && !data.revisions.length && <Empty>No edits waiting.</Empty>}
 
+        {data && <Suspensions items={data.suspensions} reload={reload} />}
         {data && <CampusAdmin data={data.campus} isAdmin={me.role === 'admin'} reload={reload} />}
       </ScrollView>
     </Screen>

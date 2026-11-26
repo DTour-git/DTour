@@ -1575,6 +1575,61 @@ export type Database = {
           },
         ]
       }
+      suspensions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          ends_at: string | null
+          id: number
+          lifted_at: string | null
+          lifted_by: string | null
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: never
+          lifted_at?: string | null
+          lifted_by?: string | null
+          reason: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: never
+          lifted_at?: string | null
+          lifted_by?: string | null
+          reason?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suspensions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suspensions_lifted_by_fkey"
+            columns: ["lifted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suspensions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_members: {
         Row: {
           team_id: number
@@ -2192,6 +2247,7 @@ export type Database = {
         Args: { p_reply: number; p_thread: number }
         Returns: undefined
       }
+      am_suspended: { Args: never; Returns: boolean }
       award_badge: {
         Args: { p_kind: string; p_notify?: boolean; p_user: string }
         Returns: undefined
@@ -2225,6 +2281,7 @@ export type Database = {
         }[]
       }
       karma_this_week: { Args: { p_user: string }; Returns: number }
+      lift_suspension: { Args: { p_id: number }; Returns: undefined }
       mark_notifications_read: { Args: never; Returns: undefined }
       notify: {
         Args: {
@@ -2331,6 +2388,11 @@ export type Database = {
           title: string
         }[]
       }
+      suspend_member: {
+        Args: { p_days?: number; p_handle: string; p_reason: string }
+        Returns: number
+      }
+      suspension_message: { Args: { p_user: string }; Returns: string }
       toggle_heart: { Args: { p_place: number }; Returns: boolean }
       toggle_rsvp: { Args: { p_post: number }; Returns: boolean }
       toggle_team_request: { Args: { p_team: number }; Returns: boolean }
