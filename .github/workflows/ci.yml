@@ -97,6 +97,9 @@ jobs:
         working-directory: apps/web
       - name: Browser tests (Playwright)
         run: npm run test:e2e
+      # Last, so a stale types file never hides test results. Fails with a diff if it doesn't match.
+      - name: Generated DB types match the migrations
+        run: npm run db:types -- --check
       # On CI the reporters are `github` + `list`, so failures leave traces in test-results/ (no HTML report).
       - name: Upload Playwright traces
         if: failure()
