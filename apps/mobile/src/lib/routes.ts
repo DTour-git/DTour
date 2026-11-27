@@ -17,5 +17,6 @@ export function appRoute(web: string): Href {
   if (web.startsWith('/wiki')) return '/wiki' as Href;
   if (web.startsWith('/boards')) return '/boards' as Href;
   if (web.startsWith('/mod')) return '/mod' as Href;
+  if (web.startsWith('/new')) return '/new' as Href;
   return '/' as Href;
 }
