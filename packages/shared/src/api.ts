@@ -1704,7 +1704,9 @@ export interface Suspension {
   ends_at: string | null;
   created_at: string;
   lifted_at: string | null;
-  user: PersonLite;
+  /** null once the member deleted their account; the suspension is kept and applies again if they sign up (#132). */
+  user: PersonLite | null;
+  former_handle: string | null;
   by: PersonLite | null;
   lifter: PersonLite | null;
 }
@@ -1734,7 +1736,7 @@ export async function getSuspensions(sb: DB, limit = 50) {
     await sb
       .from('suspensions')
       .select(
-        `id,reason,ends_at,created_at,lifted_at,user:profiles!suspensions_user_id_fkey(${PERSON}),` +
+        `id,reason,ends_at,created_at,lifted_at,former_handle,user:profiles!suspensions_user_id_fkey(${PERSON}),` +
           `by:profiles!suspensions_created_by_fkey(${PERSON}),lifter:profiles!suspensions_lifted_by_fkey(${PERSON})`,
       )
       .order('created_at', { ascending: false })
@@ -1742,6 +1744,9 @@ export async function getSuspensions(sb: DB, limit = 50) {
   );
   return rows as unknown as Suspension[];
 }
+/** Who a suspension is for: "@handle", or "@handle (account deleted)" while it waits for them to sign up again. */
+export const suspendedWho = (s: Pick<Suspension, 'user' | 'former_handle'>) =>
+  s.user ? atHandle(s.user) : s.former_handle ? `@${s.former_handle} (account deleted)` : DELETED_PERSON.handle;
 export async function suspendMember(sb: DB, handle: string, reason: string, days: number | null) {
   if (reason.trim().length < 3) throw new Error('Give a reason the member will see.');
   must(await sb.rpc('suspend_member', { p_handle: handle, p_reason: reason, p_days: days ?? undefined }));
@@ -1968,11 +1973,20 @@ export async function deleteCampusItem(sb: DB, kind: Exclude<CampusKind, 'room' 
 }
 
 // ── Account deletion and export ───────────────────────────────────────────
-/** Deletes the signed-in student's account. Their posts stay, shown as "[deleted user]". */
+/**
+ * Deletes the signed-in student's account. Their posts stay, shown as "[deleted user]".
+ * First removes their uploaded images that nothing on DTour uses any more (images in posts,
+ * guides, places and society posts that stay are kept); delete_my_account refuses while any are left.
+ */
 export async function deleteMyAccount(sb: DB) {
+  const unused = must(await sb.rpc('my_unused_media')) as unknown as string[];
+  for (let i = 0; i < unused.length; i += 100) {
+    const { error } = await sb.storage.from('media').remove(unused.slice(i, i + 100));
+    if (error) throw new Error(`Could not remove your unused images: ${error.message}`);
+  }
   must(await sb.rpc('delete_my_account'));
 }
-/** The signed-in student's profile, threads, replies and votes, as JSON text ready to save. */
+/** The signed-in student's profile, threads, replies, votes and suspensions, as JSON text ready to save. */
 export async function exportMyData(sb: DB) {
   return JSON.stringify(must(await sb.rpc('export_my_data')), null, 2);
 }
