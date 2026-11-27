@@ -1,5 +1,5 @@
 import { withSupabase } from 'npm:@supabase/server@^1';
-import { pushText } from './text.ts';
+import { buildMessages, invalidTokens, type PushTicket } from './messages.ts';
 
 type Notification = { id: number; user_id: string; text: string; snippet: string | null; route: string };
 type Webhook = { type: string; table: string; schema: string; record: Notification };
@@ -20,14 +20,7 @@ export default {
     if (!tokens?.length) return Response.json({ sent: 0 });
 
     const accessToken = Deno.env.get('EXPO_ACCESS_TOKEN');
-    const messages = tokens.map(({ token }) => ({
-      to: token,
-      title: 'DTour',
-      // Shortened: phones show this on the lock screen (#46). The full text is in the app.
-      body: pushText(event.record.text),
-      sound: 'default',
-      data: { route: event.record.route, notificationId: event.record.id },
-    }));
+    const messages = buildMessages(event.record, tokens.map((t) => t.token));
     const response = await fetch('https://exp.host/--/api/v2/push/send', {
       method: 'POST',
       headers: {
@@ -37,8 +30,8 @@ export default {
       body: JSON.stringify(messages),
     });
     if (!response.ok) return Response.json({ error: await response.text() }, { status: 502 });
-    const result = await response.json() as { data?: { status: string; details?: { error?: string } }[] };
-    const invalid = result.data?.flatMap((ticket, index) => ticket.details?.error === 'DeviceNotRegistered' ? [messages[index].to] : []) ?? [];
+    const result = await response.json() as { data?: PushTicket[] };
+    const invalid = invalidTokens(messages, result.data);
     if (invalid.length) await context.supabaseAdmin.from('device_push_tokens').delete().in('token', invalid);
     return Response.json({ sent: messages.length - invalid.length });
   }),
