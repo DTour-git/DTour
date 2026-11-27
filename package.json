@@ -24,6 +24,7 @@
     "db:types": "node scripts/db-types.mjs",
     "dev:login": "node scripts/dev-login.mjs",
     "format": "node scripts/format-changed.mjs",
+    "bench:pages": "node scripts/bench-pages.mjs",
     "format:check": "prettier --check .",
     "format:all": "prettier --write .",
     "icons": "node scripts/gen-icons.mjs"
