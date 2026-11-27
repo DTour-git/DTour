@@ -4,6 +4,7 @@ import {
   SUSPENSION_DAYS,
   agoLong,
   atHandle,
+  suspendedWho,
   clock,
   colors,
   fonts,
@@ -96,7 +97,7 @@ export function SuspendForm({ handle = '', reason = '', onDone }: { handle?: str
 export function Suspensions({ items, reload }: { items: Suspension[]; reload: () => void }) {
   const active = items.filter((s) => suspensionActive(s));
   const lift = (s: Suspension) =>
-    Alert.alert(`Lift ${atHandle(s.user)}’s suspension?`, undefined, [
+    Alert.alert(`Lift ${suspendedWho(s)}’s suspension?`, undefined, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Lift',
@@ -119,7 +120,7 @@ export function Suspensions({ items, reload }: { items: Suspension[]; reload: ()
       {active.map((s) => (
         <View key={s.id} style={[{ paddingVertical: 12, gap: 4 }, rowRule]}>
           <T size={15} w={600}>
-            {atHandle(s.user)}
+            {suspendedWho(s)}
           </T>
           <T size={13.5} color={colors.neutral800}>
             {until(s)} · {s.reason}
@@ -135,7 +136,7 @@ export function Suspensions({ items, reload }: { items: Suspension[]; reload: ()
       {items.map((s) => (
         <View key={s.id} style={[{ paddingVertical: 8 }, rowRule]}>
           <T size={13.5} color={colors.neutral800}>
-            {s.by ? atHandle(s.by) : 'A moderator'} suspended {atHandle(s.user)} {until(s)} · {agoLong(s.created_at)} · “{s.reason}”
+            {s.by ? atHandle(s.by) : 'A moderator'} suspended {suspendedWho(s)} {until(s)} · {agoLong(s.created_at)} · “{s.reason}”
             {s.lifted_at ? ` · lifted by ${s.lifter ? atHandle(s.lifter) : 'a moderator'} ${agoLong(s.lifted_at)}` : ''}
           </T>
         </View>

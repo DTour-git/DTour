@@ -1738,37 +1738,64 @@ export type Database = {
           },
         ]
       }
+      suspension_carryovers: {
+        Row: {
+          email_sha256: string
+          suspension_id: number
+        }
+        ComputedFields: never
+        Insert: {
+          email_sha256: string
+          suspension_id: number
+        }
+        Update: {
+          email_sha256?: string
+          suspension_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suspension_carryovers_suspension_id_fkey"
+            columns: ["suspension_id"]
+            isOneToOne: true
+            referencedRelation: "suspensions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suspensions: {
         Row: {
           created_at: string
           created_by: string | null
           ends_at: string | null
+          former_handle: string | null
           id: number
           lifted_at: string | null
           lifted_by: string | null
           reason: string
-          user_id: string
+          user_id: string | null
         }
         ComputedFields: never
         Insert: {
           created_at?: string
           created_by?: string | null
           ends_at?: string | null
+          former_handle?: string | null
           id?: never
           lifted_at?: string | null
           lifted_by?: string | null
           reason: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
           created_by?: string | null
           ends_at?: string | null
+          former_handle?: string | null
           id?: never
           lifted_at?: string | null
           lifted_by?: string | null
           reason?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -2444,6 +2471,7 @@ export type Database = {
       }
       delete_reply: { Args: { p_reply: number }; Returns: undefined }
       dtour_clear_demo: { Args: Record<PropertyKey, never>; Returns: undefined }
+      email_sha256: { Args: { p_email: string }; Returns: string }
       enqueue_event_reminders: {
         Args: Record<PropertyKey, never>
         Returns: number
@@ -2471,6 +2499,8 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      media_references: { Args: { p_user: string }; Returns: string[] }
+      my_unused_media: { Args: Record<PropertyKey, never>; Returns: string[] }
       notify: {
         Args: {
           p_actor: string
@@ -2512,6 +2542,10 @@ export type Database = {
       promote_lounge_message: {
         Args: { p_board: string; p_message: number; p_title: string }
         Returns: number
+      }
+      prune_kept_suspensions: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       record_download: { Args: { p_item: number }; Returns: string }
       register_push_token: {
@@ -2593,6 +2627,7 @@ export type Database = {
       toggle_heart: { Args: { p_place: number }; Returns: boolean }
       toggle_rsvp: { Args: { p_post: number }; Returns: boolean }
       toggle_team_request: { Args: { p_team: number }; Returns: boolean }
+      unused_media: { Args: { p_user: string }; Returns: string[] }
     }
     Enums: {
       [_ in never]: never

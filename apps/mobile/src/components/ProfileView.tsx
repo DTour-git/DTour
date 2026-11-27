@@ -73,7 +73,7 @@ export function ProfileView({ handle, isTab }: { handle: string; isTab?: boolean
   const account = () =>
     Alert.alert(
       'Your data',
-      'Download your profile, threads, replies and votes, or delete your account.',
+      'Download your profile, threads, replies, votes and any suspensions, or delete your account.',
       [
         {
           text: 'Download my data',
@@ -93,7 +93,7 @@ export function ProfileView({ handle, isTab }: { handle: string; isTab?: boolean
   const confirmDelete = () =>
     Alert.alert(
       'Delete your account?',
-      'This cannot be undone. Removed: your profile, handle, karma, votes, saves, drafts, notifications and phone alerts. Stays: your threads, replies, Lounge messages and wiki edits, shown as "[deleted user]", and your library uploads.',
+      'This cannot be undone. Removed: your profile, handle, karma, badges, votes, saves, drafts, notifications, team memberships and phone alerts, and any images you uploaded that nothing on DTour still shows. Stays: your threads, replies, Lounge messages and wiki edits, shown as "[deleted user]", the images that posts, guides, places and society posts still show, and your library uploads. If you’re suspended, the suspension is kept with your email address and applies again if you sign up with it.',
       [
         { text: 'Keep my account', style: 'cancel' },
         {

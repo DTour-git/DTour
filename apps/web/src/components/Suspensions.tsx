@@ -6,6 +6,7 @@ import {
   SUSPENSION_DAYS,
   agoLong,
   atHandle,
+  suspendedWho,
   clock,
   liftSuspension,
   shortDate,
@@ -94,7 +95,7 @@ export function Suspensions({ items }: { items: Suspension[] }) {
   const [busy, setBusy] = useState<number | null>(null);
   const active = items.filter((s) => suspensionActive(s));
   const lift = async (s: Suspension) => {
-    if (!confirm(`Lift ${atHandle(s.user)}’s suspension?`)) return;
+    if (!confirm(`Lift ${suspendedWho(s)}’s suspension?`)) return;
     setBusy(s.id);
     try {
       await liftSuspension(supabaseBrowser(), s.id);
@@ -119,7 +120,7 @@ export function Suspensions({ items }: { items: Suspension[] }) {
           className="row-rule"
           style={{ display: 'flex', gap: 12, alignItems: 'baseline', flexWrap: 'wrap', padding: '12px 0' }}
         >
-          <b>{atHandle(s.user)}</b>
+          <b>{suspendedWho(s)}</b>
           <span style={{ fontSize: 14, color: 'var(--color-neutral-800)' }}>
             {until(s)} · {s.reason}
           </span>
@@ -133,8 +134,7 @@ export function Suspensions({ items }: { items: Suspension[] }) {
           <h4 style={{ margin: '24px 0 4px' }}>Log</h4>
           {items.map((s) => (
             <div key={s.id} className="row-rule" style={{ fontSize: 14, padding: '8px 0', color: 'var(--color-neutral-800)' }}>
-              {s.by ? atHandle(s.by) : 'A moderator'} suspended <b>{atHandle(s.user)}</b> {until(s)} · {agoLong(s.created_at)} · “{s.reason}
-              ”
+              {s.by ? atHandle(s.by) : 'A moderator'} suspended <b>{suspendedWho(s)}</b> {until(s)} · {agoLong(s.created_at)} · “{s.reason}”
               {s.lifted_at && (
                 <>
                   {' '}

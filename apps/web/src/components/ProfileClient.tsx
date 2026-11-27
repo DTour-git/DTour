@@ -259,10 +259,14 @@ export function ProfileButtons({ profile }: { profile: ProfileRow }) {
                 <div className="dialog-title">Delete your account?</div>
                 <div className="dialog-body">
                   This cannot be undone. <b>Removed:</b> your profile, handle, karma, badges, votes, saves, drafts, notifications, team
-                  memberships and phone alerts.
+                  memberships and phone alerts, and any images you uploaded that nothing on DTour still shows.
                   <br />
-                  <b>Stays:</b> your threads, replies, Lounge messages and wiki edits, shown as &ldquo;[deleted user]&rdquo;, and anything
-                  you uploaded to the library. Your handle becomes available to others.
+                  <b>Stays:</b> your threads, replies, Lounge messages and wiki edits, shown as &ldquo;[deleted user]&rdquo;, the images
+                  that posts, guides, places and society posts still show, and anything you uploaded to the library. Your handle becomes
+                  available to others.
+                  <br />
+                  <b>If you&rsquo;re suspended:</b> the suspension is kept with your email address, and applies again if you sign up with
+                  it.
                 </div>
                 {error && (
                   <div role="alert" style={{ fontSize: 14, color: 'var(--color-accent-2-700)' }}>
