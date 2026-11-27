@@ -1738,48 +1738,6 @@ export type Database = {
           },
         ]
       }
-      suspension_carryovers: {
-        Row: {
-          created_by: string | null
-          email_sha256: string
-          ends_at: string | null
-          handle: string | null
-          id: number
-          kept_at: string
-          reason: string
-          suspended_at: string
-        }
-        ComputedFields: never
-        Insert: {
-          created_by?: string | null
-          email_sha256: string
-          ends_at?: string | null
-          handle?: string | null
-          id?: never
-          kept_at?: string
-          reason: string
-          suspended_at: string
-        }
-        Update: {
-          created_by?: string | null
-          email_sha256?: string
-          ends_at?: string | null
-          handle?: string | null
-          id?: never
-          kept_at?: string
-          reason?: string
-          suspended_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "suspension_carryovers_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       suspensions: {
         Row: {
           created_at: string
@@ -2486,7 +2444,6 @@ export type Database = {
       }
       delete_reply: { Args: { p_reply: number }; Returns: undefined }
       dtour_clear_demo: { Args: Record<PropertyKey, never>; Returns: undefined }
-      email_sha256: { Args: { p_email: string }; Returns: string }
       enqueue_event_reminders: {
         Args: Record<PropertyKey, never>
         Returns: number
